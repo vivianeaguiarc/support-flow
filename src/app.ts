@@ -5,10 +5,12 @@ import { notFoundHandler } from './shared/http/middlewares/not-found-handler.js'
 import { rateLimitMiddleware } from './shared/http/middlewares/rate-limit.js';
 import { securityMiddleware } from './shared/http/middlewares/security.js';
 import { healthRouter } from './shared/http/routes/health.routes.js';
+import { httpLogger } from './shared/logger/http-logger.js';
 
 export function createApp() {
   const app = express();
 
+  app.use(httpLogger);
   app.use(...securityMiddleware);
   app.use(rateLimitMiddleware);
   app.use(express.json());

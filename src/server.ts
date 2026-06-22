@@ -1,8 +1,9 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { logger } from './shared/logger/logger.js';
 
 const app = createApp();
 
 app.listen(env.PORT, () => {
-  console.log(`Server running on port ${env.PORT} [${env.NODE_ENV}]`);
+  logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
 });

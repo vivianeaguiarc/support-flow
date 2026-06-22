@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../errors/app-error.js';
+import { logger } from '../../logger/logger.js';
 
 export function errorHandler(
   err: Error,
@@ -16,7 +17,7 @@ export function errorHandler(
     return;
   }
 
-  console.error(err);
+  logger.error({ err }, 'Unexpected error');
 
   res.status(500).json({
     statusCode: 500,
