@@ -1,8 +1,11 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
-export function notFoundHandler(_req: Request, res: Response): void {
-  res.status(404).json({
-    status: 'error',
-    message: 'Route not found',
-  });
+import { AppError } from '../../errors/app-error.js';
+
+export function notFoundHandler(
+  _req: Request,
+  _res: Response,
+  next: NextFunction,
+): void {
+  next(new AppError('Route not found', 404));
 }
