@@ -1,6 +1,16 @@
 # Modules
 
-Estrutura base do **Modular Monolith** do SupportFlow. Cada pasta representa um bounded context com responsabilidades isoladas.
+## Objetivo da arquitetura modular
+
+Esta pasta implementa um **Modular Monolith** com princípios de **Clean Architecture** e **DDD Lite**. O objetivo é organizar o backend em módulos independentes por domínio, cada um com camadas bem definidas, permitindo que o projeto cresça de forma previsível sem acoplamento excessivo.
+
+A regra de dependência é simples: camadas externas dependem das internas, nunca o contrário.
+
+```
+Routes → Controllers → Services
+```
+
+Módulos podem usar `shared/` e `config/`, mas `shared` **não** importa de `modules`.
 
 ## Módulos
 
@@ -14,46 +24,45 @@ Estrutura base do **Modular Monolith** do SupportFlow. Cada pasta representa um 
 
 ## Camadas
 
-Cada módulo segue a mesma organização interna. A dependência sempre aponta para dentro: **Routes → Controllers → Services**.
+### Controllers (`controllers/`)
 
-### Controller (`controllers/`)
+Responsáveis **apenas por HTTP**.
 
-Responsável **apenas por HTTP**.
+- Recebem `Request` e `Response`
+- Validam entrada (via DTOs)
+- Chamam o Service correspondente
+- Mapeiam o retorno para status code e JSON
+- **Não** contêm regra de negócio
 
-- Recebe `Request` e `Response`
-- Valida entrada (via DTOs)
-- Chama o Service correspondente
-- Mapeia o retorno para status code e JSON
-- **Não** contém regra de negócio
+### Services (`services/`)
 
-### Service (`services/`)
+Responsáveis pela **regra de negócio**.
 
-Responsável pela **regra de negócio**.
+- Orquestram casos de uso do domínio
+- Aplicam validações de negócio
+- Coordenam repositórios e integrações (quando existirem)
+- **Não** conhecem Express, HTTP ou status codes
 
-- Orquestra casos de uso do domínio
-- Aplica validações de negócio
-- Coordena repositórios e integrações (quando existirem)
-- **Não** conhece Express, HTTP ou status codes
+### DTOs (`dtos/`)
 
-### DTO (`dtos/`)
+Responsáveis pela **tipagem de entrada e saída**.
 
-Responsável pela **tipagem de entrada e saída**.
-
-- Define contratos de dados entre camadas
+- Definem contratos de dados entre camadas
 - Tipos TypeScript e schemas Zod (futuro)
-- Separa o formato da API do modelo de domínio
+- Separam o formato da API do modelo de domínio
 
 ### Routes (`routes/`)
 
-Responsável pelo **mapeamento das rotas**.
+Responsáveis pelo **mapeamento das rotas**.
 
-- Define verbos HTTP, paths e middlewares específicos
-- Conecta endpoints aos Controllers
-- Exporta o `Router` do Express para registro no `app.ts`
+- Definem verbos HTTP, paths e middlewares específicos
+- Conectam endpoints aos Controllers
+- Exportam o `Router` do Express para registro no `app.ts`
 
-## Adicionando um novo módulo
+## Como criar novos módulos
 
 1. Criar pasta em `src/modules/<nome-do-modulo>/`
-2. Replicar as pastas `controllers/`, `services/`, `routes/` e `dtos/`
-3. Criar `index.ts` exportando as camadas
+2. Adicionar as pastas `controllers/`, `services/`, `routes/` e `dtos/`
+3. Criar `index.ts` em cada pasta e no módulo para exportações
 4. Registrar as rotas em `app.ts` com prefixo `/api/v1/<recurso>`
+5. Implementar na ordem: **DTO → Service → Controller → Routes**
