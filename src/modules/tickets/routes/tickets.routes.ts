@@ -35,7 +35,7 @@ ticketsRouter.post(
 ticketsRouter.get(
   '/',
   authenticate,
-  authorize(UserRole.AGENT),
+  authorize(UserRole.AGENT, UserRole.CUSTOMER),
   ticketsController.list,
 );
 
@@ -74,7 +74,7 @@ ticketsRouter.patch(
 ticketsRouter.get(
   '/:id',
   authenticate,
-  authorize(UserRole.AGENT),
+  authorize(UserRole.AGENT, UserRole.CUSTOMER),
   validateRequest({ params: idParamSchema }),
   ticketsController.findById,
 );

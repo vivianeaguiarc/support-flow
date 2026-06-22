@@ -2,6 +2,7 @@ import type { Ticket, TicketPriority } from '@prisma/client';
 import { TicketStatus, UserRole } from '@prisma/client';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import type { AuthenticatedUser } from '../../../shared/types/authenticated-user.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
@@ -25,7 +26,12 @@ export class TicketsService {
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
   ) {}
 
-  async create(data: CreateTicketServiceInput): Promise<Ticket> {
+  async create(
+    data: CreateTicketServiceInput,
+    authUser: AuthenticatedUser,
+  ): Promise<Ticket> {
+    this.assertCanCreateTicket(authUser, data);
+
     await this.ensureCustomer(data.customerId);
 
     if (data.assignedAgentId) {
@@ -50,37 +56,144 @@ export class TicketsService {
     return ticket;
   }
 
-  async findById(id: string): Promise<Ticket> {
+  async findById(id: string, authUser: AuthenticatedUser): Promise<Ticket> {
     const ticket = await this.ticketsRepository.findById(id);
 
     if (!ticket) {
       throw new AppError('Ticket not found', 404);
     }
 
+    this.assertCanAccessTicket(ticket, authUser);
+
     return ticket;
   }
 
-  async list(): Promise<Ticket[]> {
+  async list(authUser: AuthenticatedUser): Promise<Ticket[]> {
+    if (authUser.role === UserRole.CUSTOMER) {
+      return this.ticketsRepository.listByCustomerId(authUser.id);
+    }
+
     return this.ticketsRepository.list();
   }
 
-  async listByCustomerId(customerId: string): Promise<Ticket[]> {
+  async listByCustomerId(
+    customerId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<Ticket[]> {
+    this.assertCanListCustomerTickets(customerId, authUser);
     return this.ticketsRepository.listByCustomerId(customerId);
   }
 
-  async listByAssignedAgentId(assignedAgentId: string): Promise<Ticket[]> {
+  async listByAssignedAgentId(
+    assignedAgentId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<Ticket[]> {
+    this.assertCanListAgentTickets(assignedAgentId, authUser);
     return this.ticketsRepository.listByAssignedAgentId(assignedAgentId);
   }
 
-  async updateStatus(id: string, status: TicketStatus): Promise<Ticket> {
-    await this.findById(id);
+  async updateStatus(
+    id: string,
+    status: TicketStatus,
+    authUser: AuthenticatedUser,
+  ): Promise<Ticket> {
+    this.assertCanManageTickets(authUser);
+    await this.findById(id, authUser);
     return this.ticketsRepository.updateStatus(id, status);
   }
 
-  async assignAgent(id: string, assignedAgentId: string): Promise<Ticket> {
-    await this.findById(id);
+  async assignAgent(
+    id: string,
+    assignedAgentId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<Ticket> {
+    this.assertCanManageTickets(authUser);
+    await this.findById(id, authUser);
     await this.ensureAgent(assignedAgentId);
     return this.ticketsRepository.assignAgent(id, assignedAgentId);
+  }
+
+  private assertCanCreateTicket(
+    authUser: AuthenticatedUser,
+    data: CreateTicketServiceInput,
+  ): void {
+    if (authUser.role === UserRole.ADMIN) {
+      return;
+    }
+
+    if (authUser.role === UserRole.CUSTOMER) {
+      if (data.customerId !== authUser.id) {
+        throw new AppError('Forbidden', 403);
+      }
+
+      if (data.assignedAgentId) {
+        throw new AppError('Customers cannot assign agents', 400);
+      }
+
+      return;
+    }
+
+    throw new AppError('Forbidden', 403);
+  }
+
+  private assertCanAccessTicket(
+    ticket: Ticket,
+    authUser: AuthenticatedUser,
+  ): void {
+    if (authUser.role === UserRole.ADMIN) {
+      return;
+    }
+
+    if (authUser.role === UserRole.AGENT) {
+      return;
+    }
+
+    if (
+      authUser.role === UserRole.CUSTOMER &&
+      ticket.customerId === authUser.id
+    ) {
+      return;
+    }
+
+    throw new AppError('Forbidden', 403);
+  }
+
+  private assertCanListCustomerTickets(
+    customerId: string,
+    authUser: AuthenticatedUser,
+  ): void {
+    if (authUser.role === UserRole.ADMIN) {
+      return;
+    }
+
+    if (authUser.role === UserRole.CUSTOMER && customerId === authUser.id) {
+      return;
+    }
+
+    throw new AppError('Forbidden', 403);
+  }
+
+  private assertCanListAgentTickets(
+    agentId: string,
+    authUser: AuthenticatedUser,
+  ): void {
+    if (authUser.role === UserRole.ADMIN) {
+      return;
+    }
+
+    if (authUser.role === UserRole.AGENT && agentId === authUser.id) {
+      return;
+    }
+
+    throw new AppError('Forbidden', 403);
+  }
+
+  private assertCanManageTickets(authUser: AuthenticatedUser): void {
+    if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
+      return;
+    }
+
+    throw new AppError('Forbidden', 403);
   }
 
   private async ensureCustomer(customerId: string): Promise<void> {
