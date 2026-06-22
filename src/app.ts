@@ -1,5 +1,6 @@
 import express from 'express';
 
+import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { ticketsRouter } from './modules/tickets/routes/tickets.routes.js';
 import { usersRouter } from './modules/users/routes/users.routes.js';
 import { errorHandler } from './shared/http/middlewares/error-handler.js';
@@ -19,6 +20,7 @@ export function createApp() {
 
   const apiRouter = express.Router();
   apiRouter.use('/health', healthRouter);
+  apiRouter.use('/auth', authRouter);
   apiRouter.use('/users', usersRouter);
   apiRouter.use('/tickets', ticketsRouter);
   app.use('/api/v1', apiRouter);

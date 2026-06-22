@@ -1,6 +1,9 @@
+import { UserRole } from '@prisma/client';
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { authenticate } from '../../../shared/http/middlewares/authenticate.js';
+import { authorize } from '../../../shared/http/middlewares/authorize.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
 import { usersController } from '../controllers/users.controller.js';
 import { createUserSchema } from '../dtos/create-user.dto.js';
@@ -17,10 +20,17 @@ usersRouter.post(
   usersController.create,
 );
 
-usersRouter.get('/', usersController.list);
+usersRouter.get(
+  '/',
+  authenticate,
+  authorize(UserRole.ADMIN),
+  usersController.list,
+);
 
 usersRouter.get(
   '/:id',
+  authenticate,
+  authorize(UserRole.ADMIN),
   validateRequest({ params: idParamSchema }),
   usersController.findById,
 );
