@@ -10,6 +10,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.url().default('http://localhost:5173'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
 });
 
 const result = envSchema.safeParse(process.env);
