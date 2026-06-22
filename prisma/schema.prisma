@@ -6,13 +6,59 @@ datasource db {
   provider = "postgresql"
 }
 
+enum UserRole {
+  ADMIN
+  AGENT
+  CUSTOMER
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String
   email     String   @unique
   password  String
+  role      UserRole @default(CUSTOMER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  ticketsCreated  Ticket[] @relation("TicketCustomer")
+  ticketsAssigned Ticket[] @relation("TicketAgent")
+
   @@map("users")
+}
+
+model Ticket {
+  id              String         @id @default(uuid())
+  title           String
+  description     String
+  status          TicketStatus   @default(OPEN)
+  priority        TicketPriority @default(MEDIUM)
+  customerId      String
+  assignedAgentId String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  customer      User  @relation("TicketCustomer", fields: [customerId], references: [id])
+  assignedAgent User? @relation("TicketAgent", fields: [assignedAgentId], references: [id])
+
+  @@index([status])
+  @@index([priority])
+  @@index([customerId])
+  @@index([assignedAgentId])
+  @@map("tickets")
 }
