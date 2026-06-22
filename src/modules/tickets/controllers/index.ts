@@ -1,1 +1,1 @@
-export {};
+export * from './tickets.controller.js';

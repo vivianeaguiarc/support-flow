@@ -1,1 +1,1 @@
-export {};
+export * from './users.controller.js';
