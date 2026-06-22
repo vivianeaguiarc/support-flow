@@ -1,6 +1,7 @@
 import type { User } from '@prisma/client';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import { hashPassword } from '../../../shared/security/password-hash.js';
 import {
   type CreateUserInput,
   UsersRepository,
@@ -19,7 +20,12 @@ export class UsersService {
       throw new AppError('Email already in use', 409);
     }
 
-    return this.repository.create(data);
+    const hashedPassword = await hashPassword(data.password);
+
+    return this.repository.create({
+      ...data,
+      password: hashedPassword,
+    });
   }
 
   async findById(id: string): Promise<User> {
