@@ -7,6 +7,9 @@ const envSchema = z.object({
     .enum(['development', 'test', 'production'])
     .default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
+  CORS_ORIGIN: z.url().default('http://localhost:5173'),
+  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
+  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
 });
 
 const result = envSchema.safeParse(process.env);
