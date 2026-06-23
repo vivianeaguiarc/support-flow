@@ -30,6 +30,7 @@
     "test:db:prepare": "docker compose up -d && node --import tsx src/test/integration/prepare-database.ts",
     "test": "vitest run --exclude '**/*.integration.spec.ts'",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest --exclude '**/*.integration.spec.ts'",
     "test:coverage": "vitest run --coverage"
   },

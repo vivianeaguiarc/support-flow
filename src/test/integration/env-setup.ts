@@ -1,10 +1,14 @@
+const defaultTestDatabaseUrl =
+  'postgresql://postgres:postgres@localhost:5433/supportflow_test?schema=public';
+
+const testDatabaseUrl =
+  process.env.DATABASE_URL_TEST ??
+  process.env.DATABASE_URL ??
+  defaultTestDatabaseUrl;
+
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL =
-  process.env.DATABASE_URL_TEST ??
-  'postgresql://postgres:postgres@localhost:5433/supportflow_test?schema=public';
-process.env.DATABASE_URL_TEST =
-  process.env.DATABASE_URL_TEST ??
-  'postgresql://postgres:postgres@localhost:5433/supportflow_test?schema=public';
+process.env.DATABASE_URL = testDatabaseUrl;
+process.env.DATABASE_URL_TEST = testDatabaseUrl;
 process.env.JWT_SECRET = 'integration-test-secret';
 process.env.JWT_EXPIRES_IN = '1d';
 process.env.CORS_ORIGIN = 'http://localhost:5173';

@@ -287,6 +287,8 @@ pnpm test
 
 # Testes de integração (~149) — requer PostgreSQL em localhost:5433
 pnpm test:integration
+# alias equivalente
+pnpm test:e2e
 
 # Cobertura
 pnpm test:coverage
@@ -334,6 +336,8 @@ Documentação gerada a partir de JSDoc nos arquivos `*.swagger.ts` de cada mód
 
 Workflow **GitHub Actions** (`.github/workflows/ci.yml`), executado em todo `push` e `pull_request`:
 
+### Job `Quality checks`
+
 1. Checkout
 2. Setup pnpm 9 + Node.js 22 (com cache)
 3. `pnpm install --frozen-lockfile`
@@ -344,6 +348,22 @@ Workflow **GitHub Actions** (`.github/workflows/ci.yml`), executado em todo `pus
 8. `pnpm prisma:generate`
 9. `pnpm test` (unitários)
 10. `pnpm build`
+
+### Job `Integration tests (E2E)`
+
+Executa em paralelo ao job de qualidade, com **PostgreSQL 16** como service container (sem banco externo):
+
+1. Checkout + setup pnpm/Node (com cache)
+2. `pnpm install --frozen-lockfile`
+3. `pnpm prisma:generate`
+4. `pnpm prisma:deploy` — aplica migrations no Postgres do CI
+5. `pnpm test:integration` — ~149 testes E2E com Supertest + banco real
+
+Variáveis no CI:
+
+```text
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/supportflow_test?schema=public
+```
 
 Deploy automatizado ainda não configurado — a imagem Docker está pronta para Render, Railway, Fly.io ou VPS.
 
