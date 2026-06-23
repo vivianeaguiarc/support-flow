@@ -6,8 +6,11 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
+    "start:prod": "node dist/server.js",
+    "start:docker": "sh scripts/docker-entrypoint.sh",
+    "docker:build": "docker build -t supportflow-backend .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

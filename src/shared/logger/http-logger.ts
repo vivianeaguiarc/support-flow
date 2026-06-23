@@ -11,7 +11,12 @@ export const httpLogger = pinoHttp({
     censor: '[Redacted]',
   },
   autoLogging: {
-    ignore: (req: IncomingMessage) => req.url === '/api/v1/health',
+    ignore: (req: IncomingMessage) => {
+      const url = req.url?.split('?')[0];
+      return (
+        url === '/health' || url === '/health/ready' || url === '/api/v1/health'
+      );
+    },
   },
   customLogLevel: (_req: IncomingMessage, res: ServerResponse, err?: Error) => {
     if (err || res.statusCode >= 500) return 'error';

@@ -17,5 +17,28 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: supportflow-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/supportflow?schema=public
+      JWT_SECRET: local-docker-jwt-secret-with-32-chars-min
+      JWT_EXPIRES_IN: 1d
+      CORS_ORIGIN: http://localhost:5173
+      SWAGGER_ENABLED: 'false'
+    volumes:
+      - supportflow_uploads:/app/storage/attachments
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   supportflow_postgres_data:
+  supportflow_uploads:

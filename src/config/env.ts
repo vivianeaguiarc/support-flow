@@ -27,7 +27,9 @@ const envSchema = z
     SWAGGER_ENABLED: z
       .enum(['true', 'false'])
       .optional()
-      .transform((value) => value === 'true'),
+      .transform((value): boolean | undefined =>
+        value === undefined ? undefined : value === 'true',
+      ),
   })
   .superRefine((data, ctx) => {
     if (data.NODE_ENV === 'production' && data.JWT_SECRET.length < 32) {

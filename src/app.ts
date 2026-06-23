@@ -24,6 +24,8 @@ export function createApp(options: CreateAppOptions = {}) {
     app.set('trust proxy', 1);
   }
 
+  app.use('/health', healthRouter);
+
   app.use(httpLogger);
   app.use(...securityMiddleware);
   app.use(rateLimitMiddleware);
