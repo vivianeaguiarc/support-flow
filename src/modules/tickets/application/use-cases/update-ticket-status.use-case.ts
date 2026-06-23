@@ -1,6 +1,7 @@
 import type { Ticket } from '@prisma/client';
 import { TicketHistoryEvent } from '@prisma/client';
 
+import { assertAssigneeRequiredForInProgress } from '../../domain/ticket-in-progress.rules.js';
 import { assertValidTicketStatusTransition } from '../../domain/ticket-status-transitions.js';
 import {
   TicketHistoryRepository,
@@ -30,6 +31,7 @@ export class UpdateTicketStatusUseCase {
     });
 
     assertValidTicketStatusTransition(ticket.status, input.status);
+    assertAssigneeRequiredForInProgress(ticket, input.status);
 
     const updatedTicket = await this.ticketsRepository.updateStatus(
       ticket.id,

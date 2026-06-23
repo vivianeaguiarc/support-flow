@@ -260,12 +260,14 @@ describe('TicketsService', () => {
     );
   });
 
-  it('should allow AGENT to update ticket status', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-      mockTicket,
-    );
+  it('should allow AGENT to update ticket status when assignee is set', async () => {
+    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+      ...mockTicket,
+      assignedToId: 'agent-1',
+    });
     vi.mocked(ticketsRepository.updateStatus).mockResolvedValue({
       ...mockTicket,
+      assignedToId: 'agent-1',
       status: TicketStatus.IN_PROGRESS,
     });
 
@@ -288,6 +290,24 @@ describe('TicketsService', () => {
       }),
     );
     expect(result.status).toBe(TicketStatus.IN_PROGRESS);
+  });
+
+  it('should reject IN_PROGRESS when ticket has no assignee', async () => {
+    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+      mockTicket,
+    );
+
+    await expect(
+      service.updateStatus('ticket-1', TicketStatus.IN_PROGRESS, agentAuth),
+    ).rejects.toEqual(
+      new AppError(
+        'Ticket must be assigned before moving to IN_PROGRESS.',
+        400,
+      ),
+    );
+
+    expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
+    expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
   });
 
   it('should allow ADMIN to access any ticket', async () => {

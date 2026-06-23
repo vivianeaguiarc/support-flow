@@ -26,6 +26,7 @@ export {
   type TicketPriority,
   type TicketStatus,
 } from './ticket-enums.js';
+export { assertAssigneeRequiredForInProgress } from './ticket-in-progress.rules.js';
 export { generateTicketProtocol } from './ticket-protocol.js';
 export {
   assertValidTicketStatusTransition,

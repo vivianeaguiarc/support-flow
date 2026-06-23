@@ -242,12 +242,14 @@ describe('Ticket use cases', () => {
   });
 
   describe('UpdateTicketStatusUseCase', () => {
-    it('should update status and record history', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+    it('should update status and record history when assignee is set', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+        ...mockTicket,
+        assignedToId: 'agent-1',
+      });
       vi.mocked(ticketsRepository.updateStatus).mockResolvedValue({
         ...mockTicket,
+        assignedToId: 'agent-1',
         status: TicketStatus.IN_PROGRESS,
       });
 
@@ -271,6 +273,90 @@ describe('Ticket use cases', () => {
           newValue: TicketStatus.IN_PROGRESS,
         }),
       );
+      expect(result.status).toBe(TicketStatus.IN_PROGRESS);
+    });
+
+    it('should reject OPEN to IN_PROGRESS without assignee', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+        mockTicket,
+      );
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new UpdateTicketStatusUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          status: TicketStatus.IN_PROGRESS,
+        }),
+      ).rejects.toEqual(
+        new AppError(
+          'Ticket must be assigned before moving to IN_PROGRESS.',
+          400,
+        ),
+      );
+
+      expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
+      expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should reject ESCALATED to IN_PROGRESS without assignee', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+        ...mockTicket,
+        status: TicketStatus.ESCALATED,
+      });
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new UpdateTicketStatusUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          status: TicketStatus.IN_PROGRESS,
+        }),
+      ).rejects.toEqual(
+        new AppError(
+          'Ticket must be assigned before moving to IN_PROGRESS.',
+          400,
+        ),
+      );
+    });
+
+    it('should allow ESCALATED to IN_PROGRESS with assignee', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+        ...mockTicket,
+        status: TicketStatus.ESCALATED,
+        assignedToId: 'agent-1',
+      });
+      vi.mocked(ticketsRepository.updateStatus).mockResolvedValue({
+        ...mockTicket,
+        status: TicketStatus.IN_PROGRESS,
+        assignedToId: 'agent-1',
+      });
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new UpdateTicketStatusUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      const result = await useCase.execute({
+        tenantId: DEFAULT_TENANT_ID,
+        ticketId: 'ticket-1',
+        status: TicketStatus.IN_PROGRESS,
+      });
+
       expect(result.status).toBe(TicketStatus.IN_PROGRESS);
     });
 
