@@ -9,6 +9,7 @@ import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
+import { ticketMetricsQuerySchema } from '../dtos/ticket-metrics-query.dto.js';
 import { ticketSummaryQuerySchema } from '../dtos/ticket-summary-query.dto.js';
 import { updateTicketStatusSchema } from '../dtos/update-ticket-status.dto.js';
 
@@ -36,6 +37,14 @@ ticketsRouter.get(
   authorize(UserRole.AGENT, UserRole.CUSTOMER),
   validateRequest({ query: ticketSummaryQuerySchema }),
   ticketsController.summary,
+);
+
+ticketsRouter.get(
+  '/metrics',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({ query: ticketMetricsQuerySchema }),
+  ticketsController.metrics,
 );
 
 ticketsRouter.patch(

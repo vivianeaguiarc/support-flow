@@ -7,6 +7,8 @@ import {
   assignTicketUseCase,
   FindTicketByIdUseCase,
   findTicketByIdUseCase,
+  GetTicketMetricsUseCase,
+  getTicketMetricsUseCase,
   GetTicketStatusTransitionsUseCase,
   getTicketStatusTransitionsUseCase,
   GetTicketSummaryUseCase,
@@ -19,6 +21,7 @@ import {
   openTicketUseCase,
   type PaginatedTicketList,
   type TicketHistoryResult,
+  type TicketMetrics,
   type TicketStatusTransitionsResult,
   type TicketSummary,
   UpdateTicketStatusUseCase,
@@ -27,6 +30,7 @@ import {
 import type { Ticket } from '../domain/ticket.entity.js';
 import type { TicketPriority, TicketStatus } from '../domain/ticket-enums.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
+import type { TicketMetricsQueryDto } from '../dtos/ticket-metrics-query.dto.js';
 import type { TicketSummaryQueryDto } from '../dtos/ticket-summary-query.dto.js';
 import {
   TicketsRepository,
@@ -52,6 +56,7 @@ export class TicketsService {
     private readonly getTicketStatusTransitions: GetTicketStatusTransitionsUseCase = getTicketStatusTransitionsUseCase,
     private readonly listTicketHistory: ListTicketHistoryUseCase = listTicketHistoryUseCase,
     private readonly getTicketSummary: GetTicketSummaryUseCase = getTicketSummaryUseCase,
+    private readonly getTicketMetrics: GetTicketMetricsUseCase = getTicketMetricsUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
   ) {}
 
@@ -171,6 +176,20 @@ export class TicketsService {
       unassigned: query.unassigned,
       overdue: query.overdue,
       search: query.search,
+      createdFrom: query.createdFrom,
+      createdTo: query.createdTo,
+    });
+  }
+
+  async metrics(
+    authUser: AuthenticatedUser,
+    query: TicketMetricsQueryDto = {},
+  ): Promise<TicketMetrics> {
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.getTicketMetrics.execute({
+      tenantId,
+      categoryId: query.categoryId,
       createdFrom: query.createdFrom,
       createdTo: query.createdTo,
     });

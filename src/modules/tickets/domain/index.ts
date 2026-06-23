@@ -15,6 +15,7 @@ export {
 } from './ticket-enums.js';
 export { assertAssigneeRequiredForInProgress } from './ticket-in-progress.rules.js';
 export type { TicketListFilters } from './ticket-list-filters.js';
+export type { TicketMetrics } from './ticket-metrics.js';
 export type { PaginatedTicketList } from './ticket-paginated-list.js';
 export { generateTicketProtocol } from './ticket-protocol.js';
 export {

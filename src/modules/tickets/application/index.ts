@@ -1,3 +1,4 @@
+export type { TicketMetrics } from '../domain/ticket-metrics.js';
 export type { PaginatedTicketList } from '../domain/ticket-paginated-list.js';
 export type { TicketSummary } from '../domain/ticket-summary.js';
 export * from './inputs/ticket-use-case.inputs.js';
@@ -5,6 +6,7 @@ export * from './mappers/to-ticket-history-response.js';
 export * from './use-cases/assign-ticket.use-case.js';
 export * from './use-cases/calculate-ticket-sla.use-case.js';
 export * from './use-cases/find-ticket-by-id.use-case.js';
+export * from './use-cases/get-ticket-metrics.use-case.js';
 export * from './use-cases/get-ticket-status-transitions.use-case.js';
 export * from './use-cases/get-ticket-summary.use-case.js';
 export * from './use-cases/list-ticket-history.use-case.js';
