@@ -279,6 +279,8 @@ describe('Ticket use cases', () => {
         priority: TicketPriority.HIGH,
         page: 1,
         limit: 10,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
 
       expect(ticketsRepository.listWithFilters).toHaveBeenCalledWith({
@@ -287,6 +289,8 @@ describe('Ticket use cases', () => {
         priority: TicketPriority.HIGH,
         page: 1,
         limit: 10,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
       });
       expect(result).toEqual({
         data: [mockTicket],

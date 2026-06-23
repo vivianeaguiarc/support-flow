@@ -9,6 +9,7 @@ import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
+import { ticketSummaryQuerySchema } from '../dtos/ticket-summary-query.dto.js';
 import { updateTicketStatusSchema } from '../dtos/update-ticket-status.dto.js';
 
 export const ticketsRouter = Router();
@@ -27,6 +28,14 @@ ticketsRouter.get(
   authorize(UserRole.AGENT, UserRole.CUSTOMER),
   validateRequest({ query: listTicketsQuerySchema }),
   ticketsController.list,
+);
+
+ticketsRouter.get(
+  '/summary',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.CUSTOMER),
+  validateRequest({ query: ticketSummaryQuerySchema }),
+  ticketsController.summary,
 );
 
 ticketsRouter.patch(

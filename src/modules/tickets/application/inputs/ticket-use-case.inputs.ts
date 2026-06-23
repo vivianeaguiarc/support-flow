@@ -2,6 +2,10 @@ import type {
   TicketPriority,
   TicketStatus,
 } from '../../domain/ticket-enums.js';
+import type {
+  TicketListSortField,
+  TicketListSortOrder,
+} from '../../domain/ticket-list-sort.js';
 
 export type OpenTicketInput = {
   tenantId: string;
@@ -28,6 +32,8 @@ export type ListTicketsInput = {
   createdTo?: Date;
   page?: number;
   limit?: number;
+  sortBy?: TicketListSortField;
+  sortOrder?: TicketListSortOrder;
 };
 
 /** @deprecated Use ListTicketsInput */

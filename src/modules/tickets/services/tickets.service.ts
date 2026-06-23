@@ -9,6 +9,8 @@ import {
   findTicketByIdUseCase,
   GetTicketStatusTransitionsUseCase,
   getTicketStatusTransitionsUseCase,
+  GetTicketSummaryUseCase,
+  getTicketSummaryUseCase,
   ListTicketHistoryUseCase,
   listTicketHistoryUseCase,
   ListTicketsByTenantUseCase,
@@ -18,12 +20,14 @@ import {
   type PaginatedTicketList,
   type TicketHistoryResult,
   type TicketStatusTransitionsResult,
+  type TicketSummary,
   UpdateTicketStatusUseCase,
   updateTicketStatusUseCase,
 } from '../application/index.js';
 import type { Ticket } from '../domain/ticket.entity.js';
 import type { TicketPriority, TicketStatus } from '../domain/ticket-enums.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
+import type { TicketSummaryQueryDto } from '../dtos/ticket-summary-query.dto.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -47,6 +51,7 @@ export class TicketsService {
     private readonly assignTicket: AssignTicketUseCase = assignTicketUseCase,
     private readonly getTicketStatusTransitions: GetTicketStatusTransitionsUseCase = getTicketStatusTransitionsUseCase,
     private readonly listTicketHistory: ListTicketHistoryUseCase = listTicketHistoryUseCase,
+    private readonly getTicketSummary: GetTicketSummaryUseCase = getTicketSummaryUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
   ) {}
 
@@ -103,6 +108,8 @@ export class TicketsService {
     query: ListTicketsQueryDto = {
       page: 1,
       limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
     },
   ): Promise<PaginatedTicketList> {
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
@@ -132,6 +139,40 @@ export class TicketsService {
       createdTo: query.createdTo,
       page: query.page,
       limit: query.limit,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
+  }
+
+  async summary(
+    authUser: AuthenticatedUser,
+    query: TicketSummaryQueryDto = {},
+  ): Promise<TicketSummary> {
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    if (
+      authUser.role === UserRole.CUSTOMER &&
+      query.customerId &&
+      query.customerId !== authUser.id
+    ) {
+      throw new AppError('Forbidden', 403);
+    }
+
+    const customerId =
+      authUser.role === UserRole.CUSTOMER ? authUser.id : query.customerId;
+
+    return this.getTicketSummary.execute({
+      tenantId,
+      status: query.status,
+      priority: query.priority,
+      categoryId: query.categoryId,
+      customerId,
+      assignedToId: query.assignedToId,
+      unassigned: query.unassigned,
+      overdue: query.overdue,
+      search: query.search,
+      createdFrom: query.createdFrom,
+      createdTo: query.createdTo,
     });
   }
 

@@ -1,23 +1,11 @@
 import { z } from 'zod';
 
-import {
-  DEFAULT_TICKET_LIST_LIMIT,
-  DEFAULT_TICKET_LIST_PAGE,
-  MAX_TICKET_LIST_LIMIT,
-} from '../domain/ticket-list-pagination.js';
-import {
-  DEFAULT_TICKET_LIST_SORT_BY,
-  DEFAULT_TICKET_LIST_SORT_ORDER,
-  TICKET_LIST_SORT_FIELDS,
-  TICKET_LIST_SORT_ORDERS,
-} from '../domain/ticket-list-sort.js';
-
 const optionalBooleanQuery = z.preprocess(
   (value) => (value === 'true' ? true : value === 'false' ? false : undefined),
   z.boolean().optional(),
 );
 
-export const listTicketsQuerySchema = z
+export const ticketSummaryQuerySchema = z
   .object({
     status: z
       .enum([
@@ -38,19 +26,6 @@ export const listTicketsQuerySchema = z
     search: z.string().trim().min(1, 'Search term is required').optional(),
     createdFrom: z.coerce.date().optional(),
     createdTo: z.coerce.date().optional(),
-    page: z.coerce.number().int().min(1).default(DEFAULT_TICKET_LIST_PAGE),
-    limit: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(MAX_TICKET_LIST_LIMIT)
-      .default(DEFAULT_TICKET_LIST_LIMIT),
-    sortBy: z
-      .enum(TICKET_LIST_SORT_FIELDS)
-      .default(DEFAULT_TICKET_LIST_SORT_BY),
-    sortOrder: z
-      .enum(TICKET_LIST_SORT_ORDERS)
-      .default(DEFAULT_TICKET_LIST_SORT_ORDER),
   })
   .refine((data) => !(data.unassigned && data.assignedToId), {
     message: 'unassigned cannot be combined with assignedToId',
@@ -65,4 +40,4 @@ export const listTicketsQuerySchema = z
     },
   );
 
-export type ListTicketsQueryDto = z.infer<typeof listTicketsQuerySchema>;
+export type TicketSummaryQueryDto = z.infer<typeof ticketSummaryQuerySchema>;

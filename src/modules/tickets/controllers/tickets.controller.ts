@@ -4,6 +4,7 @@ import { AppError } from '../../../shared/errors/app-error.js';
 import type { AssignTicketDto } from '../dtos/assign-ticket.dto.js';
 import type { CreateTicketDto } from '../dtos/create-ticket.dto.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
+import type { TicketSummaryQueryDto } from '../dtos/ticket-summary-query.dto.js';
 import type { UpdateTicketStatusDto } from '../dtos/update-ticket-status.dto.js';
 import { TicketsService, ticketsService } from '../services/tickets.service.js';
 
@@ -135,6 +136,23 @@ export class TicketsController {
         getAuthenticatedUser(req),
       );
       res.status(200).json(history);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  summary = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const query = req.query as unknown as TicketSummaryQueryDto;
+      const summary = await this.service.summary(
+        getAuthenticatedUser(req),
+        query,
+      );
+      res.status(200).json(summary);
     } catch (error) {
       next(error);
     }

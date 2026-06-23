@@ -6,6 +6,7 @@ import type { CreateTicketDomainInput } from '../domain/ticket.types.js';
 import type { TicketListFilters } from '../domain/ticket-list-filters.js';
 import { resolveTicketListPagination } from '../domain/ticket-list-pagination.js';
 import type { PaginatedTicketList } from '../domain/ticket-paginated-list.js';
+import { buildTicketListOrderBy } from './build-ticket-list-order-by.js';
 import { buildTicketListWhere } from './build-ticket-list-where.js';
 
 export type CreateTicketInput = CreateTicketDomainInput & {
@@ -56,11 +57,12 @@ export class TicketsRepository {
       filters.limit,
     );
     const where = buildTicketListWhere(filters);
+    const orderBy = buildTicketListOrderBy(filters.sortBy, filters.sortOrder);
 
     const [data, total] = await Promise.all([
       prisma.ticket.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         take: limit,
         skip: (page - 1) * limit,
       }),

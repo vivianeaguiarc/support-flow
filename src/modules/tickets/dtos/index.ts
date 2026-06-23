@@ -2,4 +2,5 @@ export * from './assign-ticket.dto.js';
 export * from './create-ticket.dto.js';
 export * from './list-tickets-query.dto.js';
 export * from './ticket-id-param.dto.js';
+export * from './ticket-summary-query.dto.js';
 export * from './update-ticket-status.dto.js';

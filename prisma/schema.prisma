@@ -134,6 +134,9 @@ model Ticket {
 
   @@unique([tenantId, protocol])
   @@index([tenantId])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, slaDueAt])
+  @@index([tenantId, priority])
   @@index([status])
   @@index([priority])
   @@index([customerId])

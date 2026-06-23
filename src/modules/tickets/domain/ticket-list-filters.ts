@@ -1,4 +1,8 @@
 import type { TicketPriority, TicketStatus } from './ticket-enums.js';
+import type {
+  TicketListSortField,
+  TicketListSortOrder,
+} from './ticket-list-sort.js';
 
 export type TicketListFilters = {
   tenantId: string;
@@ -14,4 +18,6 @@ export type TicketListFilters = {
   createdTo?: Date;
   page?: number;
   limit?: number;
+  sortBy?: TicketListSortField;
+  sortOrder?: TicketListSortOrder;
 };

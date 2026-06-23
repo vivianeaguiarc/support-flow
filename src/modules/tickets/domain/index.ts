@@ -27,3 +27,4 @@ export {
   assertValidTicketStatusTransition,
   getAllowedTicketStatusTransitions,
 } from './ticket-status-transitions.js';
+export type { TicketSummary } from './ticket-summary.js';
