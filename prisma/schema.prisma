@@ -37,12 +37,13 @@ enum TicketHistoryEvent {
 }
 
 model Tenant {
-  id        String   @id @default(uuid())
-  name      String
-  slug      String   @unique
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(uuid())
+  name             String
+  slug             String   @unique
+  isActive         Boolean  @default(true)
+  defaultSlaHours  Int      @default(72)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   users      User[]
   customers  Customer[]
@@ -96,6 +97,7 @@ model TicketCategory {
   tenantId    String
   name        String
   description String?
+  slaHours    Int?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

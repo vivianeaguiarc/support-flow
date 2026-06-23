@@ -11,7 +11,6 @@ export type OpenTicketInput = {
   priority?: TicketPriority;
   categoryId?: string;
   assignedToId?: string;
-  slaDueAt?: Date;
   changedById?: string;
 };
 

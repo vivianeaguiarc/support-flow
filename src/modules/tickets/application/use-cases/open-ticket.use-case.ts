@@ -24,6 +24,10 @@ import {
   ticketsRepository as defaultTicketsRepository,
 } from '../../repositories/tickets.repository.js';
 import type { OpenTicketInput } from '../inputs/ticket-use-case.inputs.js';
+import {
+  CalculateTicketSlaUseCase,
+  calculateTicketSlaUseCase,
+} from './calculate-ticket-sla.use-case.js';
 
 export class OpenTicketUseCase {
   constructor(
@@ -32,6 +36,7 @@ export class OpenTicketUseCase {
     private readonly customersRepository: CustomersRepository = defaultCustomersRepository,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
     private readonly ticketCategoriesRepository: TicketCategoriesRepository = defaultTicketCategoriesRepository,
+    private readonly calculateTicketSla: CalculateTicketSlaUseCase = calculateTicketSlaUseCase,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
@@ -45,6 +50,12 @@ export class OpenTicketUseCase {
       await this.ensureAgent(input.assignedToId, input.tenantId);
     }
 
+    const slaDueAt = await this.calculateTicketSla.execute({
+      tenantId: input.tenantId,
+      priority: input.priority,
+      categoryId: input.categoryId,
+    });
+
     const ticket = await this.ticketsRepository.create({
       tenantId: input.tenantId,
       protocol: generateTicketProtocol(),
@@ -54,7 +65,7 @@ export class OpenTicketUseCase {
       priority: input.priority,
       categoryId: input.categoryId,
       assignedToId: input.assignedToId,
-      slaDueAt: input.slaDueAt,
+      slaDueAt,
       status: TicketStatus.OPEN,
     });
 

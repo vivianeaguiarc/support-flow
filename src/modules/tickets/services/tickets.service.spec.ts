@@ -22,6 +22,16 @@ vi.mock('../repositories/ticket-categories.repository.js', () => ({
   ticketCategoriesRepository: {},
 }));
 
+vi.mock('../repositories/ticket-categories.repository.js', () => ({
+  TicketCategoriesRepository: vi.fn(),
+  ticketCategoriesRepository: {},
+}));
+
+vi.mock('../repositories/tenants.repository.js', () => ({
+  TenantsRepository: vi.fn(),
+  tenantsRepository: {},
+}));
+
 vi.mock('../../users/repositories/users.repository.js', () => ({
   UsersRepository: vi.fn(),
   usersRepository: {},
@@ -38,6 +48,7 @@ import type { AuthenticatedUser } from '../../../shared/types/authenticated-user
 import type { CustomersRepository } from '../../customers/repositories/customers.repository.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
 import { AssignTicketUseCase } from '../application/use-cases/assign-ticket.use-case.js';
+import { CalculateTicketSlaUseCase } from '../application/use-cases/calculate-ticket-sla.use-case.js';
 import { FindTicketByIdUseCase } from '../application/use-cases/find-ticket-by-id.use-case.js';
 import { GetTicketStatusTransitionsUseCase } from '../application/use-cases/get-ticket-status-transitions.use-case.js';
 import { ListTicketHistoryUseCase } from '../application/use-cases/list-ticket-history.use-case.js';
@@ -161,6 +172,12 @@ describe('TicketsService', () => {
       ticketHistoryRepository,
       customersRepository,
       usersRepository,
+      undefined,
+      {
+        execute: vi
+          .fn()
+          .mockResolvedValue(new Date('2026-01-03T00:00:00.000Z')),
+      } as unknown as CalculateTicketSlaUseCase,
     );
     const findTicket = new FindTicketByIdUseCase(ticketsRepository);
     const listTickets = new ListTicketsByTenantUseCase(ticketsRepository);
@@ -197,7 +214,10 @@ describe('TicketsService', () => {
 
   it('should allow CUSTOMER to create a ticket for themselves', async () => {
     vi.mocked(customersRepository.findById).mockResolvedValue(mockCustomer);
-    vi.mocked(ticketsRepository.create).mockResolvedValue(mockTicket);
+    vi.mocked(ticketsRepository.create).mockResolvedValue({
+      ...mockTicket,
+      slaDueAt: new Date('2026-01-03T00:00:00.000Z'),
+    });
     vi.mocked(ticketHistoryRepository.create).mockResolvedValue({
       id: 'history-1',
       tenantId: DEFAULT_TENANT_ID,
@@ -232,7 +252,10 @@ describe('TicketsService', () => {
       }),
     );
     expect(ticketHistoryRepository.create).toHaveBeenCalled();
-    expect(result).toEqual(mockTicket);
+    expect(result).toEqual({
+      ...mockTicket,
+      slaDueAt: new Date('2026-01-03T00:00:00.000Z'),
+    });
   });
 
   it('should reject CUSTOMER creating a ticket for another customer', async () => {

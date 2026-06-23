@@ -78,6 +78,7 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
       tenantId: tenantA.id,
       name: `Category-${Date.now()}`,
       description: 'Integration test category',
+      slaHours: 120,
     },
   });
 

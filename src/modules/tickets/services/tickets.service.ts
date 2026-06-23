@@ -34,7 +34,6 @@ export type CreateTicketServiceInput = {
   priority?: TicketPriority;
   assignedToId?: string;
   categoryId?: string;
-  slaDueAt?: Date;
 };
 
 export class TicketsService {
@@ -65,7 +64,6 @@ export class TicketsService {
       priority: data.priority,
       categoryId: data.categoryId,
       assignedToId: data.assignedToId,
-      slaDueAt: data.slaDueAt,
       changedById: authUser.id,
     });
   }

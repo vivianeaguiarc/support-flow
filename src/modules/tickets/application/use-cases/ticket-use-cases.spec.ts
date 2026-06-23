@@ -36,9 +36,11 @@ import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import type { CustomersRepository } from '../../../customers/repositories/customers.repository.js';
 import type { UsersRepository } from '../../../users/repositories/users.repository.js';
+import type { TicketCategoriesRepository } from '../../repositories/ticket-categories.repository.js';
 import type { TicketHistoryRepository } from '../../repositories/ticket-history.repository.js';
 import type { TicketsRepository } from '../../repositories/tickets.repository.js';
 import { AssignTicketUseCase } from './assign-ticket.use-case.js';
+import { CalculateTicketSlaUseCase } from './calculate-ticket-sla.use-case.js';
 import { FindTicketByIdUseCase } from './find-ticket-by-id.use-case.js';
 import { GetTicketStatusTransitionsUseCase } from './get-ticket-status-transitions.use-case.js';
 import { ListTicketHistoryUseCase } from './list-ticket-history.use-case.js';
@@ -126,6 +128,18 @@ function createCustomersRepositoryMock(): CustomersRepository {
   };
 }
 
+function createTicketCategoriesRepositoryMock(): TicketCategoriesRepository {
+  return {
+    findByIdAndTenant: vi.fn(),
+  };
+}
+
+function createCalculateTicketSlaMock() {
+  return {
+    execute: vi.fn().mockResolvedValue(new Date('2026-01-03T00:00:00.000Z')),
+  };
+}
+
 describe('Ticket use cases', () => {
   let ticketsRepository: TicketsRepository;
   let ticketHistoryRepository: TicketHistoryRepository;
@@ -140,15 +154,25 @@ describe('Ticket use cases', () => {
   });
 
   describe('OpenTicketUseCase', () => {
-    it('should create ticket with OPEN status and CREATED history', async () => {
+    it('should create ticket with OPEN status, SLA and CREATED history', async () => {
+      const slaDueAt = new Date('2026-01-03T00:00:00.000Z');
+      const calculateTicketSla = {
+        execute: vi.fn().mockResolvedValue(slaDueAt),
+      };
+
       vi.mocked(customersRepository.findById).mockResolvedValue(mockCustomer);
-      vi.mocked(ticketsRepository.create).mockResolvedValue(mockTicket);
+      vi.mocked(ticketsRepository.create).mockResolvedValue({
+        ...mockTicket,
+        slaDueAt,
+      });
 
       const useCase = new OpenTicketUseCase(
         ticketsRepository,
         ticketHistoryRepository,
         customersRepository,
         usersRepository,
+        createTicketCategoriesRepositoryMock(),
+        calculateTicketSla as unknown as CalculateTicketSlaUseCase,
       );
 
       const result = await useCase.execute({
@@ -156,12 +180,19 @@ describe('Ticket use cases', () => {
         title: 'Login issue',
         description: 'Unable to access account',
         customerId: 'customer-1',
+        priority: TicketPriority.HIGH,
       });
 
+      expect(calculateTicketSla.execute).toHaveBeenCalledWith({
+        tenantId: DEFAULT_TENANT_ID,
+        priority: TicketPriority.HIGH,
+        categoryId: undefined,
+      });
       expect(ticketsRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           tenantId: DEFAULT_TENANT_ID,
           status: TicketStatus.OPEN,
+          slaDueAt,
           protocol: expect.stringMatching(/^SF-\d{8}-[A-Z0-9]{6}$/),
         }),
       );
@@ -171,7 +202,7 @@ describe('Ticket use cases', () => {
           ticketId: mockTicket.id,
         }),
       );
-      expect(result).toEqual(mockTicket);
+      expect(result.slaDueAt).toEqual(slaDueAt);
     });
 
     it('should reject customer from another tenant', async () => {
@@ -185,6 +216,8 @@ describe('Ticket use cases', () => {
         ticketHistoryRepository,
         customersRepository,
         usersRepository,
+        createTicketCategoriesRepositoryMock(),
+        createCalculateTicketSlaMock() as unknown as CalculateTicketSlaUseCase,
       );
 
       await expect(

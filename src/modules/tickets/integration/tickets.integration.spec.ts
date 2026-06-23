@@ -54,6 +54,13 @@ describe.sequential('Ticket workflow integration', () => {
     expect(createResponse.body.status).toBe(TicketStatus.OPEN);
     expect(createResponse.body.tenantId).toBe(fixtures.tenantA.id);
     expect(createResponse.body.protocol).toMatch(/^SF-\d{8}-[A-Z0-9]{6}$/);
+    expect(createResponse.body.slaDueAt).toBeTruthy();
+
+    const slaDueAt = new Date(createResponse.body.slaDueAt as string);
+    const slaDiffHours = (slaDueAt.getTime() - Date.now()) / (1000 * 60 * 60);
+
+    expect(slaDiffHours).toBeGreaterThan(23);
+    expect(slaDiffHours).toBeLessThan(25);
 
     const ticketId = createResponse.body.id as string;
 
