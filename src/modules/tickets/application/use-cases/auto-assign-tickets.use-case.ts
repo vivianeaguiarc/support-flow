@@ -1,4 +1,5 @@
 import { prisma } from '../../../../shared/database/prisma.js';
+import { AppError } from '../../../../shared/errors/app-error.js';
 import { UserRole } from '../../../../shared/types/user-role.js';
 import {
   type NotificationEventService,
@@ -132,8 +133,12 @@ export class AutoAssignTicketsUseCase {
   private selectAgentWithLeastWorkload(
     workloads: AgentWorkload[],
   ): AgentWorkload {
+    if (workloads.length === 0) {
+      throw new AppError('No available agents for assignment', 400);
+    }
+
     workloads.sort((a, b) => a.activeTicketsCount - b.activeTicketsCount);
-    return workloads[0];
+    return workloads[0]!;
   }
 
   private async assignTicketToAgent(
@@ -148,9 +153,7 @@ export class AutoAssignTicketsUseCase {
       ticketId: ticket.id,
       event: TicketHistoryEvent.ASSIGNED,
       field: 'assignedToId',
-      oldValue: null,
       newValue: agentId,
-      changedById: null,
     });
 
     await this.notificationService.notifyTicketAssigned(updatedTicket, agentId);

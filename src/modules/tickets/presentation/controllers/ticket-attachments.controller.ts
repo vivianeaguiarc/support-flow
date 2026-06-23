@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../../../shared/errors/app-error.js';
 import { handleMulterError } from '../../../../shared/http/middlewares/upload.middleware.js';
+import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   TicketsService,
   ticketsService,
@@ -24,7 +25,7 @@ export class TicketAttachmentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = getRouteParam(req.params, 'id');
 
       if (!req.file) {
         throw new AppError('File is required', 400);
@@ -52,7 +53,7 @@ export class TicketAttachmentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = getRouteParam(req.params, 'id');
 
       const attachments = await this.service.getAttachments(
         id,
@@ -76,7 +77,8 @@ export class TicketAttachmentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id, attachmentId } = req.params;
+      const id = getRouteParam(req.params, 'id');
+      const attachmentId = getRouteParam(req.params, 'attachmentId');
 
       await this.service.removeAttachment(
         id,

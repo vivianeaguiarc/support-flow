@@ -30,7 +30,7 @@ export class DeleteTicketAttachmentUseCase {
   ) {}
 
   async execute(input: DeleteTicketAttachmentInput): Promise<void> {
-    const ticket = await this.ticketsRepo.findById(
+    const ticket = await this.ticketsRepo.findByIdAndTenant(
       input.ticketId,
       input.tenantId,
     );

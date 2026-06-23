@@ -37,7 +37,7 @@ export class UploadTicketAttachmentUseCase {
   ) {}
 
   async execute(input: UploadTicketAttachmentInput): Promise<TicketAttachment> {
-    const ticket = await this.ticketsRepo.findById(
+    const ticket = await this.ticketsRepo.findByIdAndTenant(
       input.ticketId,
       input.tenantId,
     );

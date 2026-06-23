@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
+import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   type RouteTicketUseCase,
   routeTicketUseCase,
@@ -16,7 +17,7 @@ export class TicketRoutingController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = getRouteParam(req.params, 'id');
       const tenantId = req.user?.tenantId;
       const userId = req.user?.id;
 

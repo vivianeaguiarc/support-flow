@@ -37,7 +37,7 @@ export class CreateTicketCommentUseCase {
   ) {}
 
   async execute(input: CreateTicketCommentInput): Promise<TicketComment> {
-    const ticket = await this.ticketsRepo.findById(
+    const ticket = await this.ticketsRepo.findByIdAndTenant(
       input.ticketId,
       input.tenantId,
     );

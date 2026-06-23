@@ -46,6 +46,10 @@ const PRIORITY_LEVELS: Record<string, number> = {
   [TicketPriority.URGENT]: 4,
 };
 
+function priorityLevel(priority: string): number {
+  return PRIORITY_LEVELS[priority] ?? 1;
+}
+
 export class CalculateTicketPriorityUseCase {
   constructor(
     private readonly categoriesRepo: TicketCategoriesRepository = ticketCategoriesRepository,
@@ -55,7 +59,7 @@ export class CalculateTicketPriorityUseCase {
     input: CalculateTicketPriorityInput,
   ): Promise<CalculateTicketPriorityResult> {
     const currentLevel = input.currentPriority
-      ? PRIORITY_LEVELS[input.currentPriority] || 1
+      ? priorityLevel(input.currentPriority)
       : 1;
 
     const textToAnalyze = `${input.title} ${input.description}`.toLowerCase();
@@ -65,25 +69,25 @@ export class CalculateTicketPriorityUseCase {
     const reasons: string[] = [];
 
     if (this.containsCriticalKeywords(textToAnalyze)) {
-      if (PRIORITY_LEVELS[TicketPriority.URGENT] > suggestedLevel) {
+      if (priorityLevel(TicketPriority.URGENT) > suggestedLevel) {
         suggestedPriority = TicketPriority.URGENT;
-        suggestedLevel = PRIORITY_LEVELS[TicketPriority.URGENT];
+        suggestedLevel = priorityLevel(TicketPriority.URGENT);
         reasons.push('Termos críticos detectados no título/descrição');
       }
     }
 
     if (this.containsOmbudsmanKeywords(textToAnalyze)) {
-      if (PRIORITY_LEVELS[TicketPriority.HIGH] > suggestedLevel) {
+      if (priorityLevel(TicketPriority.HIGH) > suggestedLevel) {
         suggestedPriority = TicketPriority.HIGH;
-        suggestedLevel = PRIORITY_LEVELS[TicketPriority.HIGH];
+        suggestedLevel = priorityLevel(TicketPriority.HIGH);
         reasons.push('Identificado como Ouvidoria');
       }
     }
 
     if (this.containsComplaintKeywords(textToAnalyze)) {
-      if (PRIORITY_LEVELS[TicketPriority.MEDIUM] > suggestedLevel) {
+      if (priorityLevel(TicketPriority.MEDIUM) > suggestedLevel) {
         suggestedPriority = TicketPriority.MEDIUM;
-        suggestedLevel = PRIORITY_LEVELS[TicketPriority.MEDIUM];
+        suggestedLevel = priorityLevel(TicketPriority.MEDIUM);
         reasons.push('Identificado como reclamação');
       }
     }
@@ -95,16 +99,16 @@ export class CalculateTicketPriorityUseCase {
       );
       if (
         categoryPriority &&
-        PRIORITY_LEVELS[categoryPriority] > suggestedLevel
+        priorityLevel(categoryPriority) > suggestedLevel
       ) {
         suggestedPriority = categoryPriority;
-        suggestedLevel = PRIORITY_LEVELS[categoryPriority];
+        suggestedLevel = priorityLevel(categoryPriority);
         reasons.push('Prioridade mínima da categoria');
       }
     }
 
     if (input.manuallySet && input.currentPriority) {
-      const manualLevel = PRIORITY_LEVELS[input.currentPriority];
+      const manualLevel = priorityLevel(input.currentPriority);
       if (manualLevel > suggestedLevel) {
         suggestedPriority = input.currentPriority;
         reasons.push('Prioridade definida manualmente mantida');

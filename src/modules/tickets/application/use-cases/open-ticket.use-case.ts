@@ -15,6 +15,7 @@ import {
 import {
   type Ticket,
   TicketHistoryEvent,
+  TicketPriority,
   TicketStatus,
 } from '../../domain/index.js';
 import { generateTicketProtocol } from '../../domain/ticket-protocol.js';
@@ -72,7 +73,7 @@ export class OpenTicketUseCase {
       manuallySet: false,
     });
 
-    const finalPriority = priorityResult.suggestedPriority;
+    const finalPriority = priorityResult.suggestedPriority as TicketPriority;
 
     const slaDueAt = await this.calculateTicketSla.execute({
       tenantId: input.tenantId,
@@ -106,9 +107,8 @@ export class OpenTicketUseCase {
         ticketId: ticket.id,
         event: TicketHistoryEvent.PRIORITY_CHANGED,
         field: 'priority',
-        oldValue: input.priority || 'LOW',
+        oldValue: input.priority || TicketPriority.LOW,
         newValue: finalPriority,
-        changedById: null,
       });
     }
 

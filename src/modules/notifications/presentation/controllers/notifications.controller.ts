@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   NotificationsService,
   notificationsService,
@@ -48,7 +49,7 @@ export class NotificationsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = getRouteParam(req.params, 'id');
 
       await this.service.markAsRead(id, getAuthenticatedUser(req));
 

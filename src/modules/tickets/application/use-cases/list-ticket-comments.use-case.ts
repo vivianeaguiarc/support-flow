@@ -23,7 +23,7 @@ export class ListTicketCommentsUseCase {
   async execute(
     input: ListTicketCommentsInput,
   ): Promise<TicketCommentWithAuthor[]> {
-    const ticket = await this.ticketsRepo.findById(
+    const ticket = await this.ticketsRepo.findByIdAndTenant(
       input.ticketId,
       input.tenantId,
     );

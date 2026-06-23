@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   TicketsService,
   ticketsService,
@@ -24,7 +25,7 @@ export class TicketCommentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = getRouteParam(req.params, 'id');
       const { content } = req.body as CreateTicketCommentDto;
 
       const comment = await this.service.addComment(
@@ -45,7 +46,7 @@ export class TicketCommentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { id } = req.params;
+      const id = getRouteParam(req.params, 'id');
 
       const comments = await this.service.getComments(
         id,

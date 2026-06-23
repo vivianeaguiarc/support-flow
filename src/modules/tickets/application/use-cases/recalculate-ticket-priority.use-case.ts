@@ -68,7 +68,7 @@ export class RecalculateTicketPriorityUseCase {
       field: 'priority',
       oldValue: ticket.priority,
       newValue: priorityResult.suggestedPriority,
-      changedById: input.changedById ?? null,
+      changedById: input.changedById,
     });
 
     return updatedTicket;

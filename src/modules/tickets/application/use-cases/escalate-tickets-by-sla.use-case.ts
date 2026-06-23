@@ -71,7 +71,6 @@ export class EscalateTicketsBySlaUseCase {
         field: 'status',
         oldValue: ticket.status,
         newValue: TicketStatus.ESCALATED,
-        changedById: null,
       });
 
       await this.notificationService.notifyTicketEscalated(

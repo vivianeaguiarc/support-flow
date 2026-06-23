@@ -196,6 +196,10 @@ export class RouteTicketUseCase {
   }
 
   private selectBestAgent(workloads: AgentWorkload[]): AgentWorkload {
+    if (workloads.length === 0) {
+      throw new AppError('No available agents for routing', 400);
+    }
+
     workloads.sort((a, b) => {
       if (a.activeTicketsCount !== b.activeTicketsCount) {
         return a.activeTicketsCount - b.activeTicketsCount;
@@ -213,7 +217,7 @@ export class RouteTicketUseCase {
       return weightA - weightB;
     });
 
-    return workloads[0];
+    return workloads[0]!;
   }
 
   private async assignTicketToAgent(
@@ -234,9 +238,9 @@ export class RouteTicketUseCase {
       ticketId: ticket.id,
       event: historyEvent,
       field: 'assignedToId',
-      oldValue: ticket.assignedToId,
+      oldValue: ticket.assignedToId ?? undefined,
       newValue: agentId,
-      changedById: changedById ?? null,
+      changedById,
     });
 
     await this.notificationService.notifyTicketAssigned(updatedTicket, agentId);
@@ -259,12 +263,8 @@ export class RouteTicketUseCase {
       reasons.push('Categoria de Ouvidoria');
     }
 
-    if (agentRole === UserRole.SUPERVISOR || agentRole === UserRole.ADMIN) {
-      reasons.push(
-        `Roteado para ${agentRole === UserRole.SUPERVISOR ? 'Supervisor' : 'Administrador'}`,
-      );
-    } else if (agentRole === UserRole.OMBUDSMAN) {
-      reasons.push('Roteado para Ouvidor');
+    if (agentRole === UserRole.ADMIN) {
+      reasons.push('Roteado para Administrador');
     } else {
       reasons.push('Roteado para agente com menor carga de trabalho');
     }

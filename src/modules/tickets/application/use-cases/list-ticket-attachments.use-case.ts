@@ -23,7 +23,7 @@ export class ListTicketAttachmentsUseCase {
   async execute(
     input: ListTicketAttachmentsInput,
   ): Promise<TicketAttachmentWithUploader[]> {
-    const ticket = await this.ticketsRepo.findById(
+    const ticket = await this.ticketsRepo.findByIdAndTenant(
       input.ticketId,
       input.tenantId,
     );
