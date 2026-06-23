@@ -1,5 +1,7 @@
 import express from 'express';
+import swaggerUi from 'swagger-ui-express';
 
+import { swaggerSpec } from './config/swagger.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { notificationsRouter } from './modules/notifications/routes/notifications.routes.js';
 import { ticketsRouter } from './modules/tickets/routes/tickets.routes.js';
@@ -18,6 +20,20 @@ export function createApp() {
   app.use(...securityMiddleware);
   app.use(rateLimitMiddleware);
   app.use(express.json());
+
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      customCss: '.swagger-ui .topbar { display: none }',
+      customSiteTitle: 'SupportFlow API Documentation',
+    }),
+  );
+
+  app.get('/api-docs.json', (_req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(swaggerSpec);
+  });
 
   const apiRouter = express.Router();
   apiRouter.use('/health', healthRouter);
