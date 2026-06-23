@@ -33,7 +33,7 @@ const envSchema = z
     DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
     JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
     JWT_EXPIRES_IN: z.string().default('1d'),
-    JWT_REFRESH_SECRET: z.string().optional(),
+    JWT_REFRESH_SECRET: z.string().min(1, 'JWT_REFRESH_SECRET is required'),
     JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
     CORS_ORIGIN: z.url().default('http://localhost:5173'),
     RATE_LIMIT_ENABLED: z
@@ -72,11 +72,7 @@ const envSchema = z
       });
     }
 
-    if (
-      data.NODE_ENV === 'production' &&
-      data.JWT_REFRESH_SECRET &&
-      data.JWT_REFRESH_SECRET.length < 32
-    ) {
+    if (data.NODE_ENV === 'production' && data.JWT_REFRESH_SECRET.length < 32) {
       ctx.addIssue({
         code: 'custom',
         path: ['JWT_REFRESH_SECRET'],

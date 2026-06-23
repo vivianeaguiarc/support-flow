@@ -5,7 +5,7 @@
  *     tags:
  *       - Authentication
  *     summary: Autenticar usuário
- *     description: Realiza login e retorna token JWT para autenticação em endpoints protegidos
+ *     description: Realiza login e retorna access token e refresh token
  *     requestBody:
  *       required: true
  *       content:
@@ -19,29 +19,11 @@
  *               email:
  *                 type: string
  *                 format: email
- *                 description: Email do usuário
  *                 example: "agente@supportflow.com"
  *               password:
  *                 type: string
  *                 format: password
- *                 description: Senha do usuário
- *                 example: "senha123"
- *           examples:
- *             agente:
- *               summary: Login de agente
- *               value:
- *                 email: "agente@supportflow.com"
- *                 password: "senha123"
- *             admin:
- *               summary: Login de administrador
- *               value:
- *                 email: "admin@supportflow.com"
- *                 password: "admin123"
- *             cliente:
- *               summary: Login de cliente
- *               value:
- *                 email: "cliente@email.com"
- *                 password: "cliente123"
+ *                 example: "Password123!"
  *     responses:
  *       200:
  *         description: Autenticação bem-sucedida
@@ -50,35 +32,15 @@
  *             schema:
  *               type: object
  *               properties:
- *                 token:
+ *                 accessToken:
  *                   type: string
- *                   description: Token JWT Bearer
- *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                       format: uuid
- *                     tenantId:
- *                       type: string
- *                       format: uuid
- *                     name:
- *                       type: string
- *                       example: "João Silva"
- *                     email:
- *                       type: string
- *                       example: "agente@supportflow.com"
- *                     role:
- *                       $ref: '#/components/schemas/UserRole'
+ *                   description: JWT de acesso (Bearer)
+ *                 refreshToken:
+ *                   type: string
+ *                   description: JWT de refresh para renovação de sessão
  *             example:
- *               token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU1MGU4NDAwLWUyOWItNDFkNC1hNzE2LTQ0NjY1NTQ0MDAwMCIsInRlbmFudElkIjoiNjYwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAxIiwiaWF0IjoxNzAzMzQ1Njc4fQ..."
- *               user:
- *                 id: "550e8400-e29b-41d4-a716-446655440000"
- *                 tenantId: "660e8400-e29b-41d4-a716-446655440001"
- *                 name: "João Silva"
- *                 email: "agente@supportflow.com"
- *                 role: "AGENT"
+ *               accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *               refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *       400:
  *         description: Dados inválidos
  *         content:
@@ -91,9 +53,91 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
- *             example:
- *               error: "Invalid credentials"
- *               statusCode: 401
+ *
+ * /auth/refresh:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Renovar tokens
+ *     description: |
+ *       Gera um novo par access/refresh token e invalida o refresh token anterior (rotação).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token obtido no login ou refresh anterior
+ *     responses:
+ *       200:
+ *         description: Tokens renovados com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       400:
+ *         description: Payload inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Refresh token inválido, expirado ou revogado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *
+ * /auth/logout:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: Encerrar sessão
+ *     description: Revoga o refresh token informado
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Logout realizado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Logged out successfully"
+ *       400:
+ *         description: Payload inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       401:
+ *         description: Refresh token inválido, expirado ou revogado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 export {};

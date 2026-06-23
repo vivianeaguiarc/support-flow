@@ -21,7 +21,9 @@ jobs:
       NODE_ENV: test
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/supportflow_ci?schema=public
       JWT_SECRET: ci-jwt-secret-with-at-least-32-characters-long
+      JWT_REFRESH_SECRET: ci-jwt-refresh-secret-with-at-least-32-chars
       JWT_EXPIRES_IN: 1d
+      JWT_REFRESH_EXPIRES_IN: 7d
       CORS_ORIGIN: http://localhost:5173
 
     steps:
@@ -90,7 +92,9 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/supportflow_test?schema=public
       DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/supportflow_test?schema=public
       JWT_SECRET: ci-jwt-secret-with-at-least-32-characters-long
+      JWT_REFRESH_SECRET: ci-jwt-refresh-secret-with-at-least-32-chars
       JWT_EXPIRES_IN: 1d
+      JWT_REFRESH_EXPIRES_IN: 7d
       CORS_ORIGIN: http://localhost:5173
       RATE_LIMIT_ENABLED: 'false'
       LOG_LEVEL: warn

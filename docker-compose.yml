@@ -30,7 +30,9 @@ services:
       PORT: 3000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/supportflow?schema=public
       JWT_SECRET: local-docker-jwt-secret-with-32-chars-min
+      JWT_REFRESH_SECRET: local-docker-jwt-refresh-secret-32-chars
       JWT_EXPIRES_IN: 1d
+      JWT_REFRESH_EXPIRES_IN: 7d
       CORS_ORIGIN: http://localhost:5173
       LOG_LEVEL: info
       RATE_LIMIT_ENABLED: 'true'

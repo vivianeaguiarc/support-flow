@@ -14,7 +14,23 @@ export async function login(
     .send({ email, password })
     .expect(200);
 
-  return response.body.token as string;
+  return response.body.accessToken as string;
+}
+
+export async function loginWithTokens(
+  app: Express,
+  email: string,
+  password: string,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const response = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ email, password })
+    .expect(200);
+
+  return {
+    accessToken: response.body.accessToken as string,
+    refreshToken: response.body.refreshToken as string,
+  };
 }
 
 export function createAuthToken(input: {

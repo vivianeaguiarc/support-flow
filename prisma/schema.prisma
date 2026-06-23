@@ -91,6 +91,7 @@ model User {
   ticketComments    TicketComment[]    @relation("CommentAuthor")
   ticketAttachments TicketAttachment[] @relation("AttachmentUploader")
   notifications     Notification[]     @relation("NotificationRecipient")
+  refreshTokens     RefreshToken[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -255,4 +256,21 @@ model Notification {
   @@index([ticketId])
   @@index([readAt])
   @@map("notifications")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tenantId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([tenantId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }

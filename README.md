@@ -177,26 +177,26 @@ Para produção, use `.env.production.example` como referência ao configurar o 
 
 ### Variáveis
 
-| Variável                       | Obrigatória | Padrão (dev)                                | Descrição                                                                  |
-| ------------------------------ | ----------- | ------------------------------------------- | -------------------------------------------------------------------------- |
-| `DATABASE_URL`                 | **Sim**     | —                                           | Connection string PostgreSQL (Prisma)                                      |
-| `JWT_SECRET`                   | **Sim**     | —                                           | Segredo do access token (mín. 32 caracteres em `production`)               |
-| `NODE_ENV`                     | Não         | `development`                               | `development`, `test` ou `production`                                      |
-| `PORT`                         | Não         | `3000`                                      | Porta HTTP da API                                                          |
-| `JWT_EXPIRES_IN`               | Não         | `1d`                                        | Expiração do access token                                                  |
-| `JWT_REFRESH_SECRET`           | Não         | —                                           | Reservado para refresh tokens (mín. 32 chars em `production`, se definido) |
-| `JWT_REFRESH_EXPIRES_IN`       | Não         | `7d`                                        | Expiração do refresh token (quando implementado)                           |
-| `CORS_ORIGIN`                  | Não         | `http://localhost:5173`                     | Origem permitida pelo CORS                                                 |
-| `RATE_LIMIT_ENABLED`           | Não         | `true`                                      | Habilita rate limit global e em `/auth/login`                              |
-| `RATE_LIMIT_WINDOW_MS`         | Não         | `900000`                                    | Janela do rate limit global (ms)                                           |
-| `RATE_LIMIT_MAX_REQUESTS`      | Não         | `100`                                       | Máximo de requisições por janela (global)                                  |
-| `AUTH_RATE_LIMIT_WINDOW_MS`    | Não         | `900000`                                    | Janela do rate limit de login (ms)                                         |
-| `AUTH_RATE_LIMIT_MAX_REQUESTS` | Não         | `20`                                        | Máximo de tentativas de login por janela                                   |
-| `UPLOAD_MAX_SIZE_MB`           | Não         | `10`                                        | Tamanho máximo de upload (MB)                                              |
-| `UPLOAD_DIR`                   | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)                          |
-| `LOG_LEVEL`                    | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino                                                          |
-| `SWAGGER_ENABLED`              | Não         | ligado fora de `production`                 | Documentação OpenAPI em `/api/docs`                                        |
-| `DATABASE_URL_TEST`            | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                                     |
+| Variável                       | Obrigatória | Padrão (dev)                                | Descrição                                                     |
+| ------------------------------ | ----------- | ------------------------------------------- | ------------------------------------------------------------- |
+| `DATABASE_URL`                 | **Sim**     | —                                           | Connection string PostgreSQL (Prisma)                         |
+| `JWT_SECRET`                   | **Sim**     | —                                           | Segredo do access token (mín. 32 caracteres em `production`)  |
+| `NODE_ENV`                     | Não         | `development`                               | `development`, `test` ou `production`                         |
+| `PORT`                         | Não         | `3000`                                      | Porta HTTP da API                                             |
+| `JWT_EXPIRES_IN`               | Não         | `1d`                                        | Expiração do access token                                     |
+| `JWT_REFRESH_SECRET`           | **Sim**     | —                                           | Segredo do refresh token (mín. 32 caracteres em `production`) |
+| `JWT_REFRESH_EXPIRES_IN`       | Não         | `7d`                                        | Expiração do refresh token                                    |
+| `CORS_ORIGIN`                  | Não         | `http://localhost:5173`                     | Origem permitida pelo CORS                                    |
+| `RATE_LIMIT_ENABLED`           | Não         | `true`                                      | Habilita rate limit global e em `/auth/login`                 |
+| `RATE_LIMIT_WINDOW_MS`         | Não         | `900000`                                    | Janela do rate limit global (ms)                              |
+| `RATE_LIMIT_MAX_REQUESTS`      | Não         | `100`                                       | Máximo de requisições por janela (global)                     |
+| `AUTH_RATE_LIMIT_WINDOW_MS`    | Não         | `900000`                                    | Janela do rate limit de login (ms)                            |
+| `AUTH_RATE_LIMIT_MAX_REQUESTS` | Não         | `20`                                        | Máximo de tentativas de login por janela                      |
+| `UPLOAD_MAX_SIZE_MB`           | Não         | `10`                                        | Tamanho máximo de upload (MB)                                 |
+| `UPLOAD_DIR`                   | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)             |
+| `LOG_LEVEL`                    | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino                                             |
+| `SWAGGER_ENABLED`              | Não         | ligado fora de `production`                 | Documentação OpenAPI em `/api/docs`                           |
+| `DATABASE_URL_TEST`            | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                        |
 
 ### Validar configuração
 

@@ -1,16 +1,35 @@
 import type { User } from '@prisma/client';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import {
+  getRefreshTokenExpiration,
+  signRefreshToken,
+  signToken,
+  verifyRefreshToken,
+} from '../../../shared/security/jwt.js';
 import { comparePassword } from '../../../shared/security/password-hash.js';
+import { hashRefreshToken } from '../../../shared/security/token-hash.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
+import type { RefreshTokensRepository } from '../repositories/refresh-tokens.repository.js';
 
 export type LoginInput = {
   email: string;
   password: string;
 };
 
-export type LoginResult = {
-  token: string;
+export type TokenPair = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+export type LoginResult = TokenPair;
+
+export type RefreshInput = {
+  refreshToken: string;
+};
+
+export type LogoutInput = {
+  refreshToken: string;
 };
 
 type VerifyPasswordFn = typeof comparePassword;
@@ -18,7 +37,7 @@ type VerifyPasswordFn = typeof comparePassword;
 export class AuthService {
   constructor(
     private readonly usersRepository: UsersRepository,
-    private readonly generateToken: (user: User) => string,
+    private readonly refreshTokensRepository: RefreshTokensRepository,
     private readonly verifyPassword: VerifyPasswordFn = comparePassword,
   ) {}
 
@@ -38,6 +57,104 @@ export class AuthService {
       throw new AppError('Invalid credentials', 401);
     }
 
-    return { token: this.generateToken(user) };
+    return this.issueTokenPair(user);
+  }
+
+  async refresh(data: RefreshInput): Promise<TokenPair> {
+    const payload = this.parseRefreshToken(data.refreshToken);
+    const tokenHash = hashRefreshToken(data.refreshToken);
+    const storedToken =
+      await this.refreshTokensRepository.findByTokenHash(tokenHash);
+
+    this.assertRefreshTokenIsUsable(storedToken, payload);
+
+    await this.refreshTokensRepository.revoke(storedToken!.id);
+
+    const user = await this.usersRepository.findById(
+      payload.id,
+      payload.tenantId,
+    );
+
+    if (!user) {
+      throw new AppError('Invalid refresh token', 401);
+    }
+
+    return this.issueTokenPair(user);
+  }
+
+  async logout(data: LogoutInput): Promise<{ message: string }> {
+    const payload = this.parseRefreshToken(data.refreshToken);
+    const tokenHash = hashRefreshToken(data.refreshToken);
+    const storedToken =
+      await this.refreshTokensRepository.findByTokenHash(tokenHash);
+
+    this.assertRefreshTokenIsUsable(storedToken, payload);
+
+    await this.refreshTokensRepository.revoke(storedToken!.id);
+
+    return { message: 'Logged out successfully' };
+  }
+
+  private async issueTokenPair(user: User): Promise<TokenPair> {
+    const accessToken = signToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+    });
+
+    const refreshToken = signRefreshToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      tenantId: user.tenantId,
+    });
+
+    await this.refreshTokensRepository.create({
+      userId: user.id,
+      tenantId: user.tenantId,
+      tokenHash: hashRefreshToken(refreshToken),
+      expiresAt: getRefreshTokenExpiration(refreshToken),
+    });
+
+    return { accessToken, refreshToken };
+  }
+
+  private parseRefreshToken(refreshToken: string) {
+    try {
+      return verifyRefreshToken(refreshToken);
+    } catch {
+      throw new AppError('Invalid refresh token', 401);
+    }
+  }
+
+  private assertRefreshTokenIsUsable(
+    storedToken: {
+      id: string;
+      userId: string;
+      tenantId: string;
+      expiresAt: Date;
+      revokedAt: Date | null;
+    } | null,
+    payload: { id: string; tenantId: string },
+  ): void {
+    if (!storedToken) {
+      throw new AppError('Invalid refresh token', 401);
+    }
+
+    if (storedToken.revokedAt) {
+      throw new AppError('Refresh token has been revoked', 401);
+    }
+
+    if (storedToken.expiresAt.getTime() <= Date.now()) {
+      throw new AppError('Refresh token has expired', 401);
+    }
+
+    if (
+      storedToken.userId !== payload.id ||
+      storedToken.tenantId !== payload.tenantId
+    ) {
+      throw new AppError('Invalid refresh token', 401);
+    }
   }
 }
