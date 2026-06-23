@@ -5,36 +5,55 @@
  *     tags:
  *       - Health
  *     summary: Liveness check
- *     description: Verifica se o processo da API está respondendo (sem checar dependências externas).
+ *     description: |
+ *       Verifica se o processo da API está respondendo (sem checar dependências externas).
+ *       Disponível em `/health` e `/api/v1/health`.
  *     responses:
  *       200:
  *         description: API em execução
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: "ok"
- *                 service:
- *                   type: string
- *                   example: "supportflow-backend"
- *                 environment:
- *                   type: string
- *                   example: "production"
+ *               $ref: '#/components/schemas/HealthStatusResponse'
+ *             example:
+ *               status: ok
+ *               service: supportflow-backend
+ *               environment: development
+ *               timestamp: '2026-06-23T12:00:00.000Z'
  *
  * /health/ready:
  *   get:
  *     tags:
  *       - Health
  *     summary: Readiness check
- *     description: Verifica se a API está pronta para receber tráfego (inclui conexão com o banco).
+ *     description: |
+ *       Verifica se a API está pronta para receber tráfego, incluindo conectividade com PostgreSQL.
+ *       Disponível em `/health/ready` e `/api/v1/health/ready`.
  *     responses:
  *       200:
- *         description: API pronta
+ *         description: API pronta — banco acessível
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthReadyResponse'
+ *             example:
+ *               status: ready
+ *               service: supportflow-backend
+ *               timestamp: '2026-06-23T12:00:00.000Z'
+ *               checks:
+ *                 database: up
  *       503:
- *         description: Dependência indisponível (ex. banco de dados)
+ *         description: Dependência indisponível (banco de dados)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthReadyResponse'
+ *             example:
+ *               status: not_ready
+ *               service: supportflow-backend
+ *               timestamp: '2026-06-23T12:00:00.000Z'
+ *               checks:
+ *                 database: down
  */
 
 export {};

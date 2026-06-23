@@ -353,7 +353,7 @@
  *       Retorna indicadores gerenciais: tempo médio de resolução, taxa de cumprimento de SLA,
  *       volume de resolvidos/vencidos e performance por agente.
  *
- *       **Permissões:** apenas `AGENT` e `ADMIN`.
+ *       **Permissões:** `AGENT`, `SUPERVISOR`, `OMBUDSMAN` (apenas escalados) ou `ADMIN` para métricas.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -460,7 +460,9 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Cliente tentando acessar chamado de outro cliente
+ *         description: |
+ *           Sem permissão — inclui acesso cross-tenant (chamado de outro tenant retorna 403 Forbidden,
+ *           não 404) ou role não autorizada (ex. CUSTOMER acessando chamado de outro cliente).
  *         content:
  *           application/json:
  *             schema:
@@ -490,7 +492,7 @@
  *       - `ESCALATED` → `IN_PROGRESS`, `RESOLVED`
  *       - `RESOLVED` → `CLOSED`
  *
- *       **Permissões:** apenas `AGENT`.
+ *       **Permissões:** `AGENT`, `SUPERVISOR`, `OMBUDSMAN` (chamados escalados) ou `ADMIN`.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -571,7 +573,7 @@
  *     description: |
  *       Atribui ou reatribui o chamado a um agente do mesmo tenant.
  *
- *       **Permissões:** apenas `AGENT`.
+ *       **Permissões:** `AGENT`, `SUPERVISOR`, `OMBUDSMAN` (chamados escalados) ou `ADMIN`.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -669,7 +671,7 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Sem acesso ao chamado
+ *         description: Sem acesso ao chamado (inclui cross-tenant)
  *         content:
  *           application/json:
  *             schema:
@@ -753,7 +755,10 @@
  *     tags:
  *       - Tickets
  *     summary: Atribuição automática de chamados
- *     description: Atribui automaticamente chamados não atribuídos para agentes elegíveis com base na carga de trabalho
+ *     description: |
+ *       Atribui automaticamente chamados abertos sem agente para o staff elegível com menor carga de trabalho.
+ *
+ *       **Permissões:** `AGENT`, `SUPERVISOR` ou `ADMIN`.
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -762,37 +767,33 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 assigned:
- *                   type: integer
- *                   description: Número de chamados atribuídos
- *                   example: 5
- *                 tickets:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       ticketId:
- *                         type: string
- *                         format: uuid
- *                       assignedToId:
- *                         type: string
- *                         format: uuid
- *                       agentName:
- *                         type: string
- *                         example: "João Silva"
+ *               $ref: '#/components/schemas/AutoAssignTicketsResponse'
+ *             example:
+ *               ticketsProcessed: 5
+ *               ticketsAssigned: 4
+ *               failedAssignments: 1
  *       401:
  *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Sem permissão (apenas AGENT e ADMIN)
+ *         description: Sem permissão
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *
  * /tickets/{id}/recalculate-priority:
  *   patch:
  *     tags:
  *       - Tickets
  *     summary: Recalcular prioridade do chamado
- *     description: Recalcula automaticamente a prioridade do chamado com base em regras de negócio
+ *     description: |
+ *       Recalcula automaticamente a prioridade com base em palavras-chave e categoria.
+ *
+ *       **Permissões:** `AGENT`, `SUPERVISOR` ou `ADMIN`.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -823,16 +824,27 @@
  *       401:
  *         description: Não autenticado
  *       403:
- *         description: Sem permissão (apenas AGENT e ADMIN)
+ *         description: Sem permissão ou acesso cross-tenant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Chamado não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *
  * /tickets/{id}/route:
  *   post:
  *     tags:
  *       - Tickets
  *     summary: Rotear chamado automaticamente
- *     description: Roteia o chamado para o agente mais adequado com base em prioridade, categoria e carga de trabalho
+ *     description: |
+ *       Roteia o chamado para o agente mais adequado com base em prioridade, categoria e carga de trabalho.
+ *
+ *       **Permissões:** `AGENT`, `SUPERVISOR` ou `ADMIN`.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -851,13 +863,29 @@
  *             schema:
  *               $ref: '#/components/schemas/RouteTicketResponse'
  *       400:
- *         description: Chamado não pode ser roteado (já resolvido/fechado)
+ *         description: Chamado não pode ser roteado (resolvido/fechado) ou sem agentes elegíveis
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
  *         description: Não autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Sem permissão (apenas AGENT e ADMIN)
+ *         description: Sem permissão ou acesso cross-tenant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: Chamado não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 export {};

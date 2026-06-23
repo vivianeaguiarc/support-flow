@@ -76,7 +76,7 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Cliente ou agente de outro tenant sem permissão
+ *         description: Cliente, agente de outro tenant ou role sem permissão (cross-tenant retorna 403)
  *         content:
  *           application/json:
  *             schema:

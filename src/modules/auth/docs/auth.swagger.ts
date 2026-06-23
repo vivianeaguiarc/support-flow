@@ -30,14 +30,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *                   description: JWT de acesso (Bearer)
- *                 refreshToken:
- *                   type: string
- *                   description: JWT de refresh para renovação de sessão
+ *               $ref: '#/components/schemas/TokenPairResponse'
  *             example:
  *               accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *               refreshToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
@@ -79,12 +72,7 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 accessToken:
- *                   type: string
- *                 refreshToken:
- *                   type: string
+ *               $ref: '#/components/schemas/TokenPairResponse'
  *       400:
  *         description: Payload inválido
  *         content:

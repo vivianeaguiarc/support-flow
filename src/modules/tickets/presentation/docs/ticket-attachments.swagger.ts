@@ -93,7 +93,7 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Cliente ou agente de outro tenant sem permissão
+ *         description: Cliente, agente de outro tenant ou role sem permissão (cross-tenant retorna 403)
  *         content:
  *           application/json:
  *             schema:
@@ -171,13 +171,13 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Sem acesso ao chamado
+ *         description: Sem acesso ao chamado (inclui cross-tenant — retorna 403, não 404)
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Chamado não encontrado ou pertencente a outro tenant
+ *         description: Chamado não encontrado (UUID inexistente) ou pertencente a outro tenant
  *         content:
  *           application/json:
  *             schema:
@@ -224,7 +224,7 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Cliente ou agente de outro tenant sem permissão
+ *         description: Cliente, agente de outro tenant ou role sem permissão (cross-tenant retorna 403)
  *         content:
  *           application/json:
  *             schema:

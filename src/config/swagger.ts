@@ -10,7 +10,8 @@ const options: Options = {
       title: 'SupportFlow API',
       version: '1.0',
       description:
-        'API completa para gerenciamento de atendimento ao cliente, SAC e Ouvidoria',
+        'API completa para gerenciamento de atendimento ao cliente, SAC e Ouvidoria. ' +
+        'Clientes (`Customer`) são entidades internas referenciadas por `customerId` na criação de chamados — não há endpoints REST públicos de CRUD de clientes.',
       contact: {
         name: 'SupportFlow Team',
         email: 'support@supportflow.com',
@@ -769,6 +770,81 @@ const options: Options = {
             },
           },
         },
+        AutoAssignTicketsResponse: {
+          type: 'object',
+          required: [
+            'ticketsProcessed',
+            'ticketsAssigned',
+            'failedAssignments',
+          ],
+          properties: {
+            ticketsProcessed: {
+              type: 'integer',
+              description: 'Chamados não atribuídos analisados',
+              example: 5,
+            },
+            ticketsAssigned: {
+              type: 'integer',
+              description: 'Chamados atribuídos com sucesso',
+              example: 4,
+            },
+            failedAssignments: {
+              type: 'integer',
+              description: 'Falhas na atribuição',
+              example: 1,
+            },
+          },
+        },
+        HealthStatusResponse: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', example: 'ok' },
+            service: { type: 'string', example: 'supportflow-backend' },
+            environment: { type: 'string', example: 'development' },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-06-23T12:00:00.000Z',
+            },
+          },
+        },
+        HealthReadyResponse: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', example: 'ready' },
+            service: { type: 'string', example: 'supportflow-backend' },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-06-23T12:00:00.000Z',
+            },
+            checks: {
+              type: 'object',
+              properties: {
+                database: {
+                  type: 'string',
+                  enum: ['up', 'down'],
+                  example: 'up',
+                },
+              },
+            },
+          },
+        },
+        TokenPairResponse: {
+          type: 'object',
+          required: ['accessToken', 'refreshToken'],
+          properties: {
+            accessToken: {
+              type: 'string',
+              description:
+                'JWT de acesso — usar no header Authorization: Bearer',
+            },
+            refreshToken: {
+              type: 'string',
+              description: 'JWT de refresh para renovação de sessão',
+            },
+          },
+        },
       },
     },
     tags: [
@@ -779,7 +855,7 @@ const options: Options = {
       {
         name: 'Tickets',
         description:
-          'Gerenciamento de chamados de SAC e Ouvidoria — criação, listagem, status, atribuição, histórico e métricas',
+          'Gerenciamento de chamados — criação, listagem, status, atribuição, roteamento, SLA (métricas/resumo) e operações automáticas',
       },
       {
         name: 'Ticket History',
@@ -811,7 +887,9 @@ const options: Options = {
     ],
   },
   apis: [
-    './src/modules/**/docs/*.swagger.ts',
+    './src/modules/auth/docs/*.swagger.ts',
+    './src/modules/users/docs/*.swagger.ts',
+    './src/modules/**/presentation/docs/*.swagger.ts',
     './src/shared/http/docs/*.swagger.ts',
   ],
 };

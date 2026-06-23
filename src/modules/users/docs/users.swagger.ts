@@ -54,12 +54,26 @@
  *                 password: Agente123!
  *                 role: AGENT
  *             customer:
- *               summary: Criar cliente
+ *               summary: Criar cliente (registro público)
  *               value:
  *                 name: Ana Cliente
  *                 email: ana.cliente@email.com
  *                 password: Cliente123!
  *                 role: CUSTOMER
+ *             supervisor:
+ *               summary: Criar supervisor (requer ADMIN autenticado)
+ *               value:
+ *                 name: Paula Supervisora
+ *                 email: paula.supervisor@supportflow.com
+ *                 password: Super123!
+ *                 role: SUPERVISOR
+ *             ombudsman:
+ *               summary: Criar ouvidor (requer ADMIN autenticado)
+ *               value:
+ *                 name: Roberto Ouvidor
+ *                 email: roberto.ouvidor@supportflow.com
+ *                 password: Ouvidor123!
+ *                 role: OMBUDSMAN
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso
@@ -93,6 +107,12 @@
  *             example:
  *               error: Invalid email format
  *               statusCode: 400
+ *       403:
+ *         description: Sem permissão para criar o role informado (ex. CUSTOMER criando ADMIN)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       409:
  *         description: Email já cadastrado
  *         content:
