@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../errors/app-error.js';
+import { mapPrismaError } from '../../errors/prisma-error-mapper.js';
 import { logger } from '../../logger/logger.js';
 
 export function errorHandler(
@@ -13,6 +14,16 @@ export function errorHandler(
     res.status(err.statusCode).json({
       statusCode: err.statusCode,
       message: err.message,
+    });
+    return;
+  }
+
+  const prismaError = mapPrismaError(err);
+
+  if (prismaError) {
+    res.status(prismaError.statusCode).json({
+      statusCode: prismaError.statusCode,
+      message: prismaError.message,
     });
     return;
   }

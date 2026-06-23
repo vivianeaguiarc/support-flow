@@ -28,8 +28,8 @@ export class UsersService {
     });
   }
 
-  async findById(id: string): Promise<User> {
-    const user = await this.repository.findById(id);
+  async findById(id: string, tenantId: string): Promise<User> {
+    const user = await this.repository.findById(id, tenantId);
 
     if (!user) {
       throw new AppError('User not found', 404);
@@ -42,8 +42,8 @@ export class UsersService {
     return this.repository.findByEmail(email);
   }
 
-  async list(): Promise<User[]> {
-    return this.repository.list();
+  async list(tenantId: string): Promise<User[]> {
+    return this.repository.list(tenantId);
   }
 }
 

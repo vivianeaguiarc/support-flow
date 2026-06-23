@@ -15,6 +15,7 @@ import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
 import { createTicketCommentSchema } from '../dtos/create-ticket-comment.dto.js';
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
+import { ticketAttachmentParamsSchema } from '../dtos/ticket-attachment-params.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
 import { ticketMetricsQuerySchema } from '../dtos/ticket-metrics-query.dto.js';
 import { ticketSummaryQuerySchema } from '../dtos/ticket-summary-query.dto.js';
@@ -152,6 +153,7 @@ ticketsRouter.delete(
   '/:id/attachments/:attachmentId',
   authenticate,
   authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({ params: ticketAttachmentParamsSchema }),
   ticketAttachmentsController.delete,
 );
 

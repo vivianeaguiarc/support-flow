@@ -6,6 +6,7 @@ import {
 } from '../../../notifications/application/services/notification-event.service.js';
 import type { TicketAttachment } from '../../domain/ticket-attachment.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
+import { assertAllowedFileContent } from '../../domain/validate-file-content.js';
 import {
   type TicketAttachmentsRepository,
   ticketAttachmentsRepository,
@@ -48,6 +49,8 @@ export class UploadTicketAttachmentUseCase {
     if (ticket.tenantId !== input.tenantId) {
       throw new AppError('Forbidden', 403);
     }
+
+    assertAllowedFileContent(input.file.buffer, input.file.mimetype);
 
     const { fileName, storagePath } = await this.storageService.save(
       input.file,

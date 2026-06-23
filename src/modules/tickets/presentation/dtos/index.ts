@@ -2,6 +2,7 @@ export * from './assign-ticket.dto.js';
 export * from './create-ticket.dto.js';
 export * from './create-ticket-comment.dto.js';
 export * from './list-tickets-query.dto.js';
+export * from './ticket-attachment-params.dto.js';
 export * from './ticket-id-param.dto.js';
 export * from './ticket-metrics-query.dto.js';
 export * from './ticket-summary-query.dto.js';

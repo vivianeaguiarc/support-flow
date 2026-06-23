@@ -6,6 +6,10 @@ import { logger } from './logger.js';
 
 export const httpLogger = pinoHttp({
   logger,
+  redact: {
+    paths: ['req.headers.authorization', 'req.headers.cookie'],
+    censor: '[Redacted]',
+  },
   autoLogging: {
     ignore: (req: IncomingMessage) => req.url === '/api/v1/health',
   },

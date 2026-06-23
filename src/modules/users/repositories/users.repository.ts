@@ -33,12 +33,17 @@ export class UsersRepository {
     });
   }
 
-  async findById(id: string): Promise<User | null> {
-    return prisma.user.findUnique({ where: { id } });
+  async findById(id: string, tenantId: string): Promise<User | null> {
+    return prisma.user.findFirst({
+      where: { id, tenantId },
+    });
   }
 
-  async list(): Promise<User[]> {
-    return prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  async list(tenantId: string): Promise<User[]> {
+    return prisma.user.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }
 

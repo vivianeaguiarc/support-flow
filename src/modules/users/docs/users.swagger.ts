@@ -3,7 +3,10 @@
  * /users:
  *   post:
  *     summary: Criar novo usuário
- *     description: Cria um novo usuário no sistema (Admin, Agente ou Cliente)
+ *     description: |
+ *       Cria um novo usuário no sistema.
+ *       Registro público é permitido apenas para role CUSTOMER.
+ *       Roles ADMIN e AGENT exigem autenticação de administrador.
  *     tags:
  *       - Users
  *     requestBody:

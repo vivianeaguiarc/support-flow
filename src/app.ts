@@ -1,5 +1,6 @@
 import express from 'express';
 
+import { env } from './config/env.js';
 import { setupSwagger } from './config/setup-swagger.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { notificationsRouter } from './modules/notifications/presentation/routes/notifications.routes.js';
@@ -19,10 +20,14 @@ type CreateAppOptions = {
 export function createApp(options: CreateAppOptions = {}) {
   const app = express();
 
+  if (env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
+
   app.use(httpLogger);
   app.use(...securityMiddleware);
   app.use(rateLimitMiddleware);
-  app.use(express.json());
+  app.use(express.json({ limit: '1mb' }));
 
   const apiRouter = express.Router();
   apiRouter.use('/health', healthRouter);

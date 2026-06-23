@@ -1,9 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { logger } from '../logger/logger.js';
 
 export class FileStorageService {
   private readonly uploadDir: string;
@@ -47,7 +45,10 @@ export class FileStorageService {
     try {
       await fs.unlink(fullPath);
     } catch (error) {
-      console.error(`Failed to delete file at ${fullPath}:`, error);
+      logger.error(
+        { err: error, storagePath },
+        'Failed to delete attachment file',
+      );
     }
   }
 

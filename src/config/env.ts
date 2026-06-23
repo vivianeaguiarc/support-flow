@@ -2,18 +2,42 @@ import 'dotenv/config';
 
 import { z } from 'zod';
 
-const envSchema = z.object({
-  NODE_ENV: z
-    .enum(['development', 'test', 'production'])
-    .default('development'),
-  PORT: z.coerce.number().int().positive().default(3000),
-  CORS_ORIGIN: z.url().default('http://localhost:5173'),
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
-  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
-  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
-  JWT_EXPIRES_IN: z.string().default('1d'),
-});
+const envSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+    PORT: z.coerce.number().int().positive().default(3000),
+    CORS_ORIGIN: z.url().default('http://localhost:5173'),
+    RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
+    RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+    AUTH_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900_000),
+    AUTH_RATE_LIMIT_MAX_REQUESTS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(20),
+    DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+    JWT_SECRET: z.string().min(1, 'JWT_SECRET is required'),
+    JWT_EXPIRES_IN: z.string().default('1d'),
+    SWAGGER_ENABLED: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => value === 'true'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.NODE_ENV === 'production' && data.JWT_SECRET.length < 32) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['JWT_SECRET'],
+        message: 'JWT_SECRET must be at least 32 characters in production',
+      });
+    }
+  });
 
 const result = envSchema.safeParse(process.env);
 

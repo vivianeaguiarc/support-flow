@@ -64,7 +64,7 @@ export class AssignTicketUseCase {
   }
 
   private async ensureAgent(agentId: string, tenantId: string): Promise<void> {
-    const agent = await this.usersRepository.findById(agentId);
+    const agent = await this.usersRepository.findById(agentId, tenantId);
 
     if (!agent) {
       throw new AppError('Agent not found', 404);

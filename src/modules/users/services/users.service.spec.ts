@@ -92,7 +92,7 @@ describe('UsersService', () => {
     vi.mocked(repository.findById).mockResolvedValue(null);
 
     // Act & Assert
-    await expect(service.findById('missing-id')).rejects.toEqual(
+    await expect(service.findById('missing-id', 'tenant-1')).rejects.toEqual(
       new AppError('User not found', 404),
     );
   });
