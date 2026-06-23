@@ -30,6 +30,22 @@ export class TicketsRepository {
     return prisma.ticket.findUnique({ where: { id } });
   }
 
+  async findByIdAndTenant(
+    id: string,
+    tenantId: string,
+  ): Promise<Ticket | null> {
+    return prisma.ticket.findFirst({
+      where: { id, tenantId },
+    });
+  }
+
+  async listByTenant(tenantId: string): Promise<Ticket[]> {
+    return prisma.ticket.findMany({
+      where: { tenantId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async list(): Promise<Ticket[]> {
     return prisma.ticket.findMany({ orderBy: { createdAt: 'desc' } });
   }

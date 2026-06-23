@@ -1,18 +1,21 @@
-import type { Ticket, TicketPriority } from '@prisma/client';
-import { TicketStatus, UserRole } from '@prisma/client';
+import type { Ticket, TicketPriority, TicketStatus } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 
 import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import type { AuthenticatedUser } from '../../../shared/types/authenticated-user.js';
 import {
-  CustomersRepository,
-  customersRepository as defaultCustomersRepository,
-} from '../../customers/repositories/customers.repository.js';
-import {
-  UsersRepository,
-  usersRepository as defaultUsersRepository,
-} from '../../users/repositories/users.repository.js';
-import { generateTicketProtocol } from '../domain/ticket-protocol.js';
+  AssignTicketUseCase,
+  assignTicketUseCase,
+  FindTicketByIdUseCase,
+  findTicketByIdUseCase,
+  ListTicketsByTenantUseCase,
+  listTicketsByTenantUseCase,
+  OpenTicketUseCase,
+  openTicketUseCase,
+  UpdateTicketStatusUseCase,
+  updateTicketStatusUseCase,
+} from '../application/index.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -30,9 +33,12 @@ export type CreateTicketServiceInput = {
 
 export class TicketsService {
   constructor(
+    private readonly openTicket: OpenTicketUseCase = openTicketUseCase,
+    private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
+    private readonly listTickets: ListTicketsByTenantUseCase = listTicketsByTenantUseCase,
+    private readonly updateTicketStatus: UpdateTicketStatusUseCase = updateTicketStatusUseCase,
+    private readonly assignTicket: AssignTicketUseCase = assignTicketUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
-    private readonly usersRepository: UsersRepository = defaultUsersRepository,
-    private readonly customersRepository: CustomersRepository = defaultCustomersRepository,
   ) {}
 
   async create(
@@ -42,15 +48,9 @@ export class TicketsService {
     this.assertCanCreateTicket(authUser, data);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
-    await this.ensureCustomer(data.customerId, tenantId);
 
-    if (data.assignedToId) {
-      await this.ensureAgent(data.assignedToId);
-    }
-
-    const ticket = await this.ticketsRepository.create({
+    return this.openTicket.execute({
       tenantId,
-      protocol: generateTicketProtocol(),
       title: data.title,
       description: data.description,
       customerId: data.customerId,
@@ -58,18 +58,16 @@ export class TicketsService {
       categoryId: data.categoryId,
       assignedToId: data.assignedToId,
       slaDueAt: data.slaDueAt,
-      status: TicketStatus.OPEN,
+      changedById: authUser.id,
     });
-
-    return ticket;
   }
 
   async findById(id: string, authUser: AuthenticatedUser): Promise<Ticket> {
-    const ticket = await this.ticketsRepository.findById(id);
-
-    if (!ticket) {
-      throw new AppError('Ticket not found', 404);
-    }
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const ticket = await this.findTicket.execute({
+      tenantId,
+      ticketId: id,
+    });
 
     this.assertCanAccessTicket(ticket, authUser);
 
@@ -81,7 +79,8 @@ export class TicketsService {
       return this.ticketsRepository.listByCustomerId(authUser.id);
     }
 
-    return this.ticketsRepository.list();
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    return this.listTickets.execute({ tenantId });
   }
 
   async listByCustomerId(
@@ -106,8 +105,15 @@ export class TicketsService {
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
     this.assertCanManageTickets(authUser);
-    await this.findById(id, authUser);
-    return this.ticketsRepository.updateStatus(id, status);
+
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.updateTicketStatus.execute({
+      tenantId,
+      ticketId: id,
+      status,
+      changedById: authUser.id,
+    });
   }
 
   async assignAgent(
@@ -116,9 +122,15 @@ export class TicketsService {
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
     this.assertCanManageTickets(authUser);
-    await this.findById(id, authUser);
-    await this.ensureAgent(assignedToId);
-    return this.ticketsRepository.assignTo(id, assignedToId);
+
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.assignTicket.execute({
+      tenantId,
+      ticketId: id,
+      assignedToId,
+      changedById: authUser.id,
+    });
   }
 
   private assertCanCreateTicket(
@@ -202,37 +214,6 @@ export class TicketsService {
     }
 
     throw new AppError('Forbidden', 403);
-  }
-
-  private async ensureCustomer(
-    customerId: string,
-    tenantId: string,
-  ): Promise<void> {
-    const customer = await this.customersRepository.findById(customerId);
-
-    if (!customer) {
-      throw new AppError('Customer not found', 404);
-    }
-
-    if (customer.tenantId !== tenantId) {
-      throw new AppError('Forbidden', 403);
-    }
-
-    if (!customer.isActive) {
-      throw new AppError('Customer is inactive', 400);
-    }
-  }
-
-  private async ensureAgent(agentId: string): Promise<void> {
-    const agent = await this.usersRepository.findById(agentId);
-
-    if (!agent) {
-      throw new AppError('Agent not found', 404);
-    }
-
-    if (agent.role !== UserRole.AGENT && agent.role !== UserRole.ADMIN) {
-      throw new AppError('User must have AGENT role', 400);
-    }
   }
 }
 

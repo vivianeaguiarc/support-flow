@@ -1,3 +1,4 @@
+export * from './application/index.js';
 export * from './controllers/index.js';
 export * from './dtos/index.js';
 export * from './repositories/tickets.repository.js';
