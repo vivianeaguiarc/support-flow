@@ -137,7 +137,7 @@ export class TicketsService {
     authUser: AuthenticatedUser,
     data: CreateTicketServiceInput,
   ): void {
-    if (authUser.role === UserRole.ADMIN) {
+    if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
       return;
     }
 

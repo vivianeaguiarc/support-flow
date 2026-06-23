@@ -1,33 +1,21 @@
 import { UserRole } from '@prisma/client';
 import { Router } from 'express';
-import { z } from 'zod';
 
 import { authenticate } from '../../../shared/http/middlewares/authenticate.js';
 import { authorize } from '../../../shared/http/middlewares/authorize.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
-import { assignTicketAgentSchema } from '../dtos/assign-ticket-agent.dto.js';
+import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
+import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
 import { updateTicketStatusSchema } from '../dtos/update-ticket-status.dto.js';
-
-const idParamSchema = z.object({
-  id: z.uuid('Invalid ticket ID'),
-});
-
-const customerIdParamSchema = z.object({
-  customerId: z.uuid('Invalid customer ID'),
-});
-
-const agentIdParamSchema = z.object({
-  agentId: z.uuid('Invalid agent ID'),
-});
 
 export const ticketsRouter = Router();
 
 ticketsRouter.post(
   '/',
   authenticate,
-  authorize(UserRole.CUSTOMER),
+  authorize(UserRole.CUSTOMER, UserRole.AGENT),
   validateRequest({ body: createTicketSchema }),
   ticketsController.create,
 );
@@ -39,42 +27,29 @@ ticketsRouter.get(
   ticketsController.list,
 );
 
-ticketsRouter.get(
-  '/customer/:customerId',
-  authenticate,
-  authorize(UserRole.CUSTOMER),
-  validateRequest({ params: customerIdParamSchema }),
-  ticketsController.listByCustomerId,
-);
-
-ticketsRouter.get(
-  '/agent/:agentId',
-  authenticate,
-  authorize(UserRole.AGENT),
-  validateRequest({ params: agentIdParamSchema }),
-  ticketsController.listByAssignedAgentId,
-);
-
 ticketsRouter.patch(
   '/:id/status',
   authenticate,
   authorize(UserRole.AGENT),
-  validateRequest({ params: idParamSchema, body: updateTicketStatusSchema }),
+  validateRequest({
+    params: ticketIdParamSchema,
+    body: updateTicketStatusSchema,
+  }),
   ticketsController.updateStatus,
 );
 
 ticketsRouter.patch(
-  '/:id/assign-agent',
+  '/:id/assign',
   authenticate,
   authorize(UserRole.AGENT),
-  validateRequest({ params: idParamSchema, body: assignTicketAgentSchema }),
-  ticketsController.assignAgent,
+  validateRequest({ params: ticketIdParamSchema, body: assignTicketSchema }),
+  ticketsController.assign,
 );
 
 ticketsRouter.get(
   '/:id',
   authenticate,
   authorize(UserRole.AGENT, UserRole.CUSTOMER),
-  validateRequest({ params: idParamSchema }),
+  validateRequest({ params: ticketIdParamSchema }),
   ticketsController.findById,
 );

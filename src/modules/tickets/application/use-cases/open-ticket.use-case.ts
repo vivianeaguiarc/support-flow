@@ -12,6 +12,10 @@ import {
 } from '../../../users/repositories/users.repository.js';
 import { generateTicketProtocol } from '../../domain/ticket-protocol.js';
 import {
+  TicketCategoriesRepository,
+  ticketCategoriesRepository as defaultTicketCategoriesRepository,
+} from '../../repositories/ticket-categories.repository.js';
+import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
 } from '../../repositories/ticket-history.repository.js';
@@ -27,10 +31,15 @@ export class OpenTicketUseCase {
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly customersRepository: CustomersRepository = defaultCustomersRepository,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
+    private readonly ticketCategoriesRepository: TicketCategoriesRepository = defaultTicketCategoriesRepository,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
     await this.ensureCustomer(input.customerId, input.tenantId);
+
+    if (input.categoryId) {
+      await this.ensureCategory(input.categoryId, input.tenantId);
+    }
 
     if (input.assignedToId) {
       await this.ensureAgent(input.assignedToId, input.tenantId);
@@ -87,6 +96,24 @@ export class OpenTicketUseCase {
 
     if (!customer.isActive) {
       throw new AppError('Customer is inactive', 400);
+    }
+  }
+
+  private async ensureCategory(
+    categoryId: string,
+    tenantId: string,
+  ): Promise<void> {
+    const category = await this.ticketCategoriesRepository.findByIdAndTenant(
+      categoryId,
+      tenantId,
+    );
+
+    if (!category) {
+      throw new AppError('Category not found', 404);
+    }
+
+    if (!category.isActive) {
+      throw new AppError('Category is inactive', 400);
     }
   }
 

@@ -17,6 +17,11 @@ vi.mock('../../repositories/ticket-history.repository.js', () => ({
   ticketHistoryRepository: {},
 }));
 
+vi.mock('../../repositories/ticket-categories.repository.js', () => ({
+  TicketCategoriesRepository: vi.fn(),
+  ticketCategoriesRepository: {},
+}));
+
 vi.mock('../../../users/repositories/users.repository.js', () => ({
   UsersRepository: vi.fn(),
   usersRepository: {},

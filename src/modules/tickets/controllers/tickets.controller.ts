@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../../shared/errors/app-error.js';
-import type { AssignTicketAgentDto } from '../dtos/assign-ticket-agent.dto.js';
+import type { AssignTicketDto } from '../dtos/assign-ticket.dto.js';
 import type { CreateTicketDto } from '../dtos/create-ticket.dto.js';
 import type { UpdateTicketStatusDto } from '../dtos/update-ticket-status.dto.js';
 import { TicketsService, ticketsService } from '../services/tickets.service.js';
@@ -23,27 +23,19 @@ export class TicketsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
+      const body = req.body as CreateTicketDto;
       const ticket = await this.service.create(
-        req.body as CreateTicketDto,
+        {
+          title: body.title,
+          description: body.description,
+          customerId: body.customerId,
+          priority: body.priority,
+          categoryId: body.categoryId,
+          assignedToId: body.assignedToId,
+        },
         getAuthenticatedUser(req),
       );
       res.status(201).json(ticket);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  findById = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    try {
-      const ticket = await this.service.findById(
-        req.params.id as string,
-        getAuthenticatedUser(req),
-      );
-      res.status(200).json(ticket);
     } catch (error) {
       next(error);
     }
@@ -62,33 +54,17 @@ export class TicketsController {
     }
   };
 
-  listByCustomerId = async (
+  findById = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const tickets = await this.service.listByCustomerId(
-        req.params.customerId as string,
+      const ticket = await this.service.findById(
+        req.params.id as string,
         getAuthenticatedUser(req),
       );
-      res.status(200).json(tickets);
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  listByAssignedAgentId = async (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-  ): Promise<void> => {
-    try {
-      const tickets = await this.service.listByAssignedAgentId(
-        req.params.agentId as string,
-        getAuthenticatedUser(req),
-      );
-      res.status(200).json(tickets);
+      res.status(200).json(ticket);
     } catch (error) {
       next(error);
     }
@@ -112,16 +88,16 @@ export class TicketsController {
     }
   };
 
-  assignAgent = async (
+  assign = async (
     req: Request,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { assignedAgentId } = req.body as AssignTicketAgentDto;
+      const { assignedToId } = req.body as AssignTicketDto;
       const ticket = await this.service.assignAgent(
         req.params.id as string,
-        assignedAgentId,
+        assignedToId,
         getAuthenticatedUser(req),
       );
       res.status(200).json(ticket);
