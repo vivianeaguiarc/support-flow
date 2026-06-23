@@ -29,6 +29,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "seed": "tsx prisma/seed.ts",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "test:db:prepare": "docker compose up -d && node --import tsx src/test/integration/prepare-database.ts",
@@ -54,6 +56,9 @@
     "node": ">=22"
   },
   "packageManager": "pnpm@9.15.9",
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "devDependencies": {
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",

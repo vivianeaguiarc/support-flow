@@ -260,7 +260,11 @@ pnpm db:up
 # 3. Migrations em desenvolvimento
 pnpm prisma:migrate
 
-# 4. Servidor com hot reload
+# 4. (Opcional) Dados demo para Swagger
+pnpm prisma:deploy
+pnpm seed
+
+# 5. Servidor com hot reload
 pnpm dev
 ```
 
@@ -323,15 +327,50 @@ Health checks (`/health`, `/health/ready`, `/api/v1/health`) não geram log HTTP
 
 ## Migrations
 
-| Comando                | Uso                                                                    |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `pnpm prisma:migrate`  | Criar/aplicar migrations em **desenvolvimento** (`prisma migrate dev`) |
-| `pnpm prisma:deploy`   | Aplicar migrations em **produção/CI** (`prisma migrate deploy`)        |
-| `pnpm prisma:validate` | Validar schema Prisma                                                  |
-| `pnpm prisma:generate` | Gerar Prisma Client                                                    |
-| `pnpm prisma:studio`   | UI visual do banco                                                     |
+| Comando                          | Uso                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm prisma:migrate`            | Criar/aplicar migrations em **desenvolvimento** (`prisma migrate dev`) |
+| `pnpm prisma:deploy`             | Aplicar migrations em **produção/CI** (`prisma migrate deploy`)        |
+| `pnpm prisma:validate`           | Validar schema Prisma                                                  |
+| `pnpm prisma:generate`           | Gerar Prisma Client                                                    |
+| `pnpm prisma:studio`             | UI visual do banco                                                     |
+| `pnpm prisma:seed` / `pnpm seed` | Popula dados demo idempotentes (tenant, users, customer, categorias)   |
 
-Em Docker/produção, as migrations rodam automaticamente via `scripts/docker-entrypoint.sh`.
+Em Docker/produção, as migrations rodam automaticamente via `scripts/docker-entrypoint.sh`. O **seed não roda automaticamente** — execute manualmente quando necessário.
+
+### Seed demo (dados iniciais)
+
+Popula um conjunto mínimo para testes manuais via Swagger:
+
+| Recurso      | Valor padrão                                                              |
+| ------------ | ------------------------------------------------------------------------- |
+| Tenant       | `SupportFlow Demo` (`slug: demo`)                                         |
+| Admin        | `admin@demo.supportflow.local`                                            |
+| Agent        | `agent@demo.supportflow.local`                                            |
+| Customer     | `customer@demo.supportflow.local` (`customerId` fixo para abrir chamados) |
+| Categorias   | SAC Geral (72h), Ouvidoria (48h), Suporte Técnico (24h)                   |
+| Senha padrão | `DemoSupport123!` (admin e agent)                                         |
+
+```bash
+# Após migrations
+pnpm prisma:deploy
+pnpm seed
+# ou
+pnpm prisma:seed
+```
+
+O seed é **idempotente** (`upsert` por `id`, `tenantId+email` ou `tenantId+name`). Rodar novamente atualiza nomes/senhas/categorias sem duplicar registros.
+
+**Produção:** exige `SEED_DEMO_ENABLED=true` explicitamente. Não é executado no entrypoint Docker.
+
+Credenciais customizáveis via `.env` — veja `SEED_DEMO_*` em [`.env.example`](.env.example).
+
+#### Testar login no Swagger
+
+1. Suba a API (`pnpm dev` ou Docker) e abra http://localhost:3000/api/docs
+2. `POST /api/v1/auth/login` com `{ "email": "admin@demo.supportflow.local", "password": "DemoSupport123!" }`
+3. Copie o `accessToken` e clique em **Authorize** (Bearer)
+4. Exemplo: `POST /api/v1/tickets` com `customerId` exibido no output do seed
 
 ---
 
@@ -434,6 +473,7 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 | `pnpm prisma:validate`                   | Valida schema Prisma                                    |
 | `pnpm prisma:generate`                   | Gera Prisma Client                                      |
 | `pnpm prisma:studio`                     | UI visual do banco                                      |
+| `pnpm prisma:seed` / `pnpm seed`         | Popula dados demo idempotentes                          |
 | `pnpm test` / `pnpm test:integration`    | Testes unitários / E2E                                  |
 | `pnpm test:watch` / `pnpm test:coverage` | Watch mode / cobertura                                  |
 
@@ -500,7 +540,7 @@ Deploy automatizado via blueprint Render ([`render.yaml`](render.yaml)). Guia co
 - [ ] Módulo **knowledge-base** (artigos de ajuda)
 - [ ] Refatorar módulos `auth` e `users` para Clean Architecture
 - [ ] Scheduler/cron para SLA e escalação em background
-- [ ] Seed de dados iniciais (tenant + admin) para deploy
+- [x] Seed de dados iniciais (tenant + admin) para deploy
 - [ ] Deploy automatizado staging (GitHub Actions → Render/Railway)
 
 ---

@@ -12,7 +12,7 @@ process.env.CORS_ORIGIN ??= 'http://localhost:5173';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/**/*.spec.ts'],
+    include: ['src/**/*.spec.ts', 'prisma/seed/**/*.spec.ts'],
     exclude: ['src/**/*.integration.spec.ts'],
     setupFiles: ['src/test/unit/setup.ts'],
     coverage: {
