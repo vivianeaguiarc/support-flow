@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { AppError } from '../../errors/app-error.js';
+import { UnauthorizedError } from '../../errors/http-errors.js';
 import { verifyToken } from '../../security/jwt.js';
 
 export function authenticate(
@@ -11,14 +11,14 @@ export function authenticate(
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
-    next(new AppError('Token not provided', 401));
+    next(new UnauthorizedError('Token not provided'));
     return;
   }
 
   const token = authHeader.slice('Bearer '.length).trim();
 
   if (!token) {
-    next(new AppError('Token not provided', 401));
+    next(new UnauthorizedError('Token not provided'));
     return;
   }
 
@@ -26,6 +26,6 @@ export function authenticate(
     req.user = verifyToken(token);
     next();
   } catch {
-    next(new AppError('Invalid or expired token', 401));
+    next(new UnauthorizedError('Invalid or expired token'));
   }
 }

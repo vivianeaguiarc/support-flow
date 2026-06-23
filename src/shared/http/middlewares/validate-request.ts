@@ -1,7 +1,10 @@
 import type { NextFunction, Request, Response } from 'express';
 import { ZodError, type ZodType } from 'zod';
 
-import { AppError } from '../../errors/app-error.js';
+import {
+  ValidationError,
+  type ValidationIssue,
+} from '../../errors/http-errors.js';
 
 type RequestValidationSchema = {
   body?: ZodType;
@@ -16,6 +19,13 @@ function formatValidationMessage(error: ZodError): string {
       return `${path}: ${issue.message}`;
     })
     .join('; ');
+}
+
+function formatValidationDetails(error: ZodError): ValidationIssue[] {
+  return error.issues.map((issue) => ({
+    path: issue.path.length > 0 ? issue.path.join('.') : 'request',
+    message: issue.message,
+  }));
 }
 
 export function validateRequest(schema: RequestValidationSchema) {
@@ -36,7 +46,12 @@ export function validateRequest(schema: RequestValidationSchema) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        next(new AppError(formatValidationMessage(error), 400));
+        next(
+          new ValidationError(
+            formatValidationMessage(error),
+            formatValidationDetails(error),
+          ),
+        );
         return;
       }
 

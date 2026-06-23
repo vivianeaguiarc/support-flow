@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
-import { AppError } from './app-error.js';
 import { mapPrismaError } from './prisma-error-mapper.js';
 
 describe('mapPrismaError', () => {
@@ -11,9 +10,11 @@ describe('mapPrismaError', () => {
       { code: 'P2002', clientVersion: 'test' },
     );
 
-    expect(mapPrismaError(error)).toEqual(
-      new AppError('Resource already exists', 409),
-    );
+    expect(mapPrismaError(error)).toMatchObject({
+      statusCode: 409,
+      error: 'Conflict',
+      message: 'Resource already exists',
+    });
   });
 
   it('maps record not found to 404', () => {
@@ -22,9 +23,27 @@ describe('mapPrismaError', () => {
       clientVersion: 'test',
     });
 
-    expect(mapPrismaError(error)).toEqual(
-      new AppError('Resource not found', 404),
+    expect(mapPrismaError(error)).toMatchObject({
+      statusCode: 404,
+      error: 'Not Found',
+      message: 'Resource not found',
+    });
+  });
+
+  it('maps invalid reference to 400', () => {
+    const error = new Prisma.PrismaClientKnownRequestError(
+      'Invalid reference',
+      {
+        code: 'P2003',
+        clientVersion: 'test',
+      },
     );
+
+    expect(mapPrismaError(error)).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'Invalid reference',
+    });
   });
 
   it('returns null for unknown errors', () => {

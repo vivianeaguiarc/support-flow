@@ -42,17 +42,31 @@ const options: Options = {
       schemas: {
         Error: {
           type: 'object',
-          required: ['statusCode', 'message'],
+          required: ['statusCode', 'error', 'message'],
           properties: {
             statusCode: {
               type: 'integer',
               description: 'HTTP status code',
               example: 404,
             },
+            error: {
+              type: 'string',
+              description: 'HTTP error label',
+              example: 'Not Found',
+            },
             message: {
               type: 'string',
               description: 'Mensagem de erro',
               example: 'Ticket not found',
+            },
+            requestId: {
+              type: 'string',
+              description: 'Identificador da requisição para rastreamento',
+              example: 'req-1',
+            },
+            details: {
+              description:
+                'Detalhes adicionais (ex.: validação). Omitido em production.',
             },
           },
         },

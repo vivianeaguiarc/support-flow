@@ -10,6 +10,7 @@ export const rateLimitMiddleware = rateLimit({
   handler: (_req, res) => {
     res.status(429).json({
       statusCode: 429,
+      error: 'Too Many Requests',
       message: 'Too many requests, please try again later',
     });
   },

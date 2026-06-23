@@ -2,7 +2,7 @@ import { UserRole } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 
-import { AppError } from '../../errors/app-error.js';
+import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
 import { authorize } from './authorize.js';
 
 function createMockRequest(user?: Request['user']): Request {
@@ -16,7 +16,7 @@ describe('authorize', () => {
 
     middleware(createMockRequest(), {} as Response, next);
 
-    expect(next).toHaveBeenCalledWith(new AppError('Unauthorized', 401));
+    expect(next).toHaveBeenCalledWith(new UnauthorizedError());
   });
 
   it('should allow admin regardless of allowed roles', () => {
@@ -70,6 +70,6 @@ describe('authorize', () => {
       next,
     );
 
-    expect(next).toHaveBeenCalledWith(new AppError('Forbidden', 403));
+    expect(next).toHaveBeenCalledWith(new ForbiddenError());
   });
 });

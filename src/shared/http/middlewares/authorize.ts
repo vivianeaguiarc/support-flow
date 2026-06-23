@@ -1,13 +1,13 @@
 import { UserRole } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 
-import { AppError } from '../../errors/app-error.js';
+import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
 import { hasAnyRole, isAdmin } from '../../security/rbac.js';
 
 export function authorize(...allowedRoles: UserRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) {
-      next(new AppError('Unauthorized', 401));
+      next(new UnauthorizedError());
       return;
     }
 
@@ -17,7 +17,7 @@ export function authorize(...allowedRoles: UserRole[]) {
     }
 
     if (!hasAnyRole(req.user.role, allowedRoles)) {
-      next(new AppError('Forbidden', 403));
+      next(new ForbiddenError());
       return;
     }
 

@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client';
 
-import { AppError } from './app-error.js';
+import type { AppError } from './app-error.js';
+import {
+  BadRequestError,
+  ConflictError,
+  NotFoundError,
+} from './http-errors.js';
 
 export function mapPrismaError(error: unknown): AppError | null {
   if (!(error instanceof Prisma.PrismaClientKnownRequestError)) {
@@ -9,11 +14,11 @@ export function mapPrismaError(error: unknown): AppError | null {
 
   switch (error.code) {
     case 'P2002':
-      return new AppError('Resource already exists', 409);
+      return new ConflictError('Resource already exists');
     case 'P2025':
-      return new AppError('Resource not found', 404);
+      return new NotFoundError('Resource not found');
     case 'P2003':
-      return new AppError('Invalid reference', 400);
+      return new BadRequestError('Invalid reference');
     default:
       return null;
   }
