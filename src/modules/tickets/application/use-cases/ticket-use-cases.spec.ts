@@ -242,9 +242,7 @@ describe('Ticket use cases', () => {
 
   describe('FindTicketByIdUseCase', () => {
     it('should return ticket when found in tenant', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
 
       const useCase = new FindTicketByIdUseCase(ticketsRepository);
       const result = await useCase.execute({
@@ -255,8 +253,8 @@ describe('Ticket use cases', () => {
       expect(result).toEqual(mockTicket);
     });
 
-    it('should throw when ticket is not found in tenant', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(null);
+    it('should throw when ticket is not found', async () => {
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(null);
 
       const useCase = new FindTicketByIdUseCase(ticketsRepository);
 
@@ -266,6 +264,22 @@ describe('Ticket use cases', () => {
           ticketId: 'missing',
         }),
       ).rejects.toEqual(new AppError('Ticket not found', 404));
+    });
+
+    it('should throw forbidden when ticket belongs to another tenant', async () => {
+      vi.mocked(ticketsRepository.findById).mockResolvedValue({
+        ...mockTicket,
+        tenantId: 'other-tenant',
+      });
+
+      const useCase = new FindTicketByIdUseCase(ticketsRepository);
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+        }),
+      ).rejects.toEqual(new AppError('Forbidden', 403));
     });
   });
 
@@ -309,7 +323,7 @@ describe('Ticket use cases', () => {
 
   describe('UpdateTicketStatusUseCase', () => {
     it('should update status and record history when assignee is set', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+      vi.mocked(ticketsRepository.findById).mockResolvedValue({
         ...mockTicket,
         assignedToId: 'agent-1',
       });
@@ -343,9 +357,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should reject OPEN to IN_PROGRESS without assignee', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
 
       const findTicket = new FindTicketByIdUseCase(ticketsRepository);
       const useCase = new UpdateTicketStatusUseCase(
@@ -372,7 +384,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should reject ESCALATED to IN_PROGRESS without assignee', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+      vi.mocked(ticketsRepository.findById).mockResolvedValue({
         ...mockTicket,
         status: TicketStatus.ESCALATED,
       });
@@ -399,7 +411,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should allow ESCALATED to IN_PROGRESS with assignee', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+      vi.mocked(ticketsRepository.findById).mockResolvedValue({
         ...mockTicket,
         status: TicketStatus.ESCALATED,
         assignedToId: 'agent-1',
@@ -427,9 +439,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should reject invalid status transition without persisting changes', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
 
       const findTicket = new FindTicketByIdUseCase(ticketsRepository);
       const useCase = new UpdateTicketStatusUseCase(
@@ -455,9 +465,7 @@ describe('Ticket use cases', () => {
 
   describe('GetTicketStatusTransitionsUseCase', () => {
     it('should return current status and allowed transitions', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
 
       const findTicket = new FindTicketByIdUseCase(ticketsRepository);
       const useCase = new GetTicketStatusTransitionsUseCase(findTicket);
@@ -474,7 +482,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should throw when ticket is not found in tenant', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(null);
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(null);
 
       const findTicket = new FindTicketByIdUseCase(ticketsRepository);
       const useCase = new GetTicketStatusTransitionsUseCase(findTicket);
@@ -490,9 +498,7 @@ describe('Ticket use cases', () => {
 
   describe('ListTicketHistoryUseCase', () => {
     it('should return mapped history ordered by tenant scope', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
       vi.mocked(
         ticketHistoryRepository.listByTicketIdAndTenant,
       ).mockResolvedValue([
@@ -561,7 +567,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should throw when ticket is not found in tenant', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(null);
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(null);
 
       const findTicket = new FindTicketByIdUseCase(ticketsRepository);
       const useCase = new ListTicketHistoryUseCase(
@@ -584,9 +590,7 @@ describe('Ticket use cases', () => {
 
   describe('AssignTicketUseCase', () => {
     it('should assign agent and record history', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
       vi.mocked(usersRepository.findById).mockResolvedValue(mockAgent);
       vi.mocked(ticketsRepository.assignTo).mockResolvedValue({
         ...mockTicket,
@@ -617,9 +621,7 @@ describe('Ticket use cases', () => {
     });
 
     it('should reject agent from another tenant', async () => {
-      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-        mockTicket,
-      );
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
       vi.mocked(usersRepository.findById).mockResolvedValue({
         ...mockAgent,
         tenantId: 'other-tenant',

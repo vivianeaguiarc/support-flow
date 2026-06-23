@@ -1,4 +1,4 @@
-import { AppError } from '../../../../shared/errors/app-error.js';
+import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import {
   type NotificationEventService,
   notificationEventService,
@@ -37,18 +37,10 @@ export class CreateTicketCommentUseCase {
   ) {}
 
   async execute(input: CreateTicketCommentInput): Promise<TicketComment> {
-    const ticket = await this.ticketsRepo.findByIdAndTenant(
-      input.ticketId,
+    const ticket = assertTicketForTenant(
+      await this.ticketsRepo.findById(input.ticketId),
       input.tenantId,
     );
-
-    if (!ticket) {
-      throw new AppError('Ticket not found', 404);
-    }
-
-    if (ticket.tenantId !== input.tenantId) {
-      throw new AppError('Forbidden', 403);
-    }
 
     const comment = await this.commentsRepo.create({
       tenantId: input.tenantId,

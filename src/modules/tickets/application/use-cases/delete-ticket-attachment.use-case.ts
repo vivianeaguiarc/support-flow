@@ -1,4 +1,5 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import { fileStorageService } from '../../../../shared/storage/file-storage.service.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
@@ -30,18 +31,10 @@ export class DeleteTicketAttachmentUseCase {
   ) {}
 
   async execute(input: DeleteTicketAttachmentInput): Promise<void> {
-    const ticket = await this.ticketsRepo.findByIdAndTenant(
-      input.ticketId,
+    assertTicketForTenant(
+      await this.ticketsRepo.findById(input.ticketId),
       input.tenantId,
     );
-
-    if (!ticket) {
-      throw new AppError('Ticket not found', 404);
-    }
-
-    if (ticket.tenantId !== input.tenantId) {
-      throw new AppError('Forbidden', 403);
-    }
 
     const attachment = await this.attachmentsRepo.findById(
       input.attachmentId,

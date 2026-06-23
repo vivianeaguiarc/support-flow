@@ -1,4 +1,4 @@
-import { AppError } from '../../../../shared/errors/app-error.js';
+import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { TicketCommentWithAuthor } from '../../domain/ticket-comment.js';
 import {
   type TicketCommentsRepository,
@@ -23,18 +23,10 @@ export class ListTicketCommentsUseCase {
   async execute(
     input: ListTicketCommentsInput,
   ): Promise<TicketCommentWithAuthor[]> {
-    const ticket = await this.ticketsRepo.findByIdAndTenant(
-      input.ticketId,
+    assertTicketForTenant(
+      await this.ticketsRepo.findById(input.ticketId),
       input.tenantId,
     );
-
-    if (!ticket) {
-      throw new AppError('Ticket not found', 404);
-    }
-
-    if (ticket.tenantId !== input.tenantId) {
-      throw new AppError('Forbidden', 403);
-    }
 
     return this.commentsRepo.listByTicketId(input.ticketId, input.tenantId);
   }

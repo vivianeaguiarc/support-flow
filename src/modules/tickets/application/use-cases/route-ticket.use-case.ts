@@ -143,7 +143,9 @@ export class RouteTicketUseCase {
       const ombudsmanAgents = await prisma.user.findMany({
         where: {
           tenantId,
-          role: UserRole.ADMIN,
+          role: {
+            in: [UserRole.OMBUDSMAN, UserRole.ADMIN, UserRole.SUPERVISOR],
+          },
         },
         select: {
           id: true,
@@ -207,8 +209,10 @@ export class RouteTicketUseCase {
 
       const roleWeight: Record<string, number> = {
         [UserRole.ADMIN]: 1,
-        [UserRole.AGENT]: 2,
-        [UserRole.CUSTOMER]: 3,
+        [UserRole.SUPERVISOR]: 2,
+        [UserRole.OMBUDSMAN]: 3,
+        [UserRole.AGENT]: 4,
+        [UserRole.CUSTOMER]: 5,
       };
 
       const weightA = roleWeight[a.agentRole] ?? 99;

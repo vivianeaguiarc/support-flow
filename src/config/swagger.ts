@@ -77,7 +77,7 @@ const options: Options = {
         },
         UserRole: {
           type: 'string',
-          enum: ['ADMIN', 'AGENT', 'CUSTOMER'],
+          enum: ['ADMIN', 'SUPERVISOR', 'AGENT', 'CUSTOMER', 'OMBUDSMAN'],
           description: 'Role/Papel do usuário',
           example: 'AGENT',
         },

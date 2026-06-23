@@ -8,8 +8,10 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  SUPERVISOR
   AGENT
   CUSTOMER
+  OMBUDSMAN
 }
 
 enum TicketStatus {

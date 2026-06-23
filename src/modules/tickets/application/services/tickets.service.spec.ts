@@ -286,7 +286,7 @@ describe('TicketsService', () => {
   });
 
   it('should reject CUSTOMER accessing another customer ticket', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(
       otherCustomerTicket,
     );
 
@@ -296,7 +296,7 @@ describe('TicketsService', () => {
   });
 
   it('should allow AGENT to update ticket status when assignee is set', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue({
+    vi.mocked(ticketsRepository.findById).mockResolvedValue({
       ...mockTicket,
       assignedToId: 'agent-1',
     });
@@ -328,9 +328,7 @@ describe('TicketsService', () => {
   });
 
   it('should reject IN_PROGRESS when ticket has no assignee', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-      mockTicket,
-    );
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
 
     await expect(
       service.updateStatus('ticket-1', TicketStatus.IN_PROGRESS, agentAuth),
@@ -346,7 +344,7 @@ describe('TicketsService', () => {
   });
 
   it('should allow ADMIN to access any ticket', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(
       otherCustomerTicket,
     );
 
@@ -373,9 +371,7 @@ describe('TicketsService', () => {
   });
 
   it('should reject agent assignment when agent does not exist', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-      mockTicket,
-    );
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
     vi.mocked(usersRepository.findById).mockResolvedValue(null);
 
     await expect(
@@ -392,6 +388,8 @@ describe('TicketsService', () => {
   });
 
   it('should reject CUSTOMER updating ticket status', async () => {
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
+
     await expect(
       service.updateStatus('ticket-1', TicketStatus.CLOSED, customerAuth),
     ).rejects.toEqual(new AppError('Forbidden', 403));
@@ -399,9 +397,7 @@ describe('TicketsService', () => {
   });
 
   it('should return allowed status transitions for an accessible ticket', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-      mockTicket,
-    );
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
 
     const result = await service.getStatusTransitions('ticket-1', agentAuth);
 
@@ -414,9 +410,7 @@ describe('TicketsService', () => {
   });
 
   it('should return ticket history for an accessible ticket', async () => {
-    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
-      mockTicket,
-    );
+    vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
     vi.mocked(
       ticketHistoryRepository.listByTicketIdAndTenant,
     ).mockResolvedValue([

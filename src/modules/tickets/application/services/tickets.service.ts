@@ -1,7 +1,14 @@
+import { UserRole } from '@prisma/client';
+
 import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
+import {
+  assertCanCreateTicket,
+  assertCanManageTicket,
+  assertTicketAccess,
+  canAccessInternalComments,
+} from '../../../../shared/security/rbac.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
-import { UserRole } from '../../../../shared/types/user-role.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import type {
   TicketAttachment,
@@ -11,10 +18,8 @@ import type {
   TicketComment,
   TicketCommentWithAuthor,
 } from '../../domain/ticket-comment.js';
-import type {
-  TicketPriority,
-  TicketStatus,
-} from '../../domain/ticket-enums.js';
+import type { TicketPriority } from '../../domain/ticket-enums.js';
+import { TicketStatus } from '../../domain/ticket-enums.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -90,7 +95,7 @@ export class TicketsService {
     data: CreateTicketServiceInput,
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
-    this.assertCanCreateTicket(authUser, data);
+    assertCanCreateTicket(authUser, data);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -113,7 +118,7 @@ export class TicketsService {
       ticketId: id,
     });
 
-    this.assertCanAccessTicket(ticket, authUser);
+    assertTicketAccess(ticket, authUser);
 
     return ticket;
   }
@@ -155,10 +160,14 @@ export class TicketsService {
 
     const customerId =
       authUser.role === UserRole.CUSTOMER ? authUser.id : query.customerId;
+    const status =
+      authUser.role === UserRole.OMBUDSMAN && !query.status
+        ? TicketStatus.ESCALATED
+        : query.status;
 
     return this.listTickets.execute({
       tenantId,
-      status: query.status,
+      status,
       priority: query.priority,
       categoryId: query.categoryId,
       customerId,
@@ -191,10 +200,14 @@ export class TicketsService {
 
     const customerId =
       authUser.role === UserRole.CUSTOMER ? authUser.id : query.customerId;
+    const status =
+      authUser.role === UserRole.OMBUDSMAN && !query.status
+        ? TicketStatus.ESCALATED
+        : query.status;
 
     return this.getTicketSummary.execute({
       tenantId,
-      status: query.status,
+      status,
       priority: query.priority,
       categoryId: query.categoryId,
       customerId,
@@ -242,7 +255,8 @@ export class TicketsService {
     status: TicketStatus,
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
-    this.assertCanManageTickets(authUser);
+    const ticket = await this.findById(id, authUser);
+    assertCanManageTicket(authUser, ticket);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -259,7 +273,8 @@ export class TicketsService {
     assignedToId: string,
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
-    this.assertCanManageTickets(authUser);
+    const ticket = await this.findById(id, authUser);
+    assertCanManageTicket(authUser, ticket);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -276,7 +291,9 @@ export class TicketsService {
     content: string,
     authUser: AuthenticatedUser,
   ): Promise<TicketComment> {
-    this.assertCanAccessComments(authUser);
+    if (!canAccessInternalComments(authUser.role)) {
+      throw new AppError('Forbidden', 403);
+    }
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -292,7 +309,9 @@ export class TicketsService {
     ticketId: string,
     authUser: AuthenticatedUser,
   ): Promise<TicketCommentWithAuthor[]> {
-    this.assertCanAccessComments(authUser);
+    if (!canAccessInternalComments(authUser.role)) {
+      throw new AppError('Forbidden', 403);
+    }
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -307,7 +326,8 @@ export class TicketsService {
     file: Express.Multer.File,
     authUser: AuthenticatedUser,
   ): Promise<TicketAttachment> {
-    this.assertCanManageTickets(authUser);
+    const ticket = await this.findById(ticketId, authUser);
+    assertCanManageTicket(authUser, ticket);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -338,7 +358,8 @@ export class TicketsService {
     attachmentId: string,
     authUser: AuthenticatedUser,
   ): Promise<void> {
-    this.assertCanManageTickets(authUser);
+    const ticket = await this.findById(ticketId, authUser);
+    assertCanManageTicket(authUser, ticket);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -348,51 +369,6 @@ export class TicketsService {
       tenantId,
       deletedById: authUser.id,
     });
-  }
-
-  private assertCanCreateTicket(
-    authUser: AuthenticatedUser,
-    data: CreateTicketServiceInput,
-  ): void {
-    if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
-      return;
-    }
-
-    if (authUser.role === UserRole.CUSTOMER) {
-      if (data.customerId !== authUser.id) {
-        throw new AppError('Forbidden', 403);
-      }
-
-      if (data.assignedToId) {
-        throw new AppError('Customers cannot assign agents', 400);
-      }
-
-      return;
-    }
-
-    throw new AppError('Forbidden', 403);
-  }
-
-  private assertCanAccessTicket(
-    ticket: Ticket,
-    authUser: AuthenticatedUser,
-  ): void {
-    if (authUser.role === UserRole.ADMIN) {
-      return;
-    }
-
-    if (authUser.role === UserRole.AGENT) {
-      return;
-    }
-
-    if (
-      authUser.role === UserRole.CUSTOMER &&
-      ticket.customerId === authUser.id
-    ) {
-      return;
-    }
-
-    throw new AppError('Forbidden', 403);
   }
 
   private assertCanListCustomerTickets(
@@ -414,27 +390,14 @@ export class TicketsService {
     agentId: string,
     authUser: AuthenticatedUser,
   ): void {
-    if (authUser.role === UserRole.ADMIN) {
+    if (
+      authUser.role === UserRole.ADMIN ||
+      authUser.role === UserRole.SUPERVISOR
+    ) {
       return;
     }
 
     if (authUser.role === UserRole.AGENT && agentId === authUser.id) {
-      return;
-    }
-
-    throw new AppError('Forbidden', 403);
-  }
-
-  private assertCanManageTickets(authUser: AuthenticatedUser): void {
-    if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
-      return;
-    }
-
-    throw new AppError('Forbidden', 403);
-  }
-
-  private assertCanAccessComments(authUser: AuthenticatedUser): void {
-    if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
       return;
     }
 

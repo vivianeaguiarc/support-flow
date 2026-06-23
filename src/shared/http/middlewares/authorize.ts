@@ -2,6 +2,7 @@ import { UserRole } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../errors/app-error.js';
+import { hasAnyRole, isAdmin } from '../../security/rbac.js';
 
 export function authorize(...allowedRoles: UserRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {
@@ -10,12 +11,12 @@ export function authorize(...allowedRoles: UserRole[]) {
       return;
     }
 
-    if (req.user.role === UserRole.ADMIN) {
+    if (isAdmin(req.user.role)) {
       next();
       return;
     }
 
-    if (!allowedRoles.includes(req.user.role)) {
+    if (!hasAnyRole(req.user.role, allowedRoles)) {
       next(new AppError('Forbidden', 403));
       return;
     }

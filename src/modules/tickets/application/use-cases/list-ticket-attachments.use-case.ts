@@ -1,4 +1,4 @@
-import { AppError } from '../../../../shared/errors/app-error.js';
+import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { TicketAttachmentWithUploader } from '../../domain/ticket-attachment.js';
 import {
   type TicketAttachmentsRepository,
@@ -23,18 +23,10 @@ export class ListTicketAttachmentsUseCase {
   async execute(
     input: ListTicketAttachmentsInput,
   ): Promise<TicketAttachmentWithUploader[]> {
-    const ticket = await this.ticketsRepo.findByIdAndTenant(
-      input.ticketId,
+    assertTicketForTenant(
+      await this.ticketsRepo.findById(input.ticketId),
       input.tenantId,
     );
-
-    if (!ticket) {
-      throw new AppError('Ticket not found', 404);
-    }
-
-    if (ticket.tenantId !== input.tenantId) {
-      throw new AppError('Forbidden', 403);
-    }
 
     return this.attachmentsRepo.listByTicketId(input.ticketId, input.tenantId);
   }

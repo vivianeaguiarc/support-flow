@@ -1,4 +1,4 @@
-import { AppError } from '../../../../shared/errors/app-error.js';
+import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import {
   TicketsRepository,
@@ -12,16 +12,9 @@ export class FindTicketByIdUseCase {
   ) {}
 
   async execute(input: FindTicketByIdInput): Promise<Ticket> {
-    const ticket = await this.ticketsRepository.findByIdAndTenant(
-      input.ticketId,
-      input.tenantId,
-    );
+    const ticket = await this.ticketsRepository.findById(input.ticketId);
 
-    if (!ticket) {
-      throw new AppError('Ticket not found', 404);
-    }
-
-    return ticket;
+    return assertTicketForTenant(ticket, input.tenantId);
   }
 }
 

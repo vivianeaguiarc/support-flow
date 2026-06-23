@@ -1,5 +1,5 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
-import { UserRole } from '../../../../shared/types/user-role.js';
+import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
 import {
   CustomersRepository,
   customersRepository as defaultCustomersRepository,
@@ -180,8 +180,8 @@ export class OpenTicketUseCase {
       throw new AppError('Invalid tenant for agent', 403);
     }
 
-    if (agent.role !== UserRole.AGENT && agent.role !== UserRole.ADMIN) {
-      throw new AppError('User must have AGENT role', 400);
+    if (!canBeAssignedTickets(agent.role)) {
+      throw new AppError('User must have an assignable staff role', 400);
     }
   }
 }

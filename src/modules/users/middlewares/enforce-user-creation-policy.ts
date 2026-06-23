@@ -19,7 +19,7 @@ export function enforceUserCreationPolicy(
   if (!req.user || req.user.role !== UserRole.ADMIN) {
     next(
       new AppError(
-        'Only administrators can create users with ADMIN or AGENT role',
+        'Only administrators can create users with staff roles',
         403,
       ),
     );

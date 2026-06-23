@@ -47,8 +47,8 @@ O SupportFlow Backend entrega essa base como **API modular**, pronta para integr
 
 ### Autenticação e usuários
 
-- Login com JWT (`ADMIN`, `AGENT`, `CUSTOMER`)
-- Registro público restrito a `CUSTOMER`; criação de `ADMIN`/`AGENT` exige administrador autenticado
+- Login com JWT (`ADMIN`, `SUPERVISOR`, `AGENT`, `CUSTOMER`, `OMBUDSMAN`)
+- Registro público restrito a `CUSTOMER`; criação de perfis staff exige administrador autenticado
 - Listagem de usuários isolada por tenant
 
 ### Operações e observabilidade

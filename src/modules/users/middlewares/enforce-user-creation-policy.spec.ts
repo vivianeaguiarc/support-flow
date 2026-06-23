@@ -31,7 +31,7 @@ describe('enforceUserCreationPolicy', () => {
 
     expect(next).toHaveBeenCalledWith(
       new AppError(
-        'Only administrators can create users with ADMIN or AGENT role',
+        'Only administrators can create users with staff roles',
         403,
       ),
     );
