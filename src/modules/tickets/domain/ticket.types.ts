@@ -1,4 +1,4 @@
-import type { TicketHistoryEvent, TicketPriority } from '@prisma/client';
+import type { TicketHistoryEvent, TicketPriority } from './ticket-enums.js';
 
 export type CreateTicketDomainInput = {
   tenantId: string;

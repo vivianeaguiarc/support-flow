@@ -1,7 +1,5 @@
-import type { Ticket } from '@prisma/client';
-import { TicketHistoryEvent, TicketStatus, UserRole } from '@prisma/client';
-
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { UserRole } from '../../../../shared/types/user-role.js';
 import {
   CustomersRepository,
   customersRepository as defaultCustomersRepository,
@@ -10,6 +8,11 @@ import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
+import {
+  type Ticket,
+  TicketHistoryEvent,
+  TicketStatus,
+} from '../../domain/index.js';
 import { generateTicketProtocol } from '../../domain/ticket-protocol.js';
 import {
   TicketCategoriesRepository,

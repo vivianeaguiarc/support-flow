@@ -1,6 +1,5 @@
-import { TicketPriority } from '@prisma/client';
-
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { TicketPriority } from '../../domain/ticket-enums.js';
 import { calculateSlaDueAt, resolveSlaHours } from '../../domain/ticket-sla.js';
 import {
   TenantsRepository,

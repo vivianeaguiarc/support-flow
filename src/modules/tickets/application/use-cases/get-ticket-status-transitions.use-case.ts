@@ -1,5 +1,4 @@
-import type { TicketStatus } from '@prisma/client';
-
+import type { TicketStatus } from '../../domain/ticket-enums.js';
 import { getAllowedTicketStatusTransitions } from '../../domain/ticket-status-transitions.js';
 import type { FindTicketByIdInput } from '../inputs/ticket-use-case.inputs.js';
 import {

@@ -1,12 +1,37 @@
-export const TICKET_PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'URGENT'] as const;
-export type TicketPriority = (typeof TICKET_PRIORITIES)[number];
+export const TicketPriority = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT',
+} as const;
 
-export const TICKET_STATUSES = [
-  'OPEN',
-  'IN_PROGRESS',
-  'WAITING_CUSTOMER',
-  'ESCALATED',
-  'RESOLVED',
-  'CLOSED',
-] as const;
-export type TicketStatus = (typeof TICKET_STATUSES)[number];
+export type TicketPriority =
+  (typeof TicketPriority)[keyof typeof TicketPriority];
+
+export const TICKET_PRIORITIES = Object.values(TicketPriority);
+
+export const TicketStatus = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  WAITING_CUSTOMER: 'WAITING_CUSTOMER',
+  ESCALATED: 'ESCALATED',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED',
+} as const;
+
+export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
+
+export const TICKET_STATUSES = Object.values(TicketStatus);
+
+export const TicketHistoryEvent = {
+  CREATED: 'CREATED',
+  STATUS_CHANGED: 'STATUS_CHANGED',
+  PRIORITY_CHANGED: 'PRIORITY_CHANGED',
+  ASSIGNED: 'ASSIGNED',
+  CATEGORY_CHANGED: 'CATEGORY_CHANGED',
+} as const;
+
+export type TicketHistoryEvent =
+  (typeof TicketHistoryEvent)[keyof typeof TicketHistoryEvent];
+
+export const TICKET_HISTORY_EVENTS = Object.values(TicketHistoryEvent);

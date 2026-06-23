@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../../shared/errors/app-error.js';
 import type { AssignTicketDto } from '../dtos/assign-ticket.dto.js';
 import type { CreateTicketDto } from '../dtos/create-ticket.dto.js';
+import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
 import type { UpdateTicketStatusDto } from '../dtos/update-ticket-status.dto.js';
 import { TicketsService, ticketsService } from '../services/tickets.service.js';
 
@@ -47,7 +48,8 @@ export class TicketsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const tickets = await this.service.list(getAuthenticatedUser(req));
+      const query = req.query as unknown as ListTicketsQueryDto;
+      const tickets = await this.service.list(getAuthenticatedUser(req), query);
       res.status(200).json(tickets);
     } catch (error) {
       next(error);

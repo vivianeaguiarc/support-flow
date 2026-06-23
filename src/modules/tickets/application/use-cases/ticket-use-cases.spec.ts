@@ -1,11 +1,14 @@
-import type { Customer, Ticket, User } from '@prisma/client';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { UserRole } from '../../../../shared/types/user-role.js';
+import type { Customer } from '../../../customers/domain/customer.entity.js';
+import type { User } from '../../../users/domain/user.entity.js';
 import {
+  type Ticket,
   TicketHistoryEvent,
   TicketPriority,
   TicketStatus,
-  UserRole,
-} from '@prisma/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+} from '../../domain/index.js';
 
 vi.mock('../../repositories/tickets.repository.js', () => ({
   TicketsRepository: vi.fn(),
@@ -67,7 +70,6 @@ const mockAgent: User = {
   email: 'agent@example.com',
   password: 'hashed',
   role: UserRole.AGENT,
-  isActive: true,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
@@ -95,6 +97,7 @@ function createTicketsRepositoryMock(): TicketsRepository {
     findById: vi.fn(),
     findByIdAndTenant: vi.fn(),
     listByTenant: vi.fn(),
+    listWithFilters: vi.fn(),
     list: vi.fn(),
     listByCustomerId: vi.fn(),
     listByAssignedToId: vi.fn(),
@@ -261,15 +264,23 @@ describe('Ticket use cases', () => {
   });
 
   describe('ListTicketsByTenantUseCase', () => {
-    it('should list tickets scoped by tenant', async () => {
-      vi.mocked(ticketsRepository.listByTenant).mockResolvedValue([mockTicket]);
+    it('should list tickets scoped by tenant with filters', async () => {
+      vi.mocked(ticketsRepository.listWithFilters).mockResolvedValue([
+        mockTicket,
+      ]);
 
       const useCase = new ListTicketsByTenantUseCase(ticketsRepository);
-      const result = await useCase.execute({ tenantId: DEFAULT_TENANT_ID });
+      const result = await useCase.execute({
+        tenantId: DEFAULT_TENANT_ID,
+        status: TicketStatus.OPEN,
+        priority: TicketPriority.HIGH,
+      });
 
-      expect(ticketsRepository.listByTenant).toHaveBeenCalledWith(
-        DEFAULT_TENANT_ID,
-      );
+      expect(ticketsRepository.listWithFilters).toHaveBeenCalledWith({
+        tenantId: DEFAULT_TENANT_ID,
+        status: TicketStatus.OPEN,
+        priority: TicketPriority.HIGH,
+      });
       expect(result).toEqual([mockTicket]);
     });
   });

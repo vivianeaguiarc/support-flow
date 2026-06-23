@@ -3,6 +3,8 @@ import { TicketPriority } from '@prisma/client';
 
 import { prisma } from '../../../shared/database/prisma.js';
 import type { CreateTicketDomainInput } from '../domain/ticket.types.js';
+import type { TicketListFilters } from '../domain/ticket-list-filters.js';
+import { buildTicketListWhere } from './build-ticket-list-where.js';
 
 export type CreateTicketInput = CreateTicketDomainInput & {
   status?: TicketStatus;
@@ -40,9 +42,22 @@ export class TicketsRepository {
   }
 
   async listByTenant(tenantId: string): Promise<Ticket[]> {
+    return this.listWithFilters({ tenantId });
+  }
+
+  async listWithFilters(filters: TicketListFilters): Promise<Ticket[]> {
+    const page = filters.page ?? 1;
+    const limit = filters.limit;
+
     return prisma.ticket.findMany({
-      where: { tenantId },
+      where: buildTicketListWhere(filters),
       orderBy: { createdAt: 'desc' },
+      ...(limit
+        ? {
+            take: limit,
+            skip: (page - 1) * limit,
+          }
+        : {}),
     });
   }
 

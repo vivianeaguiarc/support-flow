@@ -1,6 +1,5 @@
-import type { Ticket } from '@prisma/client';
-
 import { AppError } from '../../../../shared/errors/app-error.js';
+import type { Ticket } from '../../domain/ticket.entity.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,

@@ -1,4 +1,4 @@
-import { TicketPriority } from '@prisma/client';
+import { TicketPriority } from './ticket-enums.js';
 
 export const DEFAULT_SLA_FALLBACK_HOURS = 72;
 

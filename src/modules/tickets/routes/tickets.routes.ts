@@ -7,6 +7,7 @@ import { validateRequest } from '../../../shared/http/middlewares/validate-reque
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
+import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
 import { updateTicketStatusSchema } from '../dtos/update-ticket-status.dto.js';
 
@@ -24,6 +25,7 @@ ticketsRouter.get(
   '/',
   authenticate,
   authorize(UserRole.AGENT, UserRole.CUSTOMER),
+  validateRequest({ query: listTicketsQuerySchema }),
   ticketsController.list,
 );
 

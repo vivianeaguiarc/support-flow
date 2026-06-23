@@ -1,6 +1,5 @@
-import { TicketStatus } from '@prisma/client';
-
 import { AppError } from '../../../shared/errors/app-error.js';
+import { TicketStatus } from './ticket-enums.js';
 
 const ALLOWED_STATUS_TRANSITIONS: Record<
   TicketStatus,

@@ -14,9 +14,24 @@ export type OpenTicketInput = {
   changedById?: string;
 };
 
-export type ListTicketsByTenantInput = {
+export type ListTicketsInput = {
   tenantId: string;
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  categoryId?: string;
+  customerId?: string;
+  assignedToId?: string;
+  unassigned?: boolean;
+  overdue?: boolean;
+  search?: string;
+  createdFrom?: Date;
+  createdTo?: Date;
+  page?: number;
+  limit?: number;
 };
+
+/** @deprecated Use ListTicketsInput */
+export type ListTicketsByTenantInput = Pick<ListTicketsInput, 'tenantId'>;
 
 export type FindTicketByIdInput = {
   tenantId: string;

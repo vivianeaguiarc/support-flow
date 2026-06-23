@@ -1,6 +1,4 @@
-import type { Ticket } from '@prisma/client';
-import { TicketHistoryEvent } from '@prisma/client';
-
+import { type Ticket, TicketHistoryEvent } from '../../domain/index.js';
 import { assertAssigneeRequiredForInProgress } from '../../domain/ticket-in-progress.rules.js';
 import { assertValidTicketStatusTransition } from '../../domain/ticket-status-transitions.js';
 import {

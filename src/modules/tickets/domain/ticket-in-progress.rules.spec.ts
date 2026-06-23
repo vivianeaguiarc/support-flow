@@ -1,8 +1,8 @@
-import type { Ticket } from '@prisma/client';
-import { TicketStatus } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import type { Ticket } from './ticket.entity.js';
+import { TicketStatus } from './ticket-enums.js';
 import { assertAssigneeRequiredForInProgress } from './ticket-in-progress.rules.js';
 
 const ticketWithoutAssignee: Pick<Ticket, 'assignedToId'> = {

@@ -1,6 +1,10 @@
-import type { Tenant, TicketCategory } from '@prisma/client';
-import { TicketPriority } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import {
+  type Tenant,
+  type TicketCategory,
+  TicketPriority,
+} from '../../domain/index.js';
 
 vi.mock('../../repositories/tenants.repository.js', () => ({
   TenantsRepository: vi.fn(),

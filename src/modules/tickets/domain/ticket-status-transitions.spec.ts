@@ -1,7 +1,7 @@
-import { TicketStatus } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import { TicketStatus } from './ticket-enums.js';
 import {
   assertValidTicketStatusTransition,
   getAllowedTicketStatusTransitions,

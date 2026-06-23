@@ -121,6 +121,7 @@ function createTicketsRepositoryMock(): TicketsRepository {
     findById: vi.fn(),
     findByIdAndTenant: vi.fn(),
     listByTenant: vi.fn(),
+    listWithFilters: vi.fn(),
     list: vi.fn(),
     listByCustomerId: vi.fn(),
     listByAssignedToId: vi.fn(),

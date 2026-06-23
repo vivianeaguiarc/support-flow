@@ -1,6 +1,6 @@
-import { TicketPriority } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
+import { TicketPriority } from './ticket-enums.js';
 import {
   calculateSlaDueAt,
   DEFAULT_SLA_FALLBACK_HOURS,

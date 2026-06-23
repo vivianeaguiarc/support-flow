@@ -22,6 +22,7 @@ import {
   UpdateTicketStatusUseCase,
   updateTicketStatusUseCase,
 } from '../application/index.js';
+import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -96,13 +97,38 @@ export class TicketsService {
     return this.listTicketHistory.forTicket(ticket.id, ticket.tenantId);
   }
 
-  async list(authUser: AuthenticatedUser): Promise<Ticket[]> {
-    if (authUser.role === UserRole.CUSTOMER) {
-      return this.ticketsRepository.listByCustomerId(authUser.id);
+  async list(
+    authUser: AuthenticatedUser,
+    query: ListTicketsQueryDto = {},
+  ): Promise<Ticket[]> {
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    if (
+      authUser.role === UserRole.CUSTOMER &&
+      query.customerId &&
+      query.customerId !== authUser.id
+    ) {
+      throw new AppError('Forbidden', 403);
     }
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
-    return this.listTickets.execute({ tenantId });
+    const customerId =
+      authUser.role === UserRole.CUSTOMER ? authUser.id : query.customerId;
+
+    return this.listTickets.execute({
+      tenantId,
+      status: query.status,
+      priority: query.priority,
+      categoryId: query.categoryId,
+      customerId,
+      assignedToId: query.assignedToId,
+      unassigned: query.unassigned,
+      overdue: query.overdue,
+      search: query.search,
+      createdFrom: query.createdFrom,
+      createdTo: query.createdTo,
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   async listByCustomerId(
