@@ -1,11 +1,13 @@
-import type { Ticket } from '@prisma/client';
-
 import { AppError } from '../errors/app-error.js';
 
-export function assertTicketForTenant(
-  ticket: Ticket | null,
+type TenantScopedResource = {
+  tenantId: string;
+};
+
+export function assertTicketForTenant<T extends TenantScopedResource>(
+  ticket: T | null,
   tenantId: string,
-): Ticket {
+): T {
   if (!ticket) {
     throw new AppError('Ticket not found', 404);
   }

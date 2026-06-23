@@ -1,7 +1,7 @@
-import type { User, UserRole } from '@prisma/client';
-
 import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
 import { prisma } from '../../../shared/database/prisma.js';
+import type { UserRole } from '../../../shared/types/user-role.js';
+import type { User } from '../domain/user.entity.js';
 
 export type CreateUserInput = {
   tenantId?: string;

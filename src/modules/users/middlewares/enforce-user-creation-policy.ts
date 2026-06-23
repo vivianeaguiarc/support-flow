@@ -1,7 +1,7 @@
-import { UserRole } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import type { CreateUserDto } from '../dtos/create-user.dto.js';
 
 export function enforceUserCreationPolicy(

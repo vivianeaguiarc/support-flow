@@ -1,10 +1,10 @@
-import { UserRole } from '@prisma/client';
 import type { Express } from 'express';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { createApp } from '../../../app.js';
 import { prisma } from '../../../shared/database/prisma.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import {
   disconnectTestDatabase,
   migrateTestDatabase,

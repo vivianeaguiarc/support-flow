@@ -1,8 +1,8 @@
-import { UserRole } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
-import { TicketStatus } from '../../modules/tickets/domain/ticket-enums.js';
 import { AppError } from '../errors/app-error.js';
+import { TicketStatus } from '../types/ticket-status.js';
+import { UserRole } from '../types/user-role.js';
 import {
   assertCanCreateTicket,
   assertCanManageTicket,

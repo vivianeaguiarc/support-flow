@@ -1,8 +1,8 @@
-import { UserRole } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 
 import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
 import { hasAnyRole, isAdmin } from '../../security/rbac.js';
+import { UserRole } from '../../types/user-role.js';
 
 export function authorize(...allowedRoles: UserRole[]) {
   return (req: Request, _res: Response, next: NextFunction): void => {

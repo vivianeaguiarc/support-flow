@@ -1,4 +1,3 @@
-import { UserRole } from '@prisma/client';
 import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
@@ -6,6 +5,7 @@ import { authorize } from '../../../../shared/http/middlewares/authorize.js';
 import { upload } from '../../../../shared/http/middlewares/upload.middleware.js';
 import { validateRequest } from '../../../../shared/http/middlewares/validate-request.js';
 import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
+import { UserRole } from '../../../../shared/types/user-role.js';
 import { ticketAttachmentsController } from '../controllers/ticket-attachments.controller.js';
 import { ticketAutoAssignmentController } from '../controllers/ticket-auto-assignment.controller.js';
 import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';

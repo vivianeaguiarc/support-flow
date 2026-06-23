@@ -1,7 +1,6 @@
-import type { User } from '@prisma/client';
-
 import { AppError } from '../../../shared/errors/app-error.js';
 import { hashPassword } from '../../../shared/security/password-hash.js';
+import type { User } from '../domain/user.entity.js';
 import {
   type CreateUserInput,
   UsersRepository,

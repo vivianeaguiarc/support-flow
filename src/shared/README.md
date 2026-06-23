@@ -6,11 +6,11 @@ Código compartilhado entre módulos. Não contém regra de negócio de um domí
 
 | Pasta        | Responsabilidade                                                             |
 | ------------ | ---------------------------------------------------------------------------- |
-| `constants/` | Valores fixos reutilizáveis (limites, enums, labels)                         |
+| `constants/` | Valores fixos reutilizáveis (limites, upload de anexos)                      |
 | `errors/`    | Erros padronizados (`AppError`, classes HTTP, Prisma mapper, payload de API) |
-| `http/`      | Middlewares, rotas transversais e utilitários HTTP                           |
+| `http/`      | Middlewares, rotas transversais, helpers HTTP e utilitários                  |
 | `logger/`    | Configuração central de logs (Pino)                                          |
-| `types/`     | Tipos genéricos compartilhados entre módulos                                 |
+| `types/`     | Tipos genéricos compartilhados (`UserRole`, `TicketStatus`, JWT payload)     |
 | `utils/`     | Funções utilitárias puras sem dependência de domínio                         |
 
 ## Regra de dependência

@@ -1,8 +1,7 @@
-import { UserRole } from '@prisma/client';
-
-import { TicketStatus } from '../../modules/tickets/domain/ticket-enums.js';
 import { AppError } from '../errors/app-error.js';
 import type { AuthenticatedUser } from '../types/authenticated-user.js';
+import { TicketStatus } from '../types/ticket-status.js';
+import { UserRole } from '../types/user-role.js';
 
 export const ROLE_GROUPS = {
   USER_ADMIN: [UserRole.ADMIN],

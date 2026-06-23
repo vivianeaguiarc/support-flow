@@ -2,67 +2,71 @@
 
 ## Objetivo da arquitetura modular
 
-Esta pasta implementa um **Modular Monolith** com princípios de **Clean Architecture** e **DDD Lite**. O objetivo é organizar o backend em módulos independentes por domínio, cada um com camadas bem definidas, permitindo que o projeto cresça de forma previsível sem acoplamento excessivo.
+Esta pasta implementa um **Modular Monolith** com princípios de **Clean Architecture** e **DDD Lite**. O backend é organizado por domínio de negócio, com camadas bem definidas nos módulos principais.
 
-A regra de dependência é simples: camadas externas dependem das internas, nunca o contrário.
+A regra de dependência é simples: **camadas externas dependem das internas, nunca o contrário**. Módulos podem usar `shared/` e `config/`, mas `shared` **não** importa de `modules`.
+
+## Módulos ativos
+
+| Módulo          | Padrão               | Responsabilidade                                         |
+| --------------- | -------------------- | -------------------------------------------------------- |
+| `tickets`       | Clean Architecture   | Chamados, SLA, roteamento, comentários, anexos, métricas |
+| `notifications` | Clean Architecture   | Notificações por evento de negócio                       |
+| `auth`          | Legado (em evolução) | Login, refresh token, logout                             |
+| `users`         | Legado (em evolução) | Gestão de usuários e perfis                              |
+| `customers`     | Interno              | Entidade referenciada na abertura de chamados            |
+
+## Módulos reservados (stubs)
+
+| Módulo           | Status                                   |
+| ---------------- | ---------------------------------------- |
+| `support`        | Placeholder — não registrado em `app.ts` |
+| `knowledge-base` | Placeholder — não registrado em `app.ts` |
+
+## Clean Architecture (`tickets`, `notifications`)
 
 ```
-Routes → Controllers → Services
+presentation/   → routes, controllers, DTOs (Zod), docs Swagger
+application/    → use cases, services de orquestração, inputs, mappers
+domain/         → entidades, enums, regras puras
+infrastructure/ → repositórios Prisma, query builders
 ```
 
-Módulos podem usar `shared/` e `config/`, mas `shared` **não** importa de `modules`.
+Fluxo:
 
-## Módulos
+```
+HTTP → Route → Middleware → Controller → Use Case / Service → Repository → PostgreSQL
+```
 
-| Módulo           | Responsabilidade futura                     |
-| ---------------- | ------------------------------------------- |
-| `auth`           | Autenticação, sessões e autorização         |
-| `users`          | Gestão de usuários e perfis                 |
-| `tickets`        | Chamados de suporte                         |
-| `support`        | Operações de atendimento e fluxo de suporte |
-| `knowledge-base` | Base de conhecimento e artigos de ajuda     |
+### Camadas
 
-## Camadas
+**Presentation** — apenas HTTP: validação de entrada (DTOs Zod), chamada de use cases/services, mapeamento de resposta.
 
-### Controllers (`controllers/`)
+**Application** — orquestra casos de uso, aplica RBAC quando necessário, coordena repositórios e serviços de evento. Não importa Express nem DTOs de presentation.
 
-Responsáveis **apenas por HTTP**.
+**Domain** — regras de negócio puras (transições de status, SLA, validação de arquivo). Sem Express, sem Prisma.
 
-- Recebem `Request` e `Response`
-- Validam entrada (via DTOs)
-- Chamam o Service correspondente
-- Mapeiam o retorno para status code e JSON
-- **Não** contêm regra de negócio
+**Infrastructure** — persistência (Prisma), adapters e query builders.
 
-### Services (`services/`)
+## Padrão legado (`auth`, `users`)
 
-Responsáveis pela **regra de negócio**.
+```
+routes/ → controllers/ → services/ → repositories/
+```
 
-- Orquestram casos de uso do domínio
-- Aplicam validações de negócio
-- Coordenam repositórios e integrações (quando existirem)
-- **Não** conhecem Express, HTTP ou status codes
-
-### DTOs (`dtos/`)
-
-Responsáveis pela **tipagem de entrada e saída**.
-
-- Definem contratos de dados entre camadas
-- Tipos TypeScript e schemas Zod (futuro)
-- Separam o formato da API do modelo de domínio
-
-### Routes (`routes/`)
-
-Responsáveis pelo **mapeamento das rotas**.
-
-- Definem verbos HTTP, paths e middlewares específicos
-- Conectam endpoints aos Controllers
-- Exportam o `Router` do Express para registro no `app.ts`
+Será migrado gradualmente para o mesmo padrão de `tickets` e `notifications`.
 
 ## Como criar novos módulos
 
 1. Criar pasta em `src/modules/<nome-do-modulo>/`
-2. Adicionar as pastas `controllers/`, `services/`, `routes/` e `dtos/`
-3. Criar `index.ts` em cada pasta e no módulo para exportações
-4. Registrar as rotas em `app.ts` com prefixo `/api/v1/<recurso>`
-5. Implementar na ordem: **DTO → Service → Controller → Routes**
+2. Preferir estrutura Clean Architecture: `domain/`, `application/`, `infrastructure/`, `presentation/`
+3. Registrar rotas em `src/app.ts` com prefixo `/api/v1/<recurso>`
+4. Adicionar testes de integração em `<modulo>/integration/`
+5. Documentar endpoints em `presentation/docs/*.swagger.ts`
+
+## Regras de dependência
+
+- `presentation` → `application` → `domain` ← `infrastructure`
+- `shared/` é transversal; **não** importa de `modules/`
+- Tipos compartilhados entre módulos ficam em `shared/types/` (ex.: `UserRole`, `TicketStatus`)
+- Constantes transversais ficam em `shared/constants/` (ex.: upload de anexos)

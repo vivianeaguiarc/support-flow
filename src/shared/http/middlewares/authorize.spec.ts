@@ -1,8 +1,8 @@
-import { UserRole } from '@prisma/client';
 import type { Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 
 import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
+import { UserRole } from '../../types/user-role.js';
 import { authorize } from './authorize.js';
 
 function createMockRequest(user?: Request['user']): Request {

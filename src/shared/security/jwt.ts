@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 
-import type { UserRole } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../../config/env.js';
+import type { UserRole } from '../types/user-role.js';
 
 export type JwtPayload = {
   id: string;

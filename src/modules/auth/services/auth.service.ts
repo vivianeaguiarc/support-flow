@@ -1,5 +1,3 @@
-import type { User } from '@prisma/client';
-
 import { AppError } from '../../../shared/errors/app-error.js';
 import {
   BusinessEvent,
@@ -13,6 +11,7 @@ import {
 } from '../../../shared/security/jwt.js';
 import { comparePassword } from '../../../shared/security/password-hash.js';
 import { hashRefreshToken } from '../../../shared/security/token-hash.js';
+import type { User } from '../../users/domain/user.entity.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
 import type { RefreshTokensRepository } from '../repositories/refresh-tokens.repository.js';
 

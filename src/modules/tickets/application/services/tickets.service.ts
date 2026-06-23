@@ -1,5 +1,3 @@
-import { UserRole } from '@prisma/client';
-
 import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import {
@@ -9,6 +7,7 @@ import {
   canAccessInternalComments,
 } from '../../../../shared/security/rbac.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
+import { UserRole } from '../../../../shared/types/user-role.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import type {
   TicketAttachment,
@@ -24,9 +23,6 @@ import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
 } from '../../infrastructure/repositories/tickets.repository.js';
-import type { ListTicketsQueryDto } from '../../presentation/dtos/list-tickets-query.dto.js';
-import type { TicketMetricsQueryDto } from '../../presentation/dtos/ticket-metrics-query.dto.js';
-import type { TicketSummaryQueryDto } from '../../presentation/dtos/ticket-summary-query.dto.js';
 import {
   AssignTicketUseCase,
   assignTicketUseCase,
@@ -62,6 +58,11 @@ import {
   UploadTicketAttachmentUseCase,
   uploadTicketAttachmentUseCase,
 } from '../index.js';
+import type {
+  ListTicketsQueryInput,
+  TicketMetricsQueryInput,
+  TicketSummaryQueryInput,
+} from '../inputs/ticket-use-case.inputs.js';
 
 export type CreateTicketServiceInput = {
   title: string;
@@ -141,7 +142,7 @@ export class TicketsService {
 
   async list(
     authUser: AuthenticatedUser,
-    query: ListTicketsQueryDto = {
+    query: ListTicketsQueryInput = {
       page: 1,
       limit: 10,
       sortBy: 'createdAt',
@@ -186,7 +187,7 @@ export class TicketsService {
 
   async summary(
     authUser: AuthenticatedUser,
-    query: TicketSummaryQueryDto = {},
+    query: TicketSummaryQueryInput = {},
   ): Promise<TicketSummary> {
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
@@ -222,7 +223,7 @@ export class TicketsService {
 
   async metrics(
     authUser: AuthenticatedUser,
-    query: TicketMetricsQueryDto = {},
+    query: TicketMetricsQueryInput = {},
   ): Promise<TicketMetrics> {
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 

@@ -1,8 +1,8 @@
-import { UserRole } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import { describe, expect, it, vi } from 'vitest';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import { enforceUserCreationPolicy } from './enforce-user-creation-policy.js';
 
 function createMockResponse(): Response {

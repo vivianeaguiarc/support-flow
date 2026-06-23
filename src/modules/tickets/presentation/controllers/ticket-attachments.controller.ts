@@ -1,20 +1,13 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { AppError } from '../../../../shared/errors/app-error.js';
+import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { handleMulterError } from '../../../../shared/http/middlewares/upload.middleware.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   TicketsService,
   ticketsService,
 } from '../../application/services/tickets.service.js';
-
-function getAuthenticatedUser(req: Request) {
-  if (!req.user) {
-    throw new AppError('Unauthorized', 401);
-  }
-
-  return req.user;
-}
 
 export class TicketAttachmentsController {
   constructor(private readonly service: TicketsService = ticketsService) {}

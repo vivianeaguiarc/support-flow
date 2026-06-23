@@ -36,6 +36,19 @@ export type ListTicketsInput = {
   sortOrder?: TicketListSortOrder;
 };
 
+export type ListTicketsQueryInput = Omit<ListTicketsInput, 'tenantId'>;
+
+export type TicketSummaryQueryInput = Omit<
+  ListTicketsInput,
+  'tenantId' | 'page' | 'limit' | 'sortBy' | 'sortOrder'
+>;
+
+export type TicketMetricsQueryInput = {
+  categoryId?: string;
+  createdFrom?: Date;
+  createdTo?: Date;
+};
+
 /** @deprecated Use ListTicketsInput */
 export type ListTicketsByTenantInput = Pick<ListTicketsInput, 'tenantId'>;
 

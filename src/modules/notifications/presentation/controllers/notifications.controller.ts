@@ -1,20 +1,12 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { AppError } from '../../../../shared/errors/app-error.js';
+import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   NotificationsService,
   notificationsService,
 } from '../../application/services/notifications.service.js';
 import type { ListNotificationsQueryDto } from '../dtos/list-notifications-query.dto.js';
-
-function getAuthenticatedUser(req: Request) {
-  if (!req.user) {
-    throw new AppError('Unauthorized', 401);
-  }
-
-  return req.user;
-}
 
 export class NotificationsController {
   constructor(

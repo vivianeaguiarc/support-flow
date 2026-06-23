@@ -1,4 +1,4 @@
-import type { User } from '@prisma/client';
+import type { User } from '../domain/user.entity.js';
 
 export type PublicUser = Omit<User, 'password'>;
 

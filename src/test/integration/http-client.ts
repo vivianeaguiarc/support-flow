@@ -1,8 +1,8 @@
-import type { UserRole } from '@prisma/client';
 import type { Express } from 'express';
 import request from 'supertest';
 
 import { signToken } from '../../shared/security/jwt.js';
+import type { UserRole } from '../../shared/types/user-role.js';
 
 export async function login(
   app: Express,

@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { AppError } from '../../../../shared/errors/app-error.js';
+import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import {
   TicketsService,
   ticketsService,
@@ -11,14 +11,6 @@ import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
 import type { TicketMetricsQueryDto } from '../dtos/ticket-metrics-query.dto.js';
 import type { TicketSummaryQueryDto } from '../dtos/ticket-summary-query.dto.js';
 import type { UpdateTicketStatusDto } from '../dtos/update-ticket-status.dto.js';
-
-function getAuthenticatedUser(req: Request) {
-  if (!req.user) {
-    throw new AppError('Unauthorized', 401);
-  }
-
-  return req.user;
-}
 
 export class TicketsController {
   constructor(private readonly service: TicketsService = ticketsService) {}

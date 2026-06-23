@@ -1,8 +1,8 @@
 import type { Customer, Tenant, TicketCategory, User } from '@prisma/client';
-import { UserRole } from '@prisma/client';
 
 import { DEFAULT_TENANT_ID } from '../../shared/constants/tenant.js';
 import { hashPassword } from '../../shared/security/password-hash.js';
+import { UserRole } from '../../shared/types/user-role.js';
 import { integrationPrisma } from './database.js';
 
 const DEFAULT_PASSWORD = 'Password123!';

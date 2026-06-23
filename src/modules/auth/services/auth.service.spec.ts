@@ -1,8 +1,9 @@
-import type { RefreshToken, User } from '@prisma/client';
-import { UserRole } from '@prisma/client';
+import type { RefreshToken } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AppError } from '../../../shared/errors/app-error.js';
+import { UserRole } from '../../../shared/types/user-role.js';
+import type { User } from '../../users/domain/user.entity.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
 import type { RefreshTokensRepository } from '../repositories/refresh-tokens.repository.js';
 import { AuthService } from './auth.service.js';

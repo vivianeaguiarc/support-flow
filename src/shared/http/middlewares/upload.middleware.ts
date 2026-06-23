@@ -7,7 +7,7 @@ import { env } from '../../../config/env.js';
 import {
   ALLOWED_EXTENSIONS,
   ALLOWED_MIME_TYPES,
-} from '../../../modules/tickets/domain/ticket-attachment.js';
+} from '../../constants/attachment-upload.js';
 import { AppError } from '../../errors/app-error.js';
 
 const storage = multer.memoryStorage();

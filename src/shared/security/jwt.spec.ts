@@ -1,6 +1,7 @@
-import { UserRole } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { UserRole } from '../types/user-role.js';
 
 const payload = {
   id: 'user-1',

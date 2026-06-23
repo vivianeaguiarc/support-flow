@@ -1,6 +1,7 @@
-import type { User } from '@prisma/client';
-import { UserRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { UserRole } from '../../../shared/types/user-role.js';
+import type { User } from '../domain/user.entity.js';
 
 vi.mock('../repositories/users.repository.js', () => ({
   UsersRepository: vi.fn(),
