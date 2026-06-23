@@ -8,6 +8,7 @@ import { validateRequest } from '../../../shared/http/middlewares/validate-reque
 import { ticketAttachmentsController } from '../controllers/ticket-attachments.controller.js';
 import { ticketAutoAssignmentController } from '../controllers/ticket-auto-assignment.controller.js';
 import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';
+import { ticketPriorityController } from '../controllers/ticket-priority.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
@@ -76,6 +77,14 @@ ticketsRouter.patch(
   authorize(UserRole.AGENT),
   validateRequest({ params: ticketIdParamSchema, body: assignTicketSchema }),
   ticketsController.assign,
+);
+
+ticketsRouter.patch(
+  '/:id/recalculate-priority',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({ params: ticketIdParamSchema }),
+  ticketPriorityController.recalculatePriority,
 );
 
 ticketsRouter.get(

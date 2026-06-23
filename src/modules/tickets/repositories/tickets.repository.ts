@@ -100,6 +100,13 @@ export class TicketsRepository {
     });
   }
 
+  async updatePriority(id: string, priority: string): Promise<Ticket> {
+    return prisma.ticket.update({
+      where: { id },
+      data: { priority: priority as TicketPriority },
+    });
+  }
+
   async assignTo(id: string, assignedToId: string): Promise<Ticket> {
     return prisma.ticket.update({
       where: { id },

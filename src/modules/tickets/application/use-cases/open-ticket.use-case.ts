@@ -32,6 +32,10 @@ import {
 } from '../../repositories/tickets.repository.js';
 import type { OpenTicketInput } from '../inputs/ticket-use-case.inputs.js';
 import {
+  type CalculateTicketPriorityUseCase,
+  calculateTicketPriorityUseCase,
+} from './calculate-ticket-priority.use-case.js';
+import {
   CalculateTicketSlaUseCase,
   calculateTicketSlaUseCase,
 } from './calculate-ticket-sla.use-case.js';
@@ -44,6 +48,7 @@ export class OpenTicketUseCase {
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
     private readonly ticketCategoriesRepository: TicketCategoriesRepository = defaultTicketCategoriesRepository,
     private readonly calculateTicketSla: CalculateTicketSlaUseCase = calculateTicketSlaUseCase,
+    private readonly calculateTicketPriority: CalculateTicketPriorityUseCase = calculateTicketPriorityUseCase,
     private readonly notificationService: NotificationEventService = notificationEventService,
   ) {}
 
@@ -58,9 +63,20 @@ export class OpenTicketUseCase {
       await this.ensureAgent(input.assignedToId, input.tenantId);
     }
 
+    const priorityResult = await this.calculateTicketPriority.execute({
+      tenantId: input.tenantId,
+      title: input.title,
+      description: input.description,
+      categoryId: input.categoryId,
+      currentPriority: input.priority,
+      manuallySet: false,
+    });
+
+    const finalPriority = priorityResult.suggestedPriority;
+
     const slaDueAt = await this.calculateTicketSla.execute({
       tenantId: input.tenantId,
-      priority: input.priority,
+      priority: finalPriority,
       categoryId: input.categoryId,
     });
 
@@ -70,7 +86,7 @@ export class OpenTicketUseCase {
       title: input.title,
       description: input.description,
       customerId: input.customerId,
-      priority: input.priority,
+      priority: finalPriority,
       categoryId: input.categoryId,
       assignedToId: input.assignedToId,
       slaDueAt,
@@ -83,6 +99,18 @@ export class OpenTicketUseCase {
       event: TicketHistoryEvent.CREATED,
       changedById: input.changedById,
     });
+
+    if (priorityResult.priorityChanged && input.priority !== finalPriority) {
+      await this.ticketHistoryRepository.create({
+        tenantId: input.tenantId,
+        ticketId: ticket.id,
+        event: TicketHistoryEvent.PRIORITY_CHANGED,
+        field: 'priority',
+        oldValue: input.priority || 'LOW',
+        newValue: finalPriority,
+        changedById: null,
+      });
+    }
 
     if (input.assignedToId) {
       await this.ticketHistoryRepository.create({
