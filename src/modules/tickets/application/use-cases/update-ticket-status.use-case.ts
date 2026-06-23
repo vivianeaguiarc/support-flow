@@ -1,3 +1,7 @@
+import {
+  type NotificationEventService,
+  notificationEventService,
+} from '../../../notifications/services/notification-event.service.js';
 import { type Ticket, TicketHistoryEvent } from '../../domain/index.js';
 import { assertAssigneeRequiredForInProgress } from '../../domain/ticket-in-progress.rules.js';
 import { assertValidTicketStatusTransition } from '../../domain/ticket-status-transitions.js';
@@ -20,6 +24,7 @@ export class UpdateTicketStatusUseCase {
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
+    private readonly notificationService: NotificationEventService = notificationEventService,
   ) {}
 
   async execute(input: UpdateTicketStatusInput): Promise<Ticket> {
@@ -45,6 +50,12 @@ export class UpdateTicketStatusUseCase {
       newValue: input.status,
       changedById: input.changedById,
     });
+
+    await this.notificationService.notifyTicketStatusChanged(
+      updatedTicket,
+      ticket.status,
+      input.status,
+    );
 
     return updatedTicket;
   }

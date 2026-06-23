@@ -1,5 +1,9 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
 import { fileStorageService } from '../../../../shared/storage/file-storage.service.js';
+import {
+  type NotificationEventService,
+  notificationEventService,
+} from '../../../notifications/services/notification-event.service.js';
 import type { TicketAttachment } from '../../domain/ticket-attachment.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
@@ -28,6 +32,7 @@ export class UploadTicketAttachmentUseCase {
     private readonly attachmentsRepo: TicketAttachmentsRepository = ticketAttachmentsRepository,
     private readonly historyRepo: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly storageService = fileStorageService,
+    private readonly notificationService: NotificationEventService = notificationEventService,
   ) {}
 
   async execute(input: UploadTicketAttachmentInput): Promise<TicketAttachment> {
@@ -69,6 +74,12 @@ export class UploadTicketAttachmentUseCase {
       field: 'attachment',
       newValue: input.file.originalname,
     });
+
+    await this.notificationService.notifyAttachmentAdded(
+      ticket,
+      input.uploadedById,
+      input.file.originalname,
+    );
 
     return attachment;
   }

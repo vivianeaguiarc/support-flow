@@ -1,6 +1,13 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
+import {
+  type NotificationEventService,
+  notificationEventService,
+} from '../../../notifications/services/notification-event.service.js';
 import type { TicketComment } from '../../domain/ticket-comment.js';
-import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
+import {
+  CommentVisibility,
+  TicketHistoryEvent,
+} from '../../domain/ticket-enums.js';
 import {
   type TicketCommentsRepository,
   ticketCommentsRepository,
@@ -26,6 +33,7 @@ export class CreateTicketCommentUseCase {
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
     private readonly commentsRepo: TicketCommentsRepository = ticketCommentsRepository,
     private readonly historyRepo: TicketHistoryRepository = defaultTicketHistoryRepository,
+    private readonly notificationService: NotificationEventService = notificationEventService,
   ) {}
 
   async execute(input: CreateTicketCommentInput): Promise<TicketComment> {
@@ -57,6 +65,12 @@ export class CreateTicketCommentUseCase {
       field: 'comment',
       newValue: `Comment added by user ${input.authorId}`,
     });
+
+    await this.notificationService.notifyCommentAdded(
+      ticket,
+      input.authorId,
+      comment.visibility === CommentVisibility.INTERNAL,
+    );
 
     return comment;
   }

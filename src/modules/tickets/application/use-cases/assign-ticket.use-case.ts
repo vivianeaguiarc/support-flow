@@ -1,6 +1,10 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
 import { UserRole } from '../../../../shared/types/user-role.js';
 import {
+  type NotificationEventService,
+  notificationEventService,
+} from '../../../notifications/services/notification-event.service.js';
+import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
@@ -25,6 +29,7 @@ export class AssignTicketUseCase {
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
+    private readonly notificationService: NotificationEventService = notificationEventService,
   ) {}
 
   async execute(input: AssignTicketInput): Promise<Ticket> {
@@ -49,6 +54,11 @@ export class AssignTicketUseCase {
       newValue: input.assignedToId,
       changedById: input.changedById,
     });
+
+    await this.notificationService.notifyTicketAssigned(
+      updatedTicket,
+      input.assignedToId,
+    );
 
     return updatedTicket;
   }

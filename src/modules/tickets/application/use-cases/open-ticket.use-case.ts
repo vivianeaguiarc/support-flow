@@ -5,6 +5,10 @@ import {
   customersRepository as defaultCustomersRepository,
 } from '../../../customers/repositories/customers.repository.js';
 import {
+  type NotificationEventService,
+  notificationEventService,
+} from '../../../notifications/services/notification-event.service.js';
+import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
@@ -40,6 +44,7 @@ export class OpenTicketUseCase {
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
     private readonly ticketCategoriesRepository: TicketCategoriesRepository = defaultTicketCategoriesRepository,
     private readonly calculateTicketSla: CalculateTicketSlaUseCase = calculateTicketSlaUseCase,
+    private readonly notificationService: NotificationEventService = notificationEventService,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
@@ -90,6 +95,11 @@ export class OpenTicketUseCase {
         changedById: input.changedById,
       });
     }
+
+    await this.notificationService.notifyTicketCreated(
+      ticket,
+      input.customerId,
+    );
 
     return ticket;
   }

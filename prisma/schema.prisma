@@ -43,6 +43,16 @@ enum CommentVisibility {
   INTERNAL
 }
 
+enum NotificationType {
+  TICKET_CREATED
+  TICKET_ASSIGNED
+  TICKET_STATUS_CHANGED
+  TICKET_COMMENT_ADDED
+  TICKET_ATTACHMENT_ADDED
+  SLA_WARNING
+  SLA_EXPIRED
+}
+
 model Tenant {
   id               String   @id @default(uuid())
   name             String
@@ -52,13 +62,14 @@ model Tenant {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  users       User[]
-  customers   Customer[]
-  categories  TicketCategory[]
-  tickets     Ticket[]
-  histories   TicketHistory[]
-  comments    TicketComment[]
-  attachments TicketAttachment[]
+  users         User[]
+  customers     Customer[]
+  categories    TicketCategory[]
+  tickets       Ticket[]
+  histories     TicketHistory[]
+  comments      TicketComment[]
+  attachments   TicketAttachment[]
+  notifications Notification[]
 
   @@map("tenants")
 }
@@ -73,11 +84,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant           Tenant             @relation(fields: [tenantId], references: [id])
-  ticketsAssigned  Ticket[]           @relation("TicketAssignee")
-  ticketHistory    TicketHistory[]    @relation("TicketHistoryActor")
-  ticketComments   TicketComment[]    @relation("CommentAuthor")
+  tenant            Tenant             @relation(fields: [tenantId], references: [id])
+  ticketsAssigned   Ticket[]           @relation("TicketAssignee")
+  ticketHistory     TicketHistory[]    @relation("TicketHistoryActor")
+  ticketComments    TicketComment[]    @relation("CommentAuthor")
   ticketAttachments TicketAttachment[] @relation("AttachmentUploader")
+  notifications     Notification[]     @relation("NotificationRecipient")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -137,13 +149,14 @@ model Ticket {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  tenant      Tenant             @relation(fields: [tenantId], references: [id])
-  customer    Customer           @relation(fields: [customerId], references: [id])
-  category    TicketCategory?    @relation(fields: [categoryId], references: [id])
-  assignedTo  User?              @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  history     TicketHistory[]
-  comments    TicketComment[]
-  attachments TicketAttachment[]
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  customer      Customer           @relation(fields: [customerId], references: [id])
+  category      TicketCategory?    @relation(fields: [categoryId], references: [id])
+  assignedTo    User?              @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  history       TicketHistory[]
+  comments      TicketComment[]
+  attachments   TicketAttachment[]
+  notifications Notification[]
 
   @@unique([tenantId, protocol])
   @@index([tenantId])
@@ -219,4 +232,26 @@ model TicketAttachment {
   @@index([ticketId])
   @@index([uploadedById])
   @@map("ticket_attachments")
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  tenantId    String
+  recipientId String
+  ticketId    String
+  type        NotificationType
+  title       String
+  message     String
+  readAt      DateTime?
+  createdAt   DateTime         @default(now())
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  recipient User   @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  ticket    Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([recipientId])
+  @@index([ticketId])
+  @@index([readAt])
+  @@map("notifications")
 }
