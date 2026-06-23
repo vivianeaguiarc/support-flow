@@ -64,7 +64,11 @@ const envSchema = z
     DATABASE_URL_TEST: z.string().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.NODE_ENV === 'production' && data.JWT_SECRET.length < 32) {
+    if (data.NODE_ENV !== 'production') {
+      return;
+    }
+
+    if (data.JWT_SECRET.length < 32) {
       ctx.addIssue({
         code: 'custom',
         path: ['JWT_SECRET'],
@@ -72,12 +76,25 @@ const envSchema = z
       });
     }
 
-    if (data.NODE_ENV === 'production' && data.JWT_REFRESH_SECRET.length < 32) {
+    if (data.JWT_REFRESH_SECRET.length < 32) {
       ctx.addIssue({
         code: 'custom',
         path: ['JWT_REFRESH_SECRET'],
         message:
           'JWT_REFRESH_SECRET must be at least 32 characters in production',
+      });
+    }
+
+    const databaseHost = data.DATABASE_URL.toLowerCase();
+    if (
+      databaseHost.includes('localhost') ||
+      databaseHost.includes('127.0.0.1')
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message:
+          'DATABASE_URL must not point to localhost in production — use a managed PostgreSQL instance',
       });
     }
   });
@@ -123,7 +140,7 @@ export const env = {
   LOG_LEVEL: resolveDefaultLogLevel(),
   uploadMaxSizeBytes: parsed.UPLOAD_MAX_SIZE_MB * 1024 * 1024,
   uploadDirAbsolute: resolveUploadDir(parsed.UPLOAD_DIR),
-  swaggerEnabled: parsed.SWAGGER_ENABLED ?? parsed.NODE_ENV !== 'production',
+  swaggerEnabled: parsed.SWAGGER_ENABLED ?? true,
 };
 
 export type Env = typeof env;

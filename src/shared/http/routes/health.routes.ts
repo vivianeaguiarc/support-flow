@@ -10,6 +10,7 @@ healthRouter.get('/', (_req, res) => {
     status: 'ok',
     service: 'supportflow-backend',
     environment: env.NODE_ENV,
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -20,6 +21,7 @@ healthRouter.get('/ready', async (_req, res) => {
     res.status(200).json({
       status: 'ready',
       service: 'supportflow-backend',
+      timestamp: new Date().toISOString(),
       checks: {
         database: 'up',
       },
@@ -28,6 +30,7 @@ healthRouter.get('/ready', async (_req, res) => {
     res.status(503).json({
       status: 'not_ready',
       service: 'supportflow-backend',
+      timestamp: new Date().toISOString(),
       checks: {
         database: 'down',
       },

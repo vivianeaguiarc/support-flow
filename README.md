@@ -55,7 +55,7 @@ O SupportFlow Backend entrega essa base como **API modular**, pronta para integr
 
 - Health check: `GET /health` (liveness) e `GET /health/ready` (readiness + banco)
 - Logs estruturados com Pino
-- Documentação **Swagger/OpenAPI** em desenvolvimento
+- Documentação **Swagger/OpenAPI** (`/api/docs`, habilitado por padrão)
 
 ---
 
@@ -218,27 +218,22 @@ O mesmo erro aparece ao executar `pnpm dev`, `pnpm start` ou `pnpm build` (o mó
 
 ---
 
-## Como rodar com Docker
+## Deploy em produção
 
-### Stack completa (API + PostgreSQL)
+Guia completo: **[docs/deploy.md](docs/deploy.md)**
 
-```bash
-docker compose up --build
-```
+Resumo:
 
-- API: http://localhost:3000
-- Health: http://localhost:3000/health
-- Readiness: http://localhost:3000/health/ready
-
-O entrypoint executa `prisma migrate deploy` antes de subir o servidor.
-
-### Apenas o banco (desenvolvimento com hot reload)
+- Imagem Docker multi-stage (`Dockerfile`) com `NODE_ENV=production`
+- Entrypoint: `prisma migrate deploy` → `node dist/server.js`
+- Variáveis de exemplo: [`.env.production.example`](.env.production.example)
+- Blueprint Render: [`render.yaml`](render.yaml)
+- Health: `GET /health` (liveness) · `GET /health/ready` (readiness + banco)
 
 ```bash
-docker compose up -d postgres
+pnpm docker:build
+docker compose up --build   # stack local API + Postgres
 ```
-
-Detalhes adicionais em [docs/DOCKER.md](docs/DOCKER.md).
 
 ---
 
@@ -357,7 +352,7 @@ Com o servidor em execução (modo development):
 | UI interativa | http://localhost:3000/api/docs      |
 | Spec JSON     | http://localhost:3000/api/docs.json |
 
-Em `production`, o Swagger fica **desligado por padrão**. Para forçar: `SWAGGER_ENABLED=true`.
+O Swagger fica **habilitado por padrão** em todos os ambientes. Para desligar em produção: `SWAGGER_ENABLED=false`.
 
 Documentação gerada a partir de JSDoc nos arquivos `*.swagger.ts` de cada módulo.
 
@@ -371,7 +366,10 @@ Documentação gerada a partir de JSDoc nos arquivos `*.swagger.ts` de cada mód
 | `pnpm build`                        | Compila TypeScript (`dist/`)                                           |
 | `pnpm start` / `pnpm start:prod`    | Executa build compilado                                                |
 | `pnpm start:docker`                 | Entrypoint Docker (migrate + start)                                    |
+| `pnpm migrate:deploy`               | Aplica migrations em produção (`prisma migrate deploy`)                |
 | `pnpm docker:build`                 | Build da imagem Docker                                                 |
+| `pnpm docker:run`                   | Executa container local (requer env vars)                              |
+| `pnpm env:check`                    | Valida variáveis de ambiente                                           |
 | `pnpm lint` / `pnpm lint:fix`       | ESLint                                                                 |
 | `pnpm format` / `pnpm format:check` | Prettier                                                               |
 | `pnpm typecheck`                    | `tsc --noEmit`                                                         |
@@ -414,7 +412,7 @@ Variáveis no CI:
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/supportflow_test?schema=public
 ```
 
-Deploy automatizado ainda não configurado — a imagem Docker está pronta para Render, Railway, Fly.io ou VPS.
+Deploy automatizado via blueprint Render ([`render.yaml`](render.yaml)). Guia completo em [docs/deploy.md](docs/deploy.md).
 
 ---
 
@@ -427,21 +425,20 @@ Deploy automatizado ainda não configurado — a imagem Docker está pronta para
 5. **Zod na borda HTTP** — validação declarativa e mensagens de erro consistentes.
 6. **Testes em duas camadas** — unitários rápidos (use cases com mocks) + integração com banco real (Supertest).
 7. **Docker multi-stage** — imagem enxuta, usuário não-root, health check e migrate no entrypoint.
-8. **Swagger desligado em production por padrão** — reduz superfície de exposição; habilitável via env.
+8. **Swagger habilitado por padrão** — `SWAGGER_ENABLED=false` desliga em produção se necessário.
 9. **Histórico como trilha de auditoria** — eventos imutáveis em `TicketHistory`, não apenas log de aplicação.
 
 ---
 
 ## Roadmap backend
 
-- [ ] Job de **testes de integração** no GitHub Actions (PostgreSQL service container)
 - [ ] Endpoint autenticado de **download de anexos** (sem expor `storagePath`)
 - [ ] Comentários com visibilidade **pública** para clientes
 - [ ] Módulo **knowledge-base** (artigos de ajuda)
 - [ ] Refatorar módulos `auth` e `users` para Clean Architecture
 - [ ] Scheduler/cron para SLA e escalação em background
 - [ ] Seed de dados iniciais (tenant + admin) para deploy
-- [ ] Deploy automatizado (staging/produção)
+- [ ] Deploy automatizado staging (GitHub Actions → Render/Railway)
 
 ---
 

@@ -7,6 +7,14 @@ export function bootstrap(): void {
   const app = createApp({ swagger: swaggerEnabled });
 
   app.listen(env.PORT, () => {
-    logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Server started');
+    logger.info(
+      {
+        port: env.PORT,
+        env: env.NODE_ENV,
+        swagger: swaggerEnabled,
+        ...(swaggerEnabled ? { docsPath: '/api/docs' } : {}),
+      },
+      'Server started',
+    );
   });
 }

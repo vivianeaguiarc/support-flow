@@ -38,12 +38,24 @@ services:
       RATE_LIMIT_ENABLED: 'true'
       UPLOAD_MAX_SIZE_MB: 10
       UPLOAD_DIR: storage/attachments
-      SWAGGER_ENABLED: 'false'
+      SWAGGER_ENABLED: 'true'
     volumes:
       - supportflow_uploads:/app/storage/attachments
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/health/ready').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
 
 volumes:
   supportflow_postgres_data:

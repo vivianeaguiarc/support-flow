@@ -59,7 +59,14 @@ export function errorHandler(
     return;
   }
 
-  logger.error({ err, requestId, stack: err.stack }, 'Unexpected error');
+  logger.error(
+    {
+      requestId,
+      error: { name: err.name, message: err.message },
+      ...(env.NODE_ENV !== 'production' ? { stack: err.stack } : {}),
+    },
+    'Unexpected error',
+  );
 
   res.status(500).json({
     statusCode: 500,

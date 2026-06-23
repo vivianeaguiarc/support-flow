@@ -19,6 +19,13 @@ COPY src ./src
 RUN pnpm prisma:generate
 RUN pnpm build
 
+FROM deps AS prod-deps
+ENV HUSKY=0
+COPY prisma ./prisma
+COPY prisma.config.ts ./
+RUN pnpm prisma:generate
+RUN pnpm prune --prod --ignore-scripts
+
 FROM base AS runner
 ENV NODE_ENV=production
 ENV HUSKY=0
@@ -32,7 +39,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 COPY scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
 
 RUN chmod +x ./scripts/docker-entrypoint.sh \
@@ -42,7 +49,7 @@ USER nodejs
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
 CMD ["./scripts/docker-entrypoint.sh"]
