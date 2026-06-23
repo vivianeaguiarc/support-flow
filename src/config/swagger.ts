@@ -42,16 +42,17 @@ const options: Options = {
       schemas: {
         Error: {
           type: 'object',
+          required: ['statusCode', 'message'],
           properties: {
-            error: {
-              type: 'string',
-              description: 'Error message',
-              example: 'Resource not found',
-            },
             statusCode: {
               type: 'integer',
               description: 'HTTP status code',
               example: 404,
+            },
+            message: {
+              type: 'string',
+              description: 'Mensagem de erro',
+              example: 'Ticket not found',
             },
           },
         },
@@ -515,57 +516,75 @@ const options: Options = {
         TicketMetrics: {
           type: 'object',
           properties: {
-            averageResolutionTime: {
+            avgResolutionTimeHours: {
               type: 'number',
-              nullable: true,
               description: 'Tempo médio de resolução em horas',
               example: 24.5,
-            },
-            resolvedTicketsCount: {
-              type: 'integer',
-              description: 'Número de chamados resolvidos',
-              example: 42,
-            },
-            overdueTicketsCount: {
-              type: 'integer',
-              description: 'Número de chamados vencidos',
-              example: 8,
             },
             slaComplianceRate: {
               type: 'number',
               description: 'Taxa de cumprimento de SLA (%)',
               example: 85.5,
             },
-            byAgent: {
+            resolvedTickets: {
+              type: 'integer',
+              description: 'Número de chamados resolvidos no período',
+              example: 42,
+            },
+            overdueTickets: {
+              type: 'integer',
+              description: 'Número de chamados vencidos (SLA)',
+              example: 8,
+            },
+            agentPerformance: {
               type: 'array',
-              description: 'Performance por agente',
+              description:
+                'Performance por agente, ordenada por volume de resoluções',
               items: {
-                type: 'object',
-                properties: {
-                  agentId: {
-                    type: 'string',
-                    format: 'uuid',
-                  },
-                  agentName: {
-                    type: 'string',
-                    example: 'João Silva',
-                  },
-                  resolvedCount: {
-                    type: 'integer',
-                    example: 15,
-                  },
-                  averageResolutionTime: {
-                    type: 'number',
-                    nullable: true,
-                    example: 22.3,
-                  },
-                },
+                $ref: '#/components/schemas/AgentPerformance',
               },
+            },
+          },
+        },
+        AgentPerformance: {
+          type: 'object',
+          properties: {
+            agentId: {
+              type: 'string',
+              format: 'uuid',
+            },
+            agentName: {
+              type: 'string',
+              example: 'Maria Santos',
+            },
+            resolvedTickets: {
+              type: 'integer',
+              example: 15,
+            },
+            avgResolutionTimeHours: {
+              type: 'number',
+              example: 22.3,
+            },
+          },
+        },
+        TicketStatusTransitions: {
+          type: 'object',
+          properties: {
+            currentStatus: {
+              $ref: '#/components/schemas/TicketStatus',
+            },
+            allowedTransitions: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/TicketStatus',
+              },
+              description: 'Status permitidos a partir do estado atual',
             },
           },
         },
         PaginatedTickets: {
           type: 'object',
+          required: ['data', 'total', 'page', 'limit'],
           properties: {
             data: {
               type: 'array',
@@ -588,6 +607,30 @@ const options: Options = {
               description: 'Itens por página',
               example: 10,
             },
+          },
+          example: {
+            data: [
+              {
+                id: '550e8400-e29b-41d4-a716-446655440000',
+                tenantId: '660e8400-e29b-41d4-a716-446655440001',
+                protocol: 'TK-2026-004521',
+                title: 'Reclamação Ouvidoria — reembolso não creditado',
+                description:
+                  'Cliente formalizou reclamação na Ouvidoria após 15 dias úteis sem crédito do estorno solicitado no SAC.',
+                status: 'ESCALATED',
+                priority: 'URGENT',
+                customerId: '770e8400-e29b-41d4-a716-446655440002',
+                categoryId: '880e8400-e29b-41d4-a716-446655440003',
+                assignedToId: '990e8400-e29b-41d4-a716-446655440004',
+                slaDueAt: '2026-06-25T18:00:00.000Z',
+                closedAt: null,
+                createdAt: '2026-06-23T10:30:00.000Z',
+                updatedAt: '2026-06-23T14:15:00.000Z',
+              },
+            ],
+            total: 150,
+            page: 1,
+            limit: 10,
           },
         },
         RouteTicketResponse: {
@@ -629,7 +672,8 @@ const options: Options = {
       },
       {
         name: 'Tickets',
-        description: 'Gerenciamento de chamados/tickets',
+        description:
+          'Gerenciamento de chamados de SAC e Ouvidoria — criação, listagem, status, atribuição, histórico e métricas',
       },
       {
         name: 'Ticket History',
