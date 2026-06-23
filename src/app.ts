@@ -1,7 +1,6 @@
 import express from 'express';
-import swaggerUi from 'swagger-ui-express';
 
-import { swaggerSpec } from './config/swagger.js';
+import { setupSwagger } from './config/setup-swagger.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { notificationsRouter } from './modules/notifications/routes/notifications.routes.js';
 import { ticketsRouter } from './modules/tickets/routes/tickets.routes.js';
@@ -13,27 +12,17 @@ import { securityMiddleware } from './shared/http/middlewares/security.js';
 import { healthRouter } from './shared/http/routes/health.routes.js';
 import { httpLogger } from './shared/logger/http-logger.js';
 
-export function createApp() {
+type CreateAppOptions = {
+  swagger?: boolean;
+};
+
+export function createApp(options: CreateAppOptions = {}) {
   const app = express();
 
   app.use(httpLogger);
   app.use(...securityMiddleware);
   app.use(rateLimitMiddleware);
   app.use(express.json());
-
-  app.use(
-    '/api-docs',
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerSpec, {
-      customCss: '.swagger-ui .topbar { display: none }',
-      customSiteTitle: 'SupportFlow API Documentation',
-    }),
-  );
-
-  app.get('/api-docs.json', (_req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.send(swaggerSpec);
-  });
 
   const apiRouter = express.Router();
   apiRouter.use('/health', healthRouter);
@@ -42,6 +31,10 @@ export function createApp() {
   apiRouter.use('/tickets', ticketsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   app.use('/api/v1', apiRouter);
+
+  if (options.swagger) {
+    setupSwagger(app);
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);

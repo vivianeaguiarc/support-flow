@@ -8,7 +8,7 @@ const options: Options = {
     openapi: '3.0.0',
     info: {
       title: 'SupportFlow API',
-      version: '1.0.0',
+      version: '1.0',
       description:
         'API completa para gerenciamento de atendimento ao cliente, SAC e Ouvidoria',
       contact: {
