@@ -322,23 +322,40 @@ Em Docker/produção, as migrations rodam automaticamente via `scripts/docker-en
 
 ## Testes
 
+### Validar antes de commitar (espelha o CI do GitHub Actions)
+
 ```bash
-# Preparar banco de teste (Docker + migrate)
+# Pipeline completo — quality + integração/E2E
+pnpm ci:full
+
+# Equivalente manual:
+pnpm ci:check && pnpm test:db:prepare && pnpm prisma:deploy && pnpm test:integration
+```
+
+| Script                | Espelha o job CI                                                       |
+| --------------------- | ---------------------------------------------------------------------- |
+| `pnpm ci:check`       | **Quality checks** (format, lint, typecheck, prisma, unitários, build) |
+| `pnpm ci:integration` | **Integration tests** (generate, migrate deploy, E2E)                  |
+| `pnpm ci:full`        | Ambos os jobs, em sequência                                            |
+
+Requisitos para integração: Docker rodando (Postgres em `localhost:5433` via `docker compose`).
+
+### Comandos individuais
+
+```bash
+# Preparar banco de teste (Docker + database supportflow_test)
 pnpm test:db:prepare
 
-# Testes unitários (~87)
+# Testes unitários (131)
 pnpm test
 
-# Testes de integração (~149) — requer PostgreSQL em localhost:5433
+# Testes de integração/E2E (160) — requer PostgreSQL em localhost:5433
 pnpm test:integration
 # alias equivalente
 pnpm test:e2e
 
 # Cobertura
 pnpm test:coverage
-
-# Pipeline local equivalente ao CI
-pnpm run ci:check
 ```
 
 ---
@@ -360,22 +377,24 @@ Documentação gerada a partir de JSDoc nos arquivos `*.swagger.ts` de cada mód
 
 ## Scripts disponíveis
 
-| Script                              | Descrição                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm dev`                          | Servidor com `tsx watch`                                               |
-| `pnpm build`                        | Compila TypeScript (`dist/`)                                           |
-| `pnpm start` / `pnpm start:prod`    | Executa build compilado                                                |
-| `pnpm start:docker`                 | Entrypoint Docker (migrate + start)                                    |
-| `pnpm migrate:deploy`               | Aplica migrations em produção (`prisma migrate deploy`)                |
-| `pnpm docker:build`                 | Build da imagem Docker                                                 |
-| `pnpm docker:run`                   | Executa container local (requer env vars)                              |
-| `pnpm env:check`                    | Valida variáveis de ambiente                                           |
-| `pnpm lint` / `pnpm lint:fix`       | ESLint                                                                 |
-| `pnpm format` / `pnpm format:check` | Prettier                                                               |
-| `pnpm typecheck`                    | `tsc --noEmit`                                                         |
-| `pnpm ci:check`                     | Pipeline completo local (format, lint, typecheck, prisma, test, build) |
-| `pnpm db:up` / `pnpm db:down`       | Sobe/para containers Docker                                            |
-| `pnpm test:db:prepare`              | Prepara banco para integração                                          |
+| Script                              | Descrição                                               |
+| ----------------------------------- | ------------------------------------------------------- |
+| `pnpm dev`                          | Servidor com `tsx watch`                                |
+| `pnpm build`                        | Compila TypeScript (`dist/`)                            |
+| `pnpm start` / `pnpm start:prod`    | Executa build compilado                                 |
+| `pnpm start:docker`                 | Entrypoint Docker (migrate + start)                     |
+| `pnpm migrate:deploy`               | Aplica migrations em produção (`prisma migrate deploy`) |
+| `pnpm docker:build`                 | Build da imagem Docker                                  |
+| `pnpm docker:run`                   | Executa container local (requer env vars)               |
+| `pnpm env:check`                    | Valida variáveis de ambiente                            |
+| `pnpm lint` / `pnpm lint:fix`       | ESLint                                                  |
+| `pnpm format` / `pnpm format:check` | Prettier                                                |
+| `pnpm typecheck`                    | `tsc --noEmit`                                          |
+| `pnpm ci:check`                     | Pipeline quality (format, lint, typecheck, test, build) |
+| `pnpm ci:integration`               | Pipeline integração (prisma generate/deploy + E2E)      |
+| `pnpm ci:full`                      | Pipeline completo local (espelha GitHub Actions)        |
+| `pnpm db:up` / `pnpm db:down`       | Sobe/para containers Docker                             |
+| `pnpm test:db:prepare`              | Prepara banco para integração                           |
 
 ---
 

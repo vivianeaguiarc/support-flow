@@ -21,6 +21,8 @@
     "prisma:validate": "prisma validate",
     "env:check": "node --import tsx -e \"import './src/config/env.ts'; console.log('Environment configuration is valid')\"",
     "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm prisma:validate && pnpm prisma:generate && pnpm test && pnpm build",
+    "ci:integration": "pnpm prisma:generate && pnpm prisma:deploy && pnpm test:integration",
+    "ci:full": "pnpm ci:check && pnpm test:db:prepare && pnpm ci:integration",
     "prepare": "husky",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
