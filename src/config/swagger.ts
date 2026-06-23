@@ -92,8 +92,50 @@ const options: Options = {
             'SLA_WARNING',
             'SLA_EXPIRED',
           ],
-          description: 'Tipo de notificação',
+          description: 'Tipo de notificação do sistema',
           example: 'TICKET_ASSIGNED',
+        },
+        CommentVisibility: {
+          type: 'string',
+          enum: ['INTERNAL'],
+          description:
+            'Visibilidade do comentário — atualmente todos são internos (não visíveis ao cliente)',
+          example: 'INTERNAL',
+        },
+        UserSummary: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            name: {
+              type: 'string',
+              example: 'Maria Santos',
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'maria.santos@supportflow.com',
+            },
+          },
+        },
+        TicketSummaryRef: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            protocol: {
+              type: 'string',
+              example: 'TK-2026-004521',
+            },
+            title: {
+              type: 'string',
+              example: 'Reclamação Ouvidoria — reembolso não creditado',
+            },
+          },
         },
         TicketHistoryEvent: {
           type: 'string',
@@ -272,10 +314,7 @@ const options: Options = {
               example: 'Cliente confirmou o recebimento do reembolso',
             },
             visibility: {
-              type: 'string',
-              enum: ['INTERNAL'],
-              description: 'Visibilidade do comentário',
-              example: 'INTERNAL',
+              $ref: '#/components/schemas/CommentVisibility',
             },
             createdAt: {
               type: 'string',
@@ -287,6 +326,19 @@ const options: Options = {
             },
           },
         },
+        TicketCommentWithAuthor: {
+          allOf: [
+            { $ref: '#/components/schemas/TicketComment' },
+            {
+              type: 'object',
+              properties: {
+                author: {
+                  $ref: '#/components/schemas/UserSummary',
+                },
+              },
+            },
+          ],
+        },
         CreateCommentRequest: {
           type: 'object',
           required: ['content'],
@@ -294,8 +346,10 @@ const options: Options = {
             content: {
               type: 'string',
               minLength: 1,
-              description: 'Conteúdo do comentário',
-              example: 'Entramos em contato com o cliente por telefone',
+              maxLength: 5000,
+              description: 'Conteúdo do comentário interno',
+              example:
+                'Contato telefônico realizado — cliente confirmou recebimento do estorno de R$ 249,90',
             },
           },
         },
@@ -334,9 +388,10 @@ const options: Options = {
               example: 'application/pdf',
             },
             size: {
-              type: 'integer',
-              description: 'Tamanho do arquivo em bytes',
-              example: 245678,
+              type: 'string',
+              description:
+                'Tamanho do arquivo em bytes (serializado como string por compatibilidade com BigInt)',
+              example: '245678',
             },
             storagePath: {
               type: 'string',
@@ -347,6 +402,19 @@ const options: Options = {
               format: 'date-time',
             },
           },
+        },
+        TicketAttachmentWithUploader: {
+          allOf: [
+            { $ref: '#/components/schemas/TicketAttachment' },
+            {
+              type: 'object',
+              properties: {
+                uploadedBy: {
+                  $ref: '#/components/schemas/UserSummary',
+                },
+              },
+            },
+          ],
         },
         TicketHistory: {
           type: 'object',
@@ -438,6 +506,30 @@ const options: Options = {
             createdAt: {
               type: 'string',
               format: 'date-time',
+            },
+          },
+        },
+        NotificationWithTicket: {
+          allOf: [
+            { $ref: '#/components/schemas/Notification' },
+            {
+              type: 'object',
+              properties: {
+                ticket: {
+                  $ref: '#/components/schemas/TicketSummaryRef',
+                },
+              },
+            },
+          ],
+        },
+        MarkAllNotificationsAsReadResponse: {
+          type: 'object',
+          required: ['count'],
+          properties: {
+            count: {
+              type: 'integer',
+              description: 'Número de notificações marcadas como lidas',
+              example: 5,
             },
           },
         },
@@ -681,15 +773,18 @@ const options: Options = {
       },
       {
         name: 'Ticket Comments',
-        description: 'Comentários internos dos chamados',
+        description:
+          'Comentários internos de SAC/Ouvidoria — visíveis apenas para agentes e administradores',
       },
       {
         name: 'Ticket Attachments',
-        description: 'Anexos dos chamados',
+        description:
+          'Anexos de chamados (comprovantes, prints, documentos) — upload multipart e gestão de arquivos',
       },
       {
         name: 'Notifications',
-        description: 'Notificações do sistema',
+        description:
+          'Notificações em tempo real sobre chamados, SLA e eventos do atendimento',
       },
       {
         name: 'Users',

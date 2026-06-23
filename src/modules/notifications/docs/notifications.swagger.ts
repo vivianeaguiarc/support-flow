@@ -4,73 +4,114 @@
  *   get:
  *     tags:
  *       - Notifications
- *     summary: Listar notificações
- *     description: Lista as notificações do usuário autenticado com paginação
+ *     summary: Listar notificações do usuário
+ *     description: |
+ *       Retorna as notificações do usuário autenticado, ordenadas da mais recente para a mais antiga,
+ *       com dados resumidos do chamado relacionado.
+ *
+ *       Cada usuário vê **apenas suas próprias** notificações no tenant atual.
+ *
+ *       **Autenticação:** JWT Bearer obrigatório.
  *     security:
  *       - BearerAuth: []
  *     parameters:
  *       - in: query
- *         name: page
+ *         name: unread
  *         schema:
- *           type: integer
- *           minimum: 1
- *           default: 1
- *         description: Número da página
+ *           type: boolean
+ *         description: Quando `true`, retorna apenas notificações não lidas
+ *         example: true
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           minimum: 1
- *           maximum: 100
- *           default: 20
- *         description: Itens por página
+ *         description: Limite máximo de registros retornados
+ *         example: 20
  *       - in: query
- *         name: unread
+ *         name: offset
  *         schema:
- *           type: boolean
- *         description: Filtrar apenas não lidas
- *       - in: query
- *         name: type
- *         schema:
- *           $ref: '#/components/schemas/NotificationType'
- *         description: Filtrar por tipo de notificação
+ *           type: integer
+ *           minimum: 0
+ *         description: Deslocamento para paginação baseada em offset
+ *         example: 0
  *     responses:
  *       200:
- *         description: Lista de notificações
+ *         description: Lista de notificações (pode ser vazia)
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Notification'
+ *                 $ref: '#/components/schemas/NotificationWithTicket'
  *             example:
- *               - id: "550e8400-e29b-41d4-a716-446655440000"
+ *               - id: "cc0e8400-e29b-41d4-a716-446655440001"
  *                 tenantId: "660e8400-e29b-41d4-a716-446655440001"
- *                 recipientId: "770e8400-e29b-41d4-a716-446655440002"
- *                 ticketId: "880e8400-e29b-41d4-a716-446655440003"
+ *                 recipientId: "880e8400-e29b-41d4-a716-446655440003"
+ *                 ticketId: "550e8400-e29b-41d4-a716-446655440000"
+ *                 type: "SLA_WARNING"
+ *                 title: "SLA próximo do vencimento"
+ *                 message: "O chamado TK-2026-004521 vence em menos de 24 horas"
+ *                 readAt: null
+ *                 createdAt: "2026-06-23T16:00:00.000Z"
+ *                 ticket:
+ *                   id: "550e8400-e29b-41d4-a716-446655440000"
+ *                   protocol: "TK-2026-004521"
+ *                   title: "Reclamação Ouvidoria — reembolso não creditado"
+ *               - id: "cc0e8400-e29b-41d4-a716-446655440002"
+ *                 tenantId: "660e8400-e29b-41d4-a716-446655440001"
+ *                 recipientId: "880e8400-e29b-41d4-a716-446655440003"
+ *                 ticketId: "550e8400-e29b-41d4-a716-446655440000"
  *                 type: "TICKET_ASSIGNED"
  *                 title: "Novo chamado atribuído"
- *                 message: "Você foi atribuído ao chamado TK-2024-001234"
- *                 readAt: null
- *                 createdAt: "2024-06-23T12:30:00.000Z"
- *               - id: "550e8400-e29b-41d4-a716-446655440004"
+ *                 message: "Você foi atribuído ao chamado TK-2026-004521"
+ *                 readAt: "2026-06-23T16:30:00.000Z"
+ *                 createdAt: "2026-06-23T15:00:00.000Z"
+ *                 ticket:
+ *                   id: "550e8400-e29b-41d4-a716-446655440000"
+ *                   protocol: "TK-2026-004521"
+ *                   title: "Reclamação Ouvidoria — reembolso não creditado"
+ *               - id: "cc0e8400-e29b-41d4-a716-446655440003"
  *                 tenantId: "660e8400-e29b-41d4-a716-446655440001"
- *                 recipientId: "770e8400-e29b-41d4-a716-446655440002"
- *                 ticketId: "880e8400-e29b-41d4-a716-446655440005"
- *                 type: "SLA_WARNING"
- *                 title: "Chamado próximo do vencimento"
- *                 message: "O chamado TK-2024-001235 vence em menos de 24 horas"
- *                 readAt: "2024-06-23T13:00:00.000Z"
- *                 createdAt: "2024-06-23T12:00:00.000Z"
+ *                 recipientId: "880e8400-e29b-41d4-a716-446655440003"
+ *                 ticketId: "770e8400-e29b-41d4-a716-446655440002"
+ *                 type: "TICKET_COMMENT_ADDED"
+ *                 title: "Novo comentário no chamado"
+ *                 message: "Comentário interno adicionado ao chamado TK-2026-003198"
+ *                 readAt: null
+ *                 createdAt: "2026-06-23T14:00:00.000Z"
+ *                 ticket:
+ *                   id: "770e8400-e29b-41d4-a716-446655440002"
+ *                   protocol: "TK-2026-003198"
+ *                   title: "Solicitação de segunda via de boleto"
+ *       400:
+ *         description: Parâmetros de query inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       401:
- *         description: Não autenticado
+ *         description: Token JWT ausente ou inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 401
+ *               message: "Unauthorized"
  *
  * /notifications/{id}/read:
  *   patch:
  *     tags:
  *       - Notifications
  *     summary: Marcar notificação como lida
- *     description: Marca uma notificação específica como lida
+ *     description: |
+ *       Marca uma notificação específica como lida (`readAt` preenchido).
+ *       Operação idempotente — marcar novamente não gera erro.
+ *
+ *       Apenas o **destinatário** da notificação pode marcá-la como lida.
+ *
+ *       **Autenticação:** JWT Bearer obrigatório.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -80,41 +121,54 @@
  *         schema:
  *           type: string
  *           format: uuid
- *         description: ID da notificação
+ *         description: UUID da notificação
+ *         example: "cc0e8400-e29b-41d4-a716-446655440001"
  *     responses:
- *       200:
- *         description: Notificação marcada como lida
+ *       204:
+ *         description: Notificação marcada como lida com sucesso
+ *       401:
+ *         description: Token JWT ausente ou inválido
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Notification'
- *       401:
- *         description: Não autenticado
+ *               $ref: '#/components/schemas/Error'
  *       404:
- *         description: Notificação não encontrada
+ *         description: Notificação não encontrada ou não pertence ao usuário
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 404
+ *               message: "Notification not found"
  *
  * /notifications/read-all:
  *   patch:
  *     tags:
  *       - Notifications
- *     summary: Marcar todas como lidas
- *     description: Marca todas as notificações do usuário como lidas
+ *     summary: Marcar todas as notificações como lidas
+ *     description: |
+ *       Marca **todas** as notificações não lidas do usuário autenticado como lidas
+ *       no tenant atual. Retorna a quantidade de registros atualizados.
+ *
+ *       **Autenticação:** JWT Bearer obrigatório.
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: Todas as notificações marcadas como lidas
+ *         description: Notificações marcadas como lidas
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 count:
- *                   type: integer
- *                   description: Número de notificações marcadas
- *                   example: 15
+ *               $ref: '#/components/schemas/MarkAllNotificationsAsReadResponse'
+ *             example:
+ *               count: 5
  *       401:
- *         description: Não autenticado
+ *         description: Token JWT ausente ou inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 export {};
