@@ -5,7 +5,12 @@ export type {
   RecordTicketHistoryInput,
 } from './ticket.types.js';
 export type { TicketCategory } from './ticket-category.entity.js';
+export type {
+  TicketComment,
+  TicketCommentWithAuthor,
+} from './ticket-comment.js';
 export {
+  CommentVisibility,
   TICKET_HISTORY_EVENTS,
   TICKET_PRIORITIES,
   TICKET_STATUSES,

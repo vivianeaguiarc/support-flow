@@ -29,9 +29,17 @@ export const TicketHistoryEvent = {
   PRIORITY_CHANGED: 'PRIORITY_CHANGED',
   ASSIGNED: 'ASSIGNED',
   CATEGORY_CHANGED: 'CATEGORY_CHANGED',
+  COMMENT_ADDED: 'COMMENT_ADDED',
 } as const;
 
 export type TicketHistoryEvent =
   (typeof TicketHistoryEvent)[keyof typeof TicketHistoryEvent];
 
 export const TICKET_HISTORY_EVENTS = Object.values(TicketHistoryEvent);
+
+export const CommentVisibility = {
+  INTERNAL: 'INTERNAL',
+} as const;
+
+export type CommentVisibility =
+  (typeof CommentVisibility)[keyof typeof CommentVisibility];

@@ -5,6 +5,8 @@ import { UserRole } from '../../../shared/types/user-role.js';
 import {
   AssignTicketUseCase,
   assignTicketUseCase,
+  CreateTicketCommentUseCase,
+  createTicketCommentUseCase,
   FindTicketByIdUseCase,
   findTicketByIdUseCase,
   GetTicketMetricsUseCase,
@@ -13,6 +15,8 @@ import {
   getTicketStatusTransitionsUseCase,
   GetTicketSummaryUseCase,
   getTicketSummaryUseCase,
+  ListTicketCommentsUseCase,
+  listTicketCommentsUseCase,
   ListTicketHistoryUseCase,
   listTicketHistoryUseCase,
   ListTicketsByTenantUseCase,
@@ -28,6 +32,10 @@ import {
   updateTicketStatusUseCase,
 } from '../application/index.js';
 import type { Ticket } from '../domain/ticket.entity.js';
+import type {
+  TicketComment,
+  TicketCommentWithAuthor,
+} from '../domain/ticket-comment.js';
 import type { TicketPriority, TicketStatus } from '../domain/ticket-enums.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
 import type { TicketMetricsQueryDto } from '../dtos/ticket-metrics-query.dto.js';
@@ -57,6 +65,8 @@ export class TicketsService {
     private readonly listTicketHistory: ListTicketHistoryUseCase = listTicketHistoryUseCase,
     private readonly getTicketSummary: GetTicketSummaryUseCase = getTicketSummaryUseCase,
     private readonly getTicketMetrics: GetTicketMetricsUseCase = getTicketMetricsUseCase,
+    private readonly createComment: CreateTicketCommentUseCase = createTicketCommentUseCase,
+    private readonly listComments: ListTicketCommentsUseCase = listTicketCommentsUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
   ) {}
 
@@ -245,6 +255,37 @@ export class TicketsService {
     });
   }
 
+  async addComment(
+    ticketId: string,
+    content: string,
+    authUser: AuthenticatedUser,
+  ): Promise<TicketComment> {
+    this.assertCanAccessComments(authUser);
+
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.createComment.execute({
+      ticketId,
+      tenantId,
+      authorId: authUser.id,
+      content,
+    });
+  }
+
+  async getComments(
+    ticketId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<TicketCommentWithAuthor[]> {
+    this.assertCanAccessComments(authUser);
+
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.listComments.execute({
+      ticketId,
+      tenantId,
+    });
+  }
+
   private assertCanCreateTicket(
     authUser: AuthenticatedUser,
     data: CreateTicketServiceInput,
@@ -321,6 +362,14 @@ export class TicketsService {
   }
 
   private assertCanManageTickets(authUser: AuthenticatedUser): void {
+    if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
+      return;
+    }
+
+    throw new AppError('Forbidden', 403);
+  }
+
+  private assertCanAccessComments(authUser: AuthenticatedUser): void {
     if (authUser.role === UserRole.ADMIN || authUser.role === UserRole.AGENT) {
       return;
     }

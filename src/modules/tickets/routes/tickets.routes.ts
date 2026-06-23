@@ -4,9 +4,11 @@ import { Router } from 'express';
 import { authenticate } from '../../../shared/http/middlewares/authenticate.js';
 import { authorize } from '../../../shared/http/middlewares/authorize.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
+import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
+import { createTicketCommentSchema } from '../dtos/create-ticket-comment.dto.js';
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
 import { ticketMetricsQuerySchema } from '../dtos/ticket-metrics-query.dto.js';
@@ -80,6 +82,25 @@ ticketsRouter.get(
   authorize(UserRole.AGENT, UserRole.CUSTOMER),
   validateRequest({ params: ticketIdParamSchema }),
   ticketsController.getHistory,
+);
+
+ticketsRouter.post(
+  '/:id/comments',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({
+    params: ticketIdParamSchema,
+    body: createTicketCommentSchema,
+  }),
+  ticketCommentsController.create,
+);
+
+ticketsRouter.get(
+  '/:id/comments',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({ params: ticketIdParamSchema }),
+  ticketCommentsController.list,
 );
 
 ticketsRouter.get(

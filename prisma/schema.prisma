@@ -34,6 +34,11 @@ enum TicketHistoryEvent {
   PRIORITY_CHANGED
   ASSIGNED
   CATEGORY_CHANGED
+  COMMENT_ADDED
+}
+
+enum CommentVisibility {
+  INTERNAL
 }
 
 model Tenant {
@@ -50,6 +55,7 @@ model Tenant {
   categories TicketCategory[]
   tickets    Ticket[]
   histories  TicketHistory[]
+  comments   TicketComment[]
 
   @@map("tenants")
 }
@@ -67,6 +73,7 @@ model User {
   tenant          Tenant          @relation(fields: [tenantId], references: [id])
   ticketsAssigned Ticket[]        @relation("TicketAssignee")
   ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
+  ticketComments  TicketComment[] @relation("CommentAuthor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -131,6 +138,7 @@ model Ticket {
   category   TicketCategory? @relation(fields: [categoryId], references: [id])
   assignedTo User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
   history    TicketHistory[]
+  comments   TicketComment[]
 
   @@unique([tenantId, protocol])
   @@index([tenantId])
@@ -164,4 +172,24 @@ model TicketHistory {
   @@index([ticketId])
   @@index([changedById])
   @@map("ticket_histories")
+}
+
+model TicketComment {
+  id         String            @id @default(uuid())
+  tenantId   String
+  ticketId   String
+  authorId   String
+  content    String
+  visibility CommentVisibility @default(INTERNAL)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author User   @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([authorId])
+  @@map("ticket_comments")
 }
