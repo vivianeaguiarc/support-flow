@@ -165,6 +165,18 @@ export class NotificationsRepository {
       },
     });
   }
+
+  async countByTicketAndType(
+    ticketId: string,
+    type: NotificationType,
+  ): Promise<number> {
+    return prisma.notification.count({
+      where: {
+        ticketId,
+        type,
+      },
+    });
+  }
 }
 
 export const notificationsRepository = new NotificationsRepository();

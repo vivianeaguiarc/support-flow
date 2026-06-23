@@ -51,24 +51,18 @@ export class NotificationEventService {
     oldStatus: string,
     newStatus: string,
   ): Promise<void> {
-    const recipientIds: string[] = [];
-
-    if (ticket.assignedToId) {
-      recipientIds.push(ticket.assignedToId);
+    if (!ticket.assignedToId) {
+      return;
     }
 
-    recipientIds.push(ticket.customerId);
-
-    for (const recipientId of recipientIds) {
-      await this.createNotification.execute({
-        tenantId: ticket.tenantId,
-        recipientId,
-        ticketId: ticket.id,
-        type: NotificationType.TICKET_STATUS_CHANGED,
-        title: 'Status do chamado alterado',
-        message: `O status do chamado "${ticket.title}" foi alterado de ${oldStatus} para ${newStatus}.`,
-      });
-    }
+    await this.createNotification.execute({
+      tenantId: ticket.tenantId,
+      recipientId: ticket.assignedToId,
+      ticketId: ticket.id,
+      type: NotificationType.TICKET_STATUS_CHANGED,
+      title: 'Status do chamado alterado',
+      message: `O status do chamado "${ticket.title}" foi alterado de ${oldStatus} para ${newStatus}.`,
+    });
   }
 
   async notifyCommentAdded(
@@ -76,28 +70,20 @@ export class NotificationEventService {
     authorId: string,
     isInternal: boolean,
   ): Promise<void> {
-    const recipientIds: string[] = [];
-
-    if (ticket.assignedToId && ticket.assignedToId !== authorId) {
-      recipientIds.push(ticket.assignedToId);
+    if (!ticket.assignedToId || ticket.assignedToId === authorId) {
+      return;
     }
 
-    if (!isInternal && ticket.customerId !== authorId) {
-      recipientIds.push(ticket.customerId);
-    }
-
-    for (const recipientId of recipientIds) {
-      await this.createNotification.execute({
-        tenantId: ticket.tenantId,
-        recipientId,
-        ticketId: ticket.id,
-        type: NotificationType.TICKET_COMMENT_ADDED,
-        title: isInternal
-          ? 'Novo comentário interno'
-          : 'Novo comentário no chamado',
-        message: `Um novo comentário foi adicionado ao chamado "${ticket.title}".`,
-      });
-    }
+    await this.createNotification.execute({
+      tenantId: ticket.tenantId,
+      recipientId: ticket.assignedToId,
+      ticketId: ticket.id,
+      type: NotificationType.TICKET_COMMENT_ADDED,
+      title: isInternal
+        ? 'Novo comentário interno'
+        : 'Novo comentário no chamado',
+      message: `Um novo comentário foi adicionado ao chamado "${ticket.title}".`,
+    });
   }
 
   async notifyAttachmentAdded(
@@ -105,26 +91,18 @@ export class NotificationEventService {
     uploadedById: string,
     fileName: string,
   ): Promise<void> {
-    const recipientIds: string[] = [];
-
-    if (ticket.assignedToId && ticket.assignedToId !== uploadedById) {
-      recipientIds.push(ticket.assignedToId);
+    if (!ticket.assignedToId || ticket.assignedToId === uploadedById) {
+      return;
     }
 
-    if (ticket.customerId !== uploadedById) {
-      recipientIds.push(ticket.customerId);
-    }
-
-    for (const recipientId of recipientIds) {
-      await this.createNotification.execute({
-        tenantId: ticket.tenantId,
-        recipientId,
-        ticketId: ticket.id,
-        type: NotificationType.TICKET_ATTACHMENT_ADDED,
-        title: 'Novo anexo adicionado',
-        message: `Um arquivo "${fileName}" foi anexado ao chamado "${ticket.title}".`,
-      });
-    }
+    await this.createNotification.execute({
+      tenantId: ticket.tenantId,
+      recipientId: ticket.assignedToId,
+      ticketId: ticket.id,
+      type: NotificationType.TICKET_ATTACHMENT_ADDED,
+      title: 'Novo anexo adicionado',
+      message: `Um arquivo "${fileName}" foi anexado ao chamado "${ticket.title}".`,
+    });
   }
 
   async notifySlaWarning(ticket: Ticket): Promise<void> {

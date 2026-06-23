@@ -106,6 +106,44 @@ export class TicketsRepository {
       data: { assignedToId },
     });
   }
+
+  async findAll(filters: {
+    status?: TicketStatus[];
+    hasSla?: boolean;
+  }): Promise<Ticket[]> {
+    const where: {
+      status?: { in: TicketStatus[] };
+      slaDueAt?: { not: null };
+    } = {};
+
+    if (filters.status) {
+      where.status = { in: filters.status };
+    }
+
+    if (filters.hasSla) {
+      where.slaDueAt = { not: null };
+    }
+
+    return prisma.ticket.findMany({
+      where,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
 }
 
 export const ticketsRepository = new TicketsRepository();

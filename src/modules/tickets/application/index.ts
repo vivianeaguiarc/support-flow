@@ -15,6 +15,7 @@ export * from './use-cases/list-ticket-attachments.use-case.js';
 export * from './use-cases/list-ticket-comments.use-case.js';
 export * from './use-cases/list-ticket-history.use-case.js';
 export * from './use-cases/list-tickets-by-tenant.use-case.js';
+export * from './use-cases/monitor-ticket-sla.use-case.js';
 export * from './use-cases/open-ticket.use-case.js';
 export * from './use-cases/update-ticket-status.use-case.js';
 export * from './use-cases/upload-ticket-attachment.use-case.js';
