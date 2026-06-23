@@ -359,7 +359,7 @@ describe.sequential('Ticket Attachments', () => {
         `/api/v1/tickets/${ticket1Id}/attachments`,
       );
 
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(403);
     });
 
     it('should isolate attachments by tenant', async () => {

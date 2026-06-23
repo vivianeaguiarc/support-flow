@@ -201,9 +201,9 @@ describe.sequential('Ticket workflow integration', () => {
 
     const forbiddenResponse = await authRequest(app, agentBToken)
       .get(`/api/v1/tickets/${ticketId}`)
-      .expect(404);
+      .expect(403);
 
-    expect(forbiddenResponse.body.message).toBe('Ticket not found');
+    expect(forbiddenResponse.body.message).toBe('Forbidden');
   });
 
   it('blocks invalid status transitions', async () => {
