@@ -17,6 +17,7 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "prisma:validate": "prisma validate",
+    "env:check": "node --import tsx -e \"import './src/config/env.ts'; console.log('Environment configuration is valid')\"",
     "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm prisma:validate && pnpm prisma:generate && pnpm test && pnpm build",
     "prepare": "husky",
     "postinstall": "prisma generate",
@@ -42,7 +43,7 @@
     ]
   },
   "keywords": [],
-  "author": "",
+  "author": "Viviane Aguiar (https://vivianeaguiardev.com.br)",
   "license": "ISC",
   "engines": {
     "node": ">=22"

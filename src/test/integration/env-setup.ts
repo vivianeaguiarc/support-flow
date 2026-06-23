@@ -8,5 +8,7 @@ process.env.DATABASE_URL_TEST =
 process.env.JWT_SECRET = 'integration-test-secret';
 process.env.JWT_EXPIRES_IN = '1d';
 process.env.CORS_ORIGIN = 'http://localhost:5173';
+process.env.RATE_LIMIT_ENABLED = 'false';
 process.env.RATE_LIMIT_WINDOW_MS = '900000';
 process.env.RATE_LIMIT_MAX_REQUESTS = '10000';
+process.env.LOG_LEVEL = 'warn';

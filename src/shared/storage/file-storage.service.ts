@@ -1,13 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { env } from '../../config/env.js';
 import { logger } from '../logger/logger.js';
 
 export class FileStorageService {
   private readonly uploadDir: string;
 
-  constructor() {
-    this.uploadDir = path.join(process.cwd(), 'storage', 'attachments');
+  constructor(uploadDir: string = env.uploadDirAbsolute) {
+    this.uploadDir = uploadDir;
   }
 
   async ensureUploadDirExists(): Promise<void> {

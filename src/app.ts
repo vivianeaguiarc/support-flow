@@ -28,7 +28,9 @@ export function createApp(options: CreateAppOptions = {}) {
 
   app.use(httpLogger);
   app.use(...securityMiddleware);
-  app.use(rateLimitMiddleware);
+  if (env.RATE_LIMIT_ENABLED) {
+    app.use(rateLimitMiddleware);
+  }
   app.use(express.json({ limit: '1mb' }));
 
   const apiRouter = express.Router();

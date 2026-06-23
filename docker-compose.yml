@@ -32,6 +32,10 @@ services:
       JWT_SECRET: local-docker-jwt-secret-with-32-chars-min
       JWT_EXPIRES_IN: 1d
       CORS_ORIGIN: http://localhost:5173
+      LOG_LEVEL: info
+      RATE_LIMIT_ENABLED: 'true'
+      UPLOAD_MAX_SIZE_MB: 10
+      UPLOAD_DIR: storage/attachments
       SWAGGER_ENABLED: 'false'
     volumes:
       - supportflow_uploads:/app/storage/attachments

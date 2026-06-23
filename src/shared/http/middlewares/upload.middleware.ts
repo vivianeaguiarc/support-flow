@@ -3,10 +3,10 @@ import path from 'node:path';
 import type { Request } from 'express';
 import multer from 'multer';
 
+import { env } from '../../../config/env.js';
 import {
   ALLOWED_EXTENSIONS,
   ALLOWED_MIME_TYPES,
-  MAX_FILE_SIZE_BYTES,
 } from '../../../modules/tickets/domain/ticket-attachment.js';
 import { AppError } from '../../errors/app-error.js';
 
@@ -46,7 +46,7 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: MAX_FILE_SIZE_BYTES,
+    fileSize: env.uploadMaxSizeBytes,
     files: 1,
   },
 });
@@ -55,7 +55,7 @@ export const handleMulterError = (error: unknown) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       throw new AppError(
-        `File too large. Maximum size: ${MAX_FILE_SIZE_BYTES / 1024 / 1024}MB`,
+        `File too large. Maximum size: ${env.UPLOAD_MAX_SIZE_MB}MB`,
         400,
       );
     }
