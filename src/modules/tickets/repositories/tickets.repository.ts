@@ -144,6 +144,34 @@ export class TicketsRepository {
       },
     });
   }
+
+  async countActiveTicketsByAgent(
+    agentId: string,
+    tenantId: string,
+  ): Promise<number> {
+    return prisma.ticket.count({
+      where: {
+        tenantId,
+        assignedToId: agentId,
+        status: {
+          in: ['OPEN', 'IN_PROGRESS', 'WAITING_CUSTOMER', 'ESCALATED'],
+        },
+      },
+    });
+  }
+
+  async findUnassignedOpenTickets(tenantId: string): Promise<Ticket[]> {
+    return prisma.ticket.findMany({
+      where: {
+        tenantId,
+        assignedToId: null,
+        status: 'OPEN',
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
 }
 
 export const ticketsRepository = new TicketsRepository();

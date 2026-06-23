@@ -6,6 +6,7 @@ import { authorize } from '../../../shared/http/middlewares/authorize.js';
 import { upload } from '../../../shared/http/middlewares/upload.middleware.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
 import { ticketAttachmentsController } from '../controllers/ticket-attachments.controller.js';
+import { ticketAutoAssignmentController } from '../controllers/ticket-auto-assignment.controller.js';
 import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
@@ -49,6 +50,13 @@ ticketsRouter.get(
   authorize(UserRole.AGENT, UserRole.ADMIN),
   validateRequest({ query: ticketMetricsQuerySchema }),
   ticketsController.metrics,
+);
+
+ticketsRouter.post(
+  '/auto-assign',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  ticketAutoAssignmentController.autoAssign,
 );
 
 ticketsRouter.patch(
