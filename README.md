@@ -47,9 +47,13 @@ O SupportFlow Backend entrega essa base como **API modular**, pronta para integr
 
 ### Autenticação e usuários
 
-- Login com JWT (`ADMIN`, `SUPERVISOR`, `AGENT`, `CUSTOMER`, `OMBUDSMAN`)
+- Login com par **access + refresh token** (`POST /auth/login`, `/auth/refresh`, `/auth/logout`)
+- Rotação de refresh token a cada renovação de sessão
+- Perfis RBAC: `ADMIN`, `SUPERVISOR`, `AGENT`, `CUSTOMER`, `OMBUDSMAN`
 - Registro público restrito a `CUSTOMER`; criação de perfis staff exige administrador autenticado
-- Listagem de usuários isolada por tenant
+- Listagem de usuários isolada por tenant (`GET /users`, `GET /users/{id}` — apenas `ADMIN`)
+
+> **Clientes (`Customer`)** são entidades internas referenciadas por `customerId` na abertura de chamados — não há endpoints REST públicos de CRUD de clientes.
 
 ### Operações e observabilidade
 
@@ -78,14 +82,16 @@ HTTP Request → Route → Middleware (auth, RBAC, validate) → Controller → 
 
 Conceitos transversais:
 
-| Conceito         | Implementação                                                           |
-| ---------------- | ----------------------------------------------------------------------- |
-| **Multi-tenant** | `tenantId` no JWT e em todas as queries de negócio                      |
-| **RBAC**         | Middleware `authorize` + regras nos use cases                           |
-| **SLA**          | Cálculo na abertura + job de monitoramento (warning/expired)            |
-| **Auditoria**    | `TicketHistory` com eventos tipados                                     |
-| **Validação**    | Zod via `validateRequest` em body, params e query                       |
-| **Segurança**    | Helmet, CORS, rate limit global e no login, JWT, sanitização de uploads |
+| Conceito            | Implementação                                                                |
+| ------------------- | ---------------------------------------------------------------------------- |
+| **Multi-tenant**    | `tenantId` no JWT e em todas as queries de negócio                           |
+| **RBAC**            | `shared/security/rbac.ts` + middleware `authorize` + regras nos use cases    |
+| **SLA**             | Cálculo na abertura + monitoramento (warning/expired) + escalação automática |
+| **Auditoria**       | `TicketHistory` com eventos tipados                                          |
+| **Validação**       | Zod via `validateRequest` em body, params e query                            |
+| **Erros**           | Payload padronizado `{ statusCode, error, message, requestId? }`             |
+| **Observabilidade** | Pino estruturado, `requestId` por requisição, logs de negócio                |
+| **Segurança**       | Helmet, CORS, rate limit, JWT + refresh, redação de dados sensíveis nos logs |
 
 ---
 
@@ -105,16 +111,16 @@ supportflow-backend/
 │   ├── server.ts               # Entrypoint
 │   ├── config/                 # Env (Zod), Swagger
 │   ├── modules/
-│   │   ├── auth/               # Login JWT
+│   │   ├── auth/               # Login, refresh, logout
 │   │   ├── users/              # Gestão de usuários
 │   │   ├── tickets/            # Domínio principal (Clean Architecture)
 │   │   │   ├── domain/
 │   │   │   ├── application/
 │   │   │   ├── infrastructure/
-│   │   │   ├── presentation/
-│   │   │   └── integration/    # Testes E2E do módulo
+│   │   │   ├── presentation/   # routes, controllers, docs/*.swagger.ts
+│   │   │   └── integration/
 │   │   ├── notifications/
-│   │   ├── customers/
+│   │   ├── customers/          # Repositório interno (sem rotas REST)
 │   │   ├── knowledge-base/     # Scaffold (roadmap)
 │   │   └── support/            # Scaffold (roadmap)
 │   ├── shared/
@@ -126,10 +132,15 @@ supportflow-backend/
 │   └── test/
 │       ├── unit/               # Setup global de mocks
 │       └── integration/          # Fixtures, DB de teste
+├── docs/
+│   ├── API_DOCUMENTATION.md    # Guia da API e Swagger
+│   ├── deploy.md               # Deploy em produção
+│   └── DOCKER.md               # Guia de container
+├── render.yaml                 # Blueprint Render
 ├── Dockerfile                  # Multi-stage (pnpm + Node 22)
 ├── docker-compose.yml          # PostgreSQL + API
-├── docs/DOCKER.md              # Guia detalhado de container
-└── vitest.config.ts            # Testes unitários
+├── vitest.config.ts            # Testes unitários
+└── vitest.integration.config.ts
 ```
 
 ---
@@ -195,7 +206,7 @@ Para produção, use `.env.production.example` como referência ao configurar o 
 | `UPLOAD_MAX_SIZE_MB`           | Não         | `10`                                        | Tamanho máximo de upload (MB)                                          |
 | `UPLOAD_DIR`                   | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)                      |
 | `LOG_LEVEL`                    | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino (`trace`, `debug`, `info`, `warn`, `error`, `fatal`) |
-| `SWAGGER_ENABLED`              | Não         | ligado fora de `production`                 | Documentação OpenAPI em `/api/docs`                                    |
+| `SWAGGER_ENABLED`              | Não         | `true`                                      | Documentação OpenAPI em `/api/docs` (`false` para desligar)            |
 | `DATABASE_URL_TEST`            | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                                 |
 
 ### Validar configuração
@@ -254,6 +265,10 @@ pnpm dev
 ```
 
 A API ficará disponível em http://localhost:3000.
+
+- Base REST: `http://localhost:3000/api/v1`
+- Swagger UI: http://localhost:3000/api/docs
+- Health: http://localhost:3000/health
 
 ---
 
@@ -346,7 +361,7 @@ Requisitos para integração: Docker rodando (Postgres em `localhost:5433` via `
 # Preparar banco de teste (Docker + database supportflow_test)
 pnpm test:db:prepare
 
-# Testes unitários (131)
+# Testes unitários (135, inclui cobertura Swagger)
 pnpm test
 
 # Testes de integração/E2E (160) — requer PostgreSQL em localhost:5433
@@ -362,39 +377,65 @@ pnpm test:coverage
 
 ## Swagger / OpenAPI
 
-Com o servidor em execução (modo development):
+Documentação interativa gerada a partir de JSDoc em `*.swagger.ts` (validada por `src/config/swagger.spec.ts`).
 
-| Recurso       | URL                                 |
-| ------------- | ----------------------------------- |
-| UI interativa | http://localhost:3000/api/docs      |
-| Spec JSON     | http://localhost:3000/api/docs.json |
+Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
-O Swagger fica **habilitado por padrão** em todos os ambientes. Para desligar em produção: `SWAGGER_ENABLED=false`.
+| Recurso       | URL                                         |
+| ------------- | ------------------------------------------- |
+| UI interativa | http://localhost:3000/api/docs              |
+| Spec JSON     | http://localhost:3000/api/docs.json         |
+| Redirects     | `/api-docs` → `/api/docs` (compatibilidade) |
 
-Documentação gerada a partir de JSDoc nos arquivos `*.swagger.ts` de cada módulo.
+**Habilitado por padrão** (`SWAGGER_ENABLED=true`). Para desligar: `SWAGGER_ENABLED=false`.
+
+### Autenticar no Swagger
+
+1. `POST /auth/login` → copie `accessToken`
+2. Clique em **Authorize** → informe `Bearer <accessToken>`
+3. Teste endpoints protegidos
+
+### Endpoints documentados (prefixo `/api/v1`)
+
+| Tag                | Rotas                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| Authentication     | `POST /auth/login`, `/auth/refresh`, `/auth/logout`                                                    |
+| Users              | `POST/GET /users`, `GET /users/{id}`                                                                   |
+| Tickets            | CRUD, status, assign, transitions, history, summary, metrics, auto-assign, route, recalculate-priority |
+| Ticket Comments    | `POST/GET /tickets/{id}/comments`                                                                      |
+| Ticket Attachments | `POST/GET /tickets/{id}/attachments`, `DELETE .../{attachmentId}` (multipart)                          |
+| Notifications      | `GET /notifications`, `PATCH /{id}/read`, `PATCH /read-all`                                            |
+| Health             | `GET /health`, `GET /health/ready`                                                                     |
 
 ---
 
 ## Scripts disponíveis
 
-| Script                              | Descrição                                               |
-| ----------------------------------- | ------------------------------------------------------- |
-| `pnpm dev`                          | Servidor com `tsx watch`                                |
-| `pnpm build`                        | Compila TypeScript (`dist/`)                            |
-| `pnpm start` / `pnpm start:prod`    | Executa build compilado                                 |
-| `pnpm start:docker`                 | Entrypoint Docker (migrate + start)                     |
-| `pnpm migrate:deploy`               | Aplica migrations em produção (`prisma migrate deploy`) |
-| `pnpm docker:build`                 | Build da imagem Docker                                  |
-| `pnpm docker:run`                   | Executa container local (requer env vars)               |
-| `pnpm env:check`                    | Valida variáveis de ambiente                            |
-| `pnpm lint` / `pnpm lint:fix`       | ESLint                                                  |
-| `pnpm format` / `pnpm format:check` | Prettier                                                |
-| `pnpm typecheck`                    | `tsc --noEmit`                                          |
-| `pnpm ci:check`                     | Pipeline quality (format, lint, typecheck, test, build) |
-| `pnpm ci:integration`               | Pipeline integração (prisma generate/deploy + E2E)      |
-| `pnpm ci:full`                      | Pipeline completo local (espelha GitHub Actions)        |
-| `pnpm db:up` / `pnpm db:down`       | Sobe/para containers Docker                             |
-| `pnpm test:db:prepare`              | Prepara banco para integração                           |
+| Script                                   | Descrição                                               |
+| ---------------------------------------- | ------------------------------------------------------- |
+| `pnpm dev`                               | Servidor com `tsx watch`                                |
+| `pnpm build`                             | Compila TypeScript (`dist/`)                            |
+| `pnpm start` / `pnpm start:prod`         | Executa build compilado                                 |
+| `pnpm start:docker`                      | Entrypoint Docker (migrate + start)                     |
+| `pnpm migrate:deploy`                    | Aplica migrations em produção (`prisma migrate deploy`) |
+| `pnpm docker:build`                      | Build da imagem Docker                                  |
+| `pnpm docker:run`                        | Executa container local (requer env vars)               |
+| `pnpm env:check`                         | Valida variáveis de ambiente                            |
+| `pnpm lint` / `pnpm lint:fix`            | ESLint                                                  |
+| `pnpm format` / `pnpm format:check`      | Prettier                                                |
+| `pnpm typecheck`                         | `tsc --noEmit`                                          |
+| `pnpm ci:check`                          | Pipeline quality (format, lint, typecheck, test, build) |
+| `pnpm ci:integration`                    | Pipeline integração (prisma generate/deploy + E2E)      |
+| `pnpm ci:full`                           | Pipeline completo local (espelha GitHub Actions)        |
+| `pnpm db:up` / `pnpm db:down`            | Sobe/para containers Docker                             |
+| `pnpm test:db:prepare`                   | Prepara banco para integração                           |
+| `pnpm prisma:migrate`                    | Migrations em desenvolvimento                           |
+| `pnpm prisma:deploy`                     | Migrations em produção/CI                               |
+| `pnpm prisma:validate`                   | Valida schema Prisma                                    |
+| `pnpm prisma:generate`                   | Gera Prisma Client                                      |
+| `pnpm prisma:studio`                     | UI visual do banco                                      |
+| `pnpm test` / `pnpm test:integration`    | Testes unitários / E2E                                  |
+| `pnpm test:watch` / `pnpm test:coverage` | Watch mode / cobertura                                  |
 
 ---
 
@@ -423,7 +464,7 @@ Executa em paralelo ao job de qualidade, com **PostgreSQL 16** como service cont
 2. `pnpm install --frozen-lockfile`
 3. `pnpm prisma:generate`
 4. `pnpm prisma:deploy` — aplica migrations no Postgres do CI
-5. `pnpm test:integration` — ~149 testes E2E com Supertest + banco real
+5. `pnpm test:integration` — **160** testes E2E com Supertest + banco real
 
 Variáveis no CI:
 
@@ -442,10 +483,13 @@ Deploy automatizado via blueprint Render ([`render.yaml`](render.yaml)). Guia co
 3. **Multi-tenant por coluna (`tenantId`)** — isolamento simples e eficiente para SaaS B2B nesta fase.
 4. **Prisma + PostgreSQL** — migrations versionadas, tipagem forte e adapter PG para produção.
 5. **Zod na borda HTTP** — validação declarativa e mensagens de erro consistentes.
-6. **Testes em duas camadas** — unitários rápidos (use cases com mocks) + integração com banco real (Supertest).
-7. **Docker multi-stage** — imagem enxuta, usuário não-root, health check e migrate no entrypoint.
-8. **Swagger habilitado por padrão** — `SWAGGER_ENABLED=false` desliga em produção se necessário.
-9. **Histórico como trilha de auditoria** — eventos imutáveis em `TicketHistory`, não apenas log de aplicação.
+6. **JWT + refresh tokens com rotação** — sessões renováveis sem reautenticar a cada expiração do access token.
+7. **Testes em duas camadas** — unitários rápidos (use cases com mocks) + integração com banco real (Supertest).
+8. **Docker multi-stage** — imagem enxuta, usuário não-root, health check e migrate no entrypoint.
+9. **Swagger habilitado por padrão** — cobertura validada por teste (`swagger.spec.ts`); `SWAGGER_ENABLED=false` desliga se necessário.
+10. **Observabilidade** — logs Pino estruturados, `requestId` por requisição, eventos de negócio auditáveis.
+11. **Histórico como trilha de auditoria** — eventos imutáveis em `TicketHistory`, não apenas log de aplicação.
+12. **Cross-tenant → 403** — acesso a recurso de outro tenant retorna Forbidden (não mascara como 404).
 
 ---
 
