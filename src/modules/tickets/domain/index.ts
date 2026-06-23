@@ -25,3 +25,7 @@ export type {
   RecordTicketHistoryInput,
 } from './ticket.types.js';
 export { generateTicketProtocol } from './ticket-protocol.js';
+export {
+  assertValidTicketStatusTransition,
+  getAllowedTicketStatusTransitions,
+} from './ticket-status-transitions.js';

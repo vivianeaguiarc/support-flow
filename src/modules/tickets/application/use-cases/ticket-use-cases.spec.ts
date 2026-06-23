@@ -270,6 +270,32 @@ describe('Ticket use cases', () => {
       );
       expect(result.status).toBe(TicketStatus.IN_PROGRESS);
     });
+
+    it('should reject invalid status transition without persisting changes', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+        mockTicket,
+      );
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new UpdateTicketStatusUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          status: TicketStatus.CLOSED,
+        }),
+      ).rejects.toEqual(
+        new AppError('Invalid status transition from OPEN to CLOSED', 400),
+      );
+
+      expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
+      expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('AssignTicketUseCase', () => {

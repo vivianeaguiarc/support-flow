@@ -5,6 +5,7 @@ export const updateTicketStatusSchema = z.object({
     'OPEN',
     'IN_PROGRESS',
     'WAITING_CUSTOMER',
+    'ESCALATED',
     'RESOLVED',
     'CLOSED',
   ]),

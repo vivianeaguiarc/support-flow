@@ -1,6 +1,7 @@
 import type { Ticket } from '@prisma/client';
 import { TicketHistoryEvent } from '@prisma/client';
 
+import { assertValidTicketStatusTransition } from '../../domain/ticket-status-transitions.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
@@ -27,6 +28,8 @@ export class UpdateTicketStatusUseCase {
       tenantId: input.tenantId,
       ticketId: input.ticketId,
     });
+
+    assertValidTicketStatusTransition(ticket.status, input.status);
 
     const updatedTicket = await this.ticketsRepository.updateStatus(
       ticket.id,
