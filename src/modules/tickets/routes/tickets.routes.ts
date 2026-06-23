@@ -9,6 +9,7 @@ import { ticketAttachmentsController } from '../controllers/ticket-attachments.c
 import { ticketAutoAssignmentController } from '../controllers/ticket-auto-assignment.controller.js';
 import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';
 import { ticketPriorityController } from '../controllers/ticket-priority.controller.js';
+import { ticketRoutingController } from '../controllers/ticket-routing.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
@@ -85,6 +86,14 @@ ticketsRouter.patch(
   authorize(UserRole.AGENT, UserRole.ADMIN),
   validateRequest({ params: ticketIdParamSchema }),
   ticketPriorityController.recalculatePriority,
+);
+
+ticketsRouter.post(
+  '/:id/route',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({ params: ticketIdParamSchema }),
+  ticketRoutingController.route,
 );
 
 ticketsRouter.get(

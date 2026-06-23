@@ -21,5 +21,6 @@ export * from './use-cases/list-tickets-by-tenant.use-case.js';
 export * from './use-cases/monitor-ticket-sla.use-case.js';
 export * from './use-cases/open-ticket.use-case.js';
 export * from './use-cases/recalculate-ticket-priority.use-case.js';
+export * from './use-cases/route-ticket.use-case.js';
 export * from './use-cases/update-ticket-status.use-case.js';
 export * from './use-cases/upload-ticket-attachment.use-case.js';
