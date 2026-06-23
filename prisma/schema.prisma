@@ -35,6 +35,8 @@ enum TicketHistoryEvent {
   ASSIGNED
   CATEGORY_CHANGED
   COMMENT_ADDED
+  ATTACHMENT_ADDED
+  ATTACHMENT_REMOVED
 }
 
 enum CommentVisibility {
@@ -50,12 +52,13 @@ model Tenant {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  users      User[]
-  customers  Customer[]
-  categories TicketCategory[]
-  tickets    Ticket[]
-  histories  TicketHistory[]
-  comments   TicketComment[]
+  users       User[]
+  customers   Customer[]
+  categories  TicketCategory[]
+  tickets     Ticket[]
+  histories   TicketHistory[]
+  comments    TicketComment[]
+  attachments TicketAttachment[]
 
   @@map("tenants")
 }
@@ -70,10 +73,11 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant          Tenant          @relation(fields: [tenantId], references: [id])
-  ticketsAssigned Ticket[]        @relation("TicketAssignee")
-  ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
-  ticketComments  TicketComment[] @relation("CommentAuthor")
+  tenant           Tenant             @relation(fields: [tenantId], references: [id])
+  ticketsAssigned  Ticket[]           @relation("TicketAssignee")
+  ticketHistory    TicketHistory[]    @relation("TicketHistoryActor")
+  ticketComments   TicketComment[]    @relation("CommentAuthor")
+  ticketAttachments TicketAttachment[] @relation("AttachmentUploader")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -133,12 +137,13 @@ model Ticket {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  tenant     Tenant          @relation(fields: [tenantId], references: [id])
-  customer   Customer        @relation(fields: [customerId], references: [id])
-  category   TicketCategory? @relation(fields: [categoryId], references: [id])
-  assignedTo User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  history    TicketHistory[]
-  comments   TicketComment[]
+  tenant      Tenant             @relation(fields: [tenantId], references: [id])
+  customer    Customer           @relation(fields: [customerId], references: [id])
+  category    TicketCategory?    @relation(fields: [categoryId], references: [id])
+  assignedTo  User?              @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  history     TicketHistory[]
+  comments    TicketComment[]
+  attachments TicketAttachment[]
 
   @@unique([tenantId, protocol])
   @@index([tenantId])
@@ -192,4 +197,26 @@ model TicketComment {
   @@index([ticketId])
   @@index([authorId])
   @@map("ticket_comments")
+}
+
+model TicketAttachment {
+  id           String   @id @default(uuid())
+  tenantId     String
+  ticketId     String
+  uploadedById String
+  fileName     String
+  originalName String
+  mimeType     String
+  size         BigInt
+  storagePath  String
+  createdAt    DateTime @default(now())
+
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+  ticket     Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedBy User   @relation("AttachmentUploader", fields: [uploadedById], references: [id])
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([uploadedById])
+  @@map("ticket_attachments")
 }

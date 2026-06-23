@@ -3,7 +3,9 @@ import { Router } from 'express';
 
 import { authenticate } from '../../../shared/http/middlewares/authenticate.js';
 import { authorize } from '../../../shared/http/middlewares/authorize.js';
+import { upload } from '../../../shared/http/middlewares/upload.middleware.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
+import { ticketAttachmentsController } from '../controllers/ticket-attachments.controller.js';
 import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
@@ -101,6 +103,30 @@ ticketsRouter.get(
   authorize(UserRole.AGENT, UserRole.ADMIN),
   validateRequest({ params: ticketIdParamSchema }),
   ticketCommentsController.list,
+);
+
+ticketsRouter.post(
+  '/:id/attachments',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  validateRequest({ params: ticketIdParamSchema }),
+  upload.single('file'),
+  ticketAttachmentsController.upload,
+);
+
+ticketsRouter.get(
+  '/:id/attachments',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.CUSTOMER),
+  validateRequest({ params: ticketIdParamSchema }),
+  ticketAttachmentsController.list,
+);
+
+ticketsRouter.delete(
+  '/:id/attachments/:attachmentId',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.ADMIN),
+  ticketAttachmentsController.delete,
 );
 
 ticketsRouter.get(

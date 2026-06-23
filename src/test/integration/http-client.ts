@@ -34,5 +34,7 @@ export function authRequest(app: Express, token: string) {
       request(app).post(url).set('Authorization', `Bearer ${token}`),
     patch: (url: string) =>
       request(app).patch(url).set('Authorization', `Bearer ${token}`),
+    del: (url: string) =>
+      request(app).delete(url).set('Authorization', `Bearer ${token}`),
   };
 }

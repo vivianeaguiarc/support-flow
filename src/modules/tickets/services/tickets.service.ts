@@ -7,6 +7,8 @@ import {
   assignTicketUseCase,
   CreateTicketCommentUseCase,
   createTicketCommentUseCase,
+  DeleteTicketAttachmentUseCase,
+  deleteTicketAttachmentUseCase,
   FindTicketByIdUseCase,
   findTicketByIdUseCase,
   GetTicketMetricsUseCase,
@@ -15,6 +17,8 @@ import {
   getTicketStatusTransitionsUseCase,
   GetTicketSummaryUseCase,
   getTicketSummaryUseCase,
+  ListTicketAttachmentsUseCase,
+  listTicketAttachmentsUseCase,
   ListTicketCommentsUseCase,
   listTicketCommentsUseCase,
   ListTicketHistoryUseCase,
@@ -30,8 +34,14 @@ import {
   type TicketSummary,
   UpdateTicketStatusUseCase,
   updateTicketStatusUseCase,
+  UploadTicketAttachmentUseCase,
+  uploadTicketAttachmentUseCase,
 } from '../application/index.js';
 import type { Ticket } from '../domain/ticket.entity.js';
+import type {
+  TicketAttachment,
+  TicketAttachmentWithUploader,
+} from '../domain/ticket-attachment.js';
 import type {
   TicketComment,
   TicketCommentWithAuthor,
@@ -67,6 +77,9 @@ export class TicketsService {
     private readonly getTicketMetrics: GetTicketMetricsUseCase = getTicketMetricsUseCase,
     private readonly createComment: CreateTicketCommentUseCase = createTicketCommentUseCase,
     private readonly listComments: ListTicketCommentsUseCase = listTicketCommentsUseCase,
+    private readonly uploadAttachmentUseCase: UploadTicketAttachmentUseCase = uploadTicketAttachmentUseCase,
+    private readonly listAttachmentsUseCase: ListTicketAttachmentsUseCase = listTicketAttachmentsUseCase,
+    private readonly deleteAttachmentUseCase: DeleteTicketAttachmentUseCase = deleteTicketAttachmentUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
   ) {}
 
@@ -283,6 +296,54 @@ export class TicketsService {
     return this.listComments.execute({
       ticketId,
       tenantId,
+    });
+  }
+
+  async uploadAttachment(
+    ticketId: string,
+    file: Express.Multer.File,
+    authUser: AuthenticatedUser,
+  ): Promise<TicketAttachment> {
+    this.assertCanManageTickets(authUser);
+
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.uploadAttachmentUseCase.execute({
+      ticketId,
+      tenantId,
+      uploadedById: authUser.id,
+      file,
+    });
+  }
+
+  async getAttachments(
+    ticketId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<TicketAttachmentWithUploader[]> {
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    const ticket = await this.findById(ticketId, authUser);
+
+    return this.listAttachmentsUseCase.execute({
+      ticketId: ticket.id,
+      tenantId,
+    });
+  }
+
+  async removeAttachment(
+    ticketId: string,
+    attachmentId: string,
+    authUser: AuthenticatedUser,
+  ): Promise<void> {
+    this.assertCanManageTickets(authUser);
+
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    return this.deleteAttachmentUseCase.execute({
+      attachmentId,
+      ticketId,
+      tenantId,
+      deletedById: authUser.id,
     });
   }
 

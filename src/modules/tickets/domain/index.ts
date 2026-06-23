@@ -4,6 +4,16 @@ export type {
   CreateTicketDomainInput,
   RecordTicketHistoryInput,
 } from './ticket.types.js';
+export type {
+  AllowedMimeType,
+  TicketAttachment,
+  TicketAttachmentWithUploader,
+} from './ticket-attachment.js';
+export {
+  ALLOWED_EXTENSIONS,
+  ALLOWED_MIME_TYPES,
+  MAX_FILE_SIZE_BYTES,
+} from './ticket-attachment.js';
 export type { TicketCategory } from './ticket-category.entity.js';
 export type {
   TicketComment,
