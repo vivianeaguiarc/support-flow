@@ -105,6 +105,22 @@ export class TicketsController {
       next(error);
     }
   };
+
+  getStatusTransitions = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const transitions = await this.service.getStatusTransitions(
+        req.params.id as string,
+        getAuthenticatedUser(req),
+      );
+      res.status(200).json(transitions);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export const ticketsController = new TicketsController();

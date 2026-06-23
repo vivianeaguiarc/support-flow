@@ -47,6 +47,14 @@ ticketsRouter.patch(
 );
 
 ticketsRouter.get(
+  '/:id/transitions',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.CUSTOMER),
+  validateRequest({ params: ticketIdParamSchema }),
+  ticketsController.getStatusTransitions,
+);
+
+ticketsRouter.get(
   '/:id',
   authenticate,
   authorize(UserRole.AGENT, UserRole.CUSTOMER),

@@ -40,6 +40,7 @@ import type { TicketHistoryRepository } from '../../repositories/ticket-history.
 import type { TicketsRepository } from '../../repositories/tickets.repository.js';
 import { AssignTicketUseCase } from './assign-ticket.use-case.js';
 import { FindTicketByIdUseCase } from './find-ticket-by-id.use-case.js';
+import { GetTicketStatusTransitionsUseCase } from './get-ticket-status-transitions.use-case.js';
 import { ListTicketsByTenantUseCase } from './list-tickets-by-tenant.use-case.js';
 import { OpenTicketUseCase } from './open-ticket.use-case.js';
 import { UpdateTicketStatusUseCase } from './update-ticket-status.use-case.js';
@@ -295,6 +296,41 @@ describe('Ticket use cases', () => {
 
       expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
       expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('GetTicketStatusTransitionsUseCase', () => {
+    it('should return current status and allowed transitions', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+        mockTicket,
+      );
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new GetTicketStatusTransitionsUseCase(findTicket);
+
+      const result = await useCase.execute({
+        tenantId: DEFAULT_TENANT_ID,
+        ticketId: 'ticket-1',
+      });
+
+      expect(result).toEqual({
+        currentStatus: TicketStatus.OPEN,
+        allowedTransitions: [TicketStatus.IN_PROGRESS, TicketStatus.ESCALATED],
+      });
+    });
+
+    it('should throw when ticket is not found in tenant', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(null);
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new GetTicketStatusTransitionsUseCase(findTicket);
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'missing',
+        }),
+      ).rejects.toEqual(new AppError('Ticket not found', 404));
     });
   });
 

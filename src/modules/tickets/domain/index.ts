@@ -5,8 +5,6 @@ import type {
   TicketCategory,
   TicketHistory,
   TicketHistoryEvent,
-  TicketPriority,
-  TicketStatus,
 } from '@prisma/client';
 
 export type {
@@ -16,14 +14,18 @@ export type {
   TicketCategory,
   TicketHistory,
   TicketHistoryEvent,
-  TicketPriority,
-  TicketStatus,
 };
 
 export type {
   CreateTicketDomainInput,
   RecordTicketHistoryInput,
 } from './ticket.types.js';
+export {
+  TICKET_PRIORITIES,
+  TICKET_STATUSES,
+  type TicketPriority,
+  type TicketStatus,
+} from './ticket-enums.js';
 export { generateTicketProtocol } from './ticket-protocol.js';
 export {
   assertValidTicketStatusTransition,

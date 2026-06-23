@@ -1,4 +1,7 @@
-import type { TicketPriority, TicketStatus } from '@prisma/client';
+import type {
+  TicketPriority,
+  TicketStatus,
+} from '../../domain/ticket-enums.js';
 
 export type OpenTicketInput = {
   tenantId: string;

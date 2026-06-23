@@ -34,6 +34,7 @@ import type { CustomersRepository } from '../../customers/repositories/customers
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
 import { AssignTicketUseCase } from '../application/use-cases/assign-ticket.use-case.js';
 import { FindTicketByIdUseCase } from '../application/use-cases/find-ticket-by-id.use-case.js';
+import { GetTicketStatusTransitionsUseCase } from '../application/use-cases/get-ticket-status-transitions.use-case.js';
 import { ListTicketsByTenantUseCase } from '../application/use-cases/list-tickets-by-tenant.use-case.js';
 import { OpenTicketUseCase } from '../application/use-cases/open-ticket.use-case.js';
 import { UpdateTicketStatusUseCase } from '../application/use-cases/update-ticket-status.use-case.js';
@@ -167,6 +168,9 @@ describe('TicketsService', () => {
       usersRepository,
       findTicket,
     );
+    const getTicketStatusTransitions = new GetTicketStatusTransitionsUseCase(
+      findTicket,
+    );
 
     service = new TicketsService(
       openTicket,
@@ -174,6 +178,7 @@ describe('TicketsService', () => {
       listTickets,
       updateTicketStatus,
       assignTicket,
+      getTicketStatusTransitions,
       ticketsRepository,
     );
   });
@@ -324,5 +329,20 @@ describe('TicketsService', () => {
       service.updateStatus('ticket-1', TicketStatus.CLOSED, customerAuth),
     ).rejects.toEqual(new AppError('Forbidden', 403));
     expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
+  it('should return allowed status transitions for an accessible ticket', async () => {
+    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+      mockTicket,
+    );
+
+    const result = await service.getStatusTransitions('ticket-1', agentAuth);
+
+    expect(result).toEqual({
+      currentStatus: TicketStatus.OPEN,
+      allowedTransitions: [TicketStatus.IN_PROGRESS, TicketStatus.ESCALATED],
+    });
+    expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
+    expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
   });
 });
