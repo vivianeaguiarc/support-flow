@@ -37,6 +37,7 @@ enum TicketHistoryEvent {
   COMMENT_ADDED
   ATTACHMENT_ADDED
   ATTACHMENT_REMOVED
+  TICKET_ESCALATED
 }
 
 enum CommentVisibility {

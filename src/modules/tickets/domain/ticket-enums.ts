@@ -32,6 +32,7 @@ export const TicketHistoryEvent = {
   COMMENT_ADDED: 'COMMENT_ADDED',
   ATTACHMENT_ADDED: 'ATTACHMENT_ADDED',
   ATTACHMENT_REMOVED: 'ATTACHMENT_REMOVED',
+  TICKET_ESCALATED: 'TICKET_ESCALATED',
 } as const;
 
 export type TicketHistoryEvent =

@@ -142,6 +142,24 @@ export class NotificationEventService {
       });
     }
   }
+
+  async notifyTicketEscalated(
+    ticket: Ticket,
+    previousStatus: string,
+  ): Promise<void> {
+    if (!ticket.assignedToId) {
+      return;
+    }
+
+    await this.createNotification.execute({
+      tenantId: ticket.tenantId,
+      recipientId: ticket.assignedToId,
+      ticketId: ticket.id,
+      type: NotificationType.TICKET_STATUS_CHANGED,
+      title: 'Chamado escalado automaticamente',
+      message: `O chamado "${ticket.title}" (${ticket.protocol}) foi escalado automaticamente devido ao vencimento do SLA. Status anterior: ${previousStatus}.`,
+    });
+  }
 }
 
 export const notificationEventService = new NotificationEventService();
