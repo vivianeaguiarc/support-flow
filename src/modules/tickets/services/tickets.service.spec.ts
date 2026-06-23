@@ -1,4 +1,4 @@
-import type { Ticket, User } from '@prisma/client';
+import type { Customer, Ticket } from '@prisma/client';
 import { TicketPriority, TicketStatus, UserRole } from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -12,30 +12,44 @@ vi.mock('../../users/repositories/users.repository.js', () => ({
   usersRepository: {},
 }));
 
+vi.mock('../../customers/repositories/customers.repository.js', () => ({
+  CustomersRepository: vi.fn(),
+  customersRepository: {},
+}));
+
+import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import type { AuthenticatedUser } from '../../../shared/types/authenticated-user.js';
+import type { CustomersRepository } from '../../customers/repositories/customers.repository.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
 import type { TicketsRepository } from '../repositories/tickets.repository.js';
 import { TicketsService } from './tickets.service.js';
 
-const mockCustomer: User = {
+const mockCustomer: Customer = {
   id: 'customer-1',
+  tenantId: DEFAULT_TENANT_ID,
   name: 'Customer User',
   email: 'customer@example.com',
-  password: 'hashed-password',
-  role: UserRole.CUSTOMER,
+  phone: null,
+  document: null,
+  isActive: true,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
 
 const mockTicket: Ticket = {
   id: 'ticket-1',
+  tenantId: DEFAULT_TENANT_ID,
+  protocol: 'SF-20260101-ABC123',
   title: 'Login issue',
   description: 'Unable to access account',
   status: TicketStatus.OPEN,
   priority: TicketPriority.HIGH,
+  categoryId: null,
   customerId: 'customer-1',
-  assignedAgentId: null,
+  assignedToId: null,
+  slaDueAt: null,
+  closedAt: null,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
@@ -50,18 +64,21 @@ const customerAuth: AuthenticatedUser = {
   id: 'customer-1',
   email: 'customer@example.com',
   role: UserRole.CUSTOMER,
+  tenantId: DEFAULT_TENANT_ID,
 };
 
 const agentAuth: AuthenticatedUser = {
   id: 'agent-1',
   email: 'agent@example.com',
   role: UserRole.AGENT,
+  tenantId: DEFAULT_TENANT_ID,
 };
 
 const adminAuth: AuthenticatedUser = {
   id: 'admin-1',
   email: 'admin@example.com',
   role: UserRole.ADMIN,
+  tenantId: DEFAULT_TENANT_ID,
 };
 
 function createTicketsRepositoryMock(): TicketsRepository {
@@ -70,9 +87,9 @@ function createTicketsRepositoryMock(): TicketsRepository {
     findById: vi.fn(),
     list: vi.fn(),
     listByCustomerId: vi.fn(),
-    listByAssignedAgentId: vi.fn(),
+    listByAssignedToId: vi.fn(),
     updateStatus: vi.fn(),
-    assignAgent: vi.fn(),
+    assignTo: vi.fn(),
   };
 }
 
@@ -85,20 +102,34 @@ function createUsersRepositoryMock(): UsersRepository {
   };
 }
 
+function createCustomersRepositoryMock(): CustomersRepository {
+  return {
+    create: vi.fn(),
+    findById: vi.fn(),
+    findByEmail: vi.fn(),
+  };
+}
+
 describe('TicketsService', () => {
   let ticketsRepository: TicketsRepository;
   let usersRepository: UsersRepository;
+  let customersRepository: CustomersRepository;
   let service: TicketsService;
 
   beforeEach(() => {
     ticketsRepository = createTicketsRepositoryMock();
     usersRepository = createUsersRepositoryMock();
-    service = new TicketsService(ticketsRepository, usersRepository);
+    customersRepository = createCustomersRepositoryMock();
+    service = new TicketsService(
+      ticketsRepository,
+      usersRepository,
+      customersRepository,
+    );
   });
 
   it('should allow CUSTOMER to create a ticket for themselves', async () => {
     // Arrange
-    vi.mocked(usersRepository.findById).mockResolvedValue(mockCustomer);
+    vi.mocked(customersRepository.findById).mockResolvedValue(mockCustomer);
     vi.mocked(ticketsRepository.create).mockResolvedValue(mockTicket);
 
     // Act
@@ -113,13 +144,17 @@ describe('TicketsService', () => {
     );
 
     // Assert
-    expect(ticketsRepository.create).toHaveBeenCalledWith({
-      title: 'Login issue',
-      description: 'Unable to access account',
-      customerId: 'customer-1',
-      priority: TicketPriority.HIGH,
-      status: TicketStatus.OPEN,
-    });
+    expect(ticketsRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: DEFAULT_TENANT_ID,
+        title: 'Login issue',
+        description: 'Unable to access account',
+        customerId: 'customer-1',
+        priority: TicketPriority.HIGH,
+        status: TicketStatus.OPEN,
+        protocol: expect.stringMatching(/^SF-\d{8}-[A-Z0-9]{6}$/),
+      }),
+    );
     expect(result).toEqual(mockTicket);
   });
 
@@ -189,7 +224,7 @@ describe('TicketsService', () => {
 
   it('should reject ticket creation when customer does not exist', async () => {
     // Arrange
-    vi.mocked(usersRepository.findById).mockResolvedValue(null);
+    vi.mocked(customersRepository.findById).mockResolvedValue(null);
 
     // Act & Assert
     await expect(
@@ -215,7 +250,7 @@ describe('TicketsService', () => {
     await expect(
       service.assignAgent('ticket-1', 'missing-agent', agentAuth),
     ).rejects.toEqual(new AppError('Agent not found', 404));
-    expect(ticketsRepository.assignAgent).not.toHaveBeenCalled();
+    expect(ticketsRepository.assignTo).not.toHaveBeenCalled();
   });
 
   it('should reject CUSTOMER listing another customer tickets', async () => {

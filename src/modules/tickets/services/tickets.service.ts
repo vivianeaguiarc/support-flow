@@ -1,12 +1,18 @@
 import type { Ticket, TicketPriority } from '@prisma/client';
 import { TicketStatus, UserRole } from '@prisma/client';
 
+import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import type { AuthenticatedUser } from '../../../shared/types/authenticated-user.js';
+import {
+  CustomersRepository,
+  customersRepository as defaultCustomersRepository,
+} from '../../customers/repositories/customers.repository.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../users/repositories/users.repository.js';
+import { generateTicketProtocol } from '../domain/ticket-protocol.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -17,13 +23,16 @@ export type CreateTicketServiceInput = {
   description: string;
   customerId: string;
   priority?: TicketPriority;
-  assignedAgentId?: string;
+  assignedToId?: string;
+  categoryId?: string;
+  slaDueAt?: Date;
 };
 
 export class TicketsService {
   constructor(
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
+    private readonly customersRepository: CustomersRepository = defaultCustomersRepository,
   ) {}
 
   async create(
@@ -32,26 +41,25 @@ export class TicketsService {
   ): Promise<Ticket> {
     this.assertCanCreateTicket(authUser, data);
 
-    await this.ensureCustomer(data.customerId);
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    await this.ensureCustomer(data.customerId, tenantId);
 
-    if (data.assignedAgentId) {
-      await this.ensureAgent(data.assignedAgentId);
+    if (data.assignedToId) {
+      await this.ensureAgent(data.assignedToId);
     }
 
     const ticket = await this.ticketsRepository.create({
+      tenantId,
+      protocol: generateTicketProtocol(),
       title: data.title,
       description: data.description,
       customerId: data.customerId,
       priority: data.priority,
+      categoryId: data.categoryId,
+      assignedToId: data.assignedToId,
+      slaDueAt: data.slaDueAt,
       status: TicketStatus.OPEN,
     });
-
-    if (data.assignedAgentId) {
-      return this.ticketsRepository.assignAgent(
-        ticket.id,
-        data.assignedAgentId,
-      );
-    }
 
     return ticket;
   }
@@ -85,11 +93,11 @@ export class TicketsService {
   }
 
   async listByAssignedAgentId(
-    assignedAgentId: string,
+    assignedToId: string,
     authUser: AuthenticatedUser,
   ): Promise<Ticket[]> {
-    this.assertCanListAgentTickets(assignedAgentId, authUser);
-    return this.ticketsRepository.listByAssignedAgentId(assignedAgentId);
+    this.assertCanListAgentTickets(assignedToId, authUser);
+    return this.ticketsRepository.listByAssignedToId(assignedToId);
   }
 
   async updateStatus(
@@ -104,13 +112,13 @@ export class TicketsService {
 
   async assignAgent(
     id: string,
-    assignedAgentId: string,
+    assignedToId: string,
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
     this.assertCanManageTickets(authUser);
     await this.findById(id, authUser);
-    await this.ensureAgent(assignedAgentId);
-    return this.ticketsRepository.assignAgent(id, assignedAgentId);
+    await this.ensureAgent(assignedToId);
+    return this.ticketsRepository.assignTo(id, assignedToId);
   }
 
   private assertCanCreateTicket(
@@ -126,7 +134,7 @@ export class TicketsService {
         throw new AppError('Forbidden', 403);
       }
 
-      if (data.assignedAgentId) {
+      if (data.assignedToId) {
         throw new AppError('Customers cannot assign agents', 400);
       }
 
@@ -196,15 +204,22 @@ export class TicketsService {
     throw new AppError('Forbidden', 403);
   }
 
-  private async ensureCustomer(customerId: string): Promise<void> {
-    const customer = await this.usersRepository.findById(customerId);
+  private async ensureCustomer(
+    customerId: string,
+    tenantId: string,
+  ): Promise<void> {
+    const customer = await this.customersRepository.findById(customerId);
 
     if (!customer) {
       throw new AppError('Customer not found', 404);
     }
 
-    if (customer.role !== UserRole.CUSTOMER) {
-      throw new AppError('User must have CUSTOMER role', 400);
+    if (customer.tenantId !== tenantId) {
+      throw new AppError('Forbidden', 403);
+    }
+
+    if (!customer.isActive) {
+      throw new AppError('Customer is inactive', 400);
     }
   }
 
@@ -215,7 +230,7 @@ export class TicketsService {
       throw new AppError('Agent not found', 404);
     }
 
-    if (agent.role !== UserRole.AGENT) {
+    if (agent.role !== UserRole.AGENT && agent.role !== UserRole.ADMIN) {
       throw new AppError('User must have AGENT role', 400);
     }
   }

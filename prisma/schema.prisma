@@ -27,38 +27,135 @@ enum TicketPriority {
   URGENT
 }
 
-model User {
+enum TicketHistoryEvent {
+  CREATED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ASSIGNED
+  CATEGORY_CHANGED
+}
+
+model Tenant {
   id        String   @id @default(uuid())
   name      String
-  email     String   @unique
-  password  String
-  role      UserRole @default(CUSTOMER)
+  slug      String   @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ticketsCreated  Ticket[] @relation("TicketCustomer")
-  ticketsAssigned Ticket[] @relation("TicketAgent")
+  users      User[]
+  customers  Customer[]
+  categories TicketCategory[]
+  tickets    Ticket[]
+  histories  TicketHistory[]
 
+  @@map("tenants")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  email     String
+  password  String
+  role      UserRole @default(AGENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id])
+  ticketsAssigned Ticket[]        @relation("TicketAssignee")
+  ticketHistory   TicketHistory[] @relation("TicketHistoryActor")
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
   @@map("users")
 }
 
+model Customer {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  email     String
+  phone     String?
+  document  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  tickets Ticket[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+model TicketCategory {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  tickets Ticket[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("ticket_categories")
+}
+
 model Ticket {
-  id              String         @id @default(uuid())
-  title           String
-  description     String
-  status          TicketStatus   @default(OPEN)
-  priority        TicketPriority @default(MEDIUM)
-  customerId      String
-  assignedAgentId String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id           String         @id @default(uuid())
+  tenantId     String
+  protocol     String
+  title        String
+  description  String
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  categoryId   String?
+  customerId   String
+  assignedToId String?
+  slaDueAt     DateTime?
+  closedAt     DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
-  customer      User  @relation("TicketCustomer", fields: [customerId], references: [id])
-  assignedAgent User? @relation("TicketAgent", fields: [assignedAgentId], references: [id])
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  customer   Customer        @relation(fields: [customerId], references: [id])
+  category   TicketCategory? @relation(fields: [categoryId], references: [id])
+  assignedTo User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  history    TicketHistory[]
 
+  @@unique([tenantId, protocol])
+  @@index([tenantId])
   @@index([status])
   @@index([priority])
   @@index([customerId])
-  @@index([assignedAgentId])
+  @@index([assignedToId])
+  @@index([categoryId])
   @@map("tickets")
+}
+
+model TicketHistory {
+  id          String             @id @default(uuid())
+  tenantId    String
+  ticketId    String
+  event       TicketHistoryEvent
+  field       String?
+  oldValue    String?
+  newValue    String?
+  changedById String?
+  createdAt   DateTime           @default(now())
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  ticket    Ticket  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  changedBy User?   @relation("TicketHistoryActor", fields: [changedById], references: [id])
+
+  @@index([tenantId])
+  @@index([ticketId])
+  @@index([changedById])
+  @@map("ticket_histories")
 }

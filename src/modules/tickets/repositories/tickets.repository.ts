@@ -1,18 +1,29 @@
-import type { Ticket, TicketPriority, TicketStatus } from '@prisma/client';
+import type { Ticket, TicketStatus } from '@prisma/client';
+import { TicketPriority } from '@prisma/client';
 
 import { prisma } from '../../../shared/database/prisma.js';
+import type { CreateTicketDomainInput } from '../domain/ticket.types.js';
 
-export type CreateTicketInput = {
-  title: string;
-  description: string;
-  customerId: string;
-  priority?: TicketPriority;
+export type CreateTicketInput = CreateTicketDomainInput & {
   status?: TicketStatus;
 };
 
 export class TicketsRepository {
   async create(data: CreateTicketInput): Promise<Ticket> {
-    return prisma.ticket.create({ data });
+    return prisma.ticket.create({
+      data: {
+        tenantId: data.tenantId,
+        protocol: data.protocol,
+        title: data.title,
+        description: data.description,
+        customerId: data.customerId,
+        priority: data.priority ?? TicketPriority.MEDIUM,
+        status: data.status,
+        categoryId: data.categoryId,
+        assignedToId: data.assignedToId,
+        slaDueAt: data.slaDueAt,
+      },
+    });
   }
 
   async findById(id: string): Promise<Ticket | null> {
@@ -30,9 +41,9 @@ export class TicketsRepository {
     });
   }
 
-  async listByAssignedAgentId(assignedAgentId: string): Promise<Ticket[]> {
+  async listByAssignedToId(assignedToId: string): Promise<Ticket[]> {
     return prisma.ticket.findMany({
-      where: { assignedAgentId },
+      where: { assignedToId },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -40,14 +51,17 @@ export class TicketsRepository {
   async updateStatus(id: string, status: TicketStatus): Promise<Ticket> {
     return prisma.ticket.update({
       where: { id },
-      data: { status },
+      data: {
+        status,
+        closedAt: status === 'CLOSED' ? new Date() : null,
+      },
     });
   }
 
-  async assignAgent(id: string, assignedAgentId: string): Promise<Ticket> {
+  async assignTo(id: string, assignedToId: string): Promise<Ticket> {
     return prisma.ticket.update({
       where: { id },
-      data: { assignedAgentId },
+      data: { assignedToId },
     });
   }
 }

@@ -7,6 +7,7 @@ export const authService = new AuthService(usersRepository, (user) =>
     id: user.id,
     email: user.email,
     role: user.role,
+    tenantId: user.tenantId,
   }),
 );
 
