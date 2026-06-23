@@ -4,15 +4,15 @@ import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
   type TicketAttachmentsRepository,
   ticketAttachmentsRepository,
-} from '../../repositories/ticket-attachments.repository.js';
+} from '../../infrastructure/repositories/ticket-attachments.repository.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type DeleteTicketAttachmentInput = {
   attachmentId: string;

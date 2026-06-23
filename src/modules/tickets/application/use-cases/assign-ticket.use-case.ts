@@ -3,7 +3,7 @@ import { UserRole } from '../../../../shared/types/user-role.js';
 import {
   type NotificationEventService,
   notificationEventService,
-} from '../../../notifications/services/notification-event.service.js';
+} from '../../../notifications/application/services/notification-event.service.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
@@ -12,11 +12,11 @@ import { type Ticket, TicketHistoryEvent } from '../../domain/index.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 import type { AssignTicketInput } from '../inputs/ticket-use-case.inputs.js';
 import {
   FindTicketByIdUseCase,

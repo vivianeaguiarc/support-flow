@@ -6,13 +6,13 @@ import { NotificationType } from '../../../notifications/domain/notification-typ
 import {
   type NotificationsRepository,
   notificationsRepository,
-} from '../../../notifications/repositories/notifications.repository.js';
+} from '../../../notifications/infrastructure/repositories/notifications.repository.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketStatus } from '../../domain/ticket-enums.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type MonitorTicketSlaResult = {
   ticketsChecked: number;

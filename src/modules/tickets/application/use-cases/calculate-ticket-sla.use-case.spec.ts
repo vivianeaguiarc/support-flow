@@ -6,20 +6,23 @@ import {
   TicketPriority,
 } from '../../domain/index.js';
 
-vi.mock('../../repositories/tenants.repository.js', () => ({
+vi.mock('../../infrastructure/repositories/tenants.repository.js', () => ({
   TenantsRepository: vi.fn(),
   tenantsRepository: {},
 }));
 
-vi.mock('../../repositories/ticket-categories.repository.js', () => ({
-  TicketCategoriesRepository: vi.fn(),
-  ticketCategoriesRepository: {},
-}));
+vi.mock(
+  '../../infrastructure/repositories/ticket-categories.repository.js',
+  () => ({
+    TicketCategoriesRepository: vi.fn(),
+    ticketCategoriesRepository: {},
+  }),
+);
 
 import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
-import type { TenantsRepository } from '../../repositories/tenants.repository.js';
-import type { TicketCategoriesRepository } from '../../repositories/ticket-categories.repository.js';
+import type { TenantsRepository } from '../../infrastructure/repositories/tenants.repository.js';
+import type { TicketCategoriesRepository } from '../../infrastructure/repositories/ticket-categories.repository.js';
 import { CalculateTicketSlaUseCase } from './calculate-ticket-sla.use-case.js';
 
 const mockTenant: Tenant = {

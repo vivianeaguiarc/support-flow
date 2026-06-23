@@ -7,7 +7,7 @@ import {
 import {
   type NotificationEventService,
   notificationEventService,
-} from '../../../notifications/services/notification-event.service.js';
+} from '../../../notifications/application/services/notification-event.service.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
@@ -21,15 +21,15 @@ import { generateTicketProtocol } from '../../domain/ticket-protocol.js';
 import {
   TicketCategoriesRepository,
   ticketCategoriesRepository as defaultTicketCategoriesRepository,
-} from '../../repositories/ticket-categories.repository.js';
+} from '../../infrastructure/repositories/ticket-categories.repository.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 import type { OpenTicketInput } from '../inputs/ticket-use-case.inputs.js';
 import {
   type CalculateTicketPriorityUseCase,

@@ -3,17 +3,17 @@ import { UserRole } from '../../../../shared/types/user-role.js';
 import {
   type NotificationEventService,
   notificationEventService,
-} from '../../../notifications/services/notification-event.service.js';
+} from '../../../notifications/application/services/notification-event.service.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
   type TicketHistoryRepository,
   ticketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type AutoAssignTicketsResult = {
   ticketsProcessed: number;

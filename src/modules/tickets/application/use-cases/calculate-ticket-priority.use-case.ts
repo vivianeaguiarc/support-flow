@@ -2,7 +2,7 @@ import { TicketPriority } from '../../domain/ticket-enums.js';
 import {
   type TicketCategoriesRepository,
   ticketCategoriesRepository,
-} from '../../repositories/ticket-categories.repository.js';
+} from '../../infrastructure/repositories/ticket-categories.repository.js';
 
 export type CalculateTicketPriorityInput = {
   tenantId: string;

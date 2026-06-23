@@ -1,7 +1,7 @@
 import {
   type NotificationsRepository,
   notificationsRepository,
-} from '../../repositories/notifications.repository.js';
+} from '../../infrastructure/repositories/notifications.repository.js';
 
 export type MarkAllNotificationsAsReadInput = {
   recipientId: string;

@@ -4,11 +4,11 @@ import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
   type TicketHistoryRepository,
   ticketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 import {
   type CalculateTicketPriorityUseCase,
   calculateTicketPriorityUseCase,

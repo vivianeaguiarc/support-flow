@@ -2,7 +2,7 @@ import { AppError } from '../../../../shared/errors/app-error.js';
 import {
   type NotificationEventService,
   notificationEventService,
-} from '../../../notifications/services/notification-event.service.js';
+} from '../../../notifications/application/services/notification-event.service.js';
 import type { TicketComment } from '../../domain/ticket-comment.js';
 import {
   CommentVisibility,
@@ -11,15 +11,15 @@ import {
 import {
   type TicketCommentsRepository,
   ticketCommentsRepository,
-} from '../../repositories/ticket-comments.repository.js';
+} from '../../infrastructure/repositories/ticket-comments.repository.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type CreateTicketCommentInput = {
   ticketId: string;

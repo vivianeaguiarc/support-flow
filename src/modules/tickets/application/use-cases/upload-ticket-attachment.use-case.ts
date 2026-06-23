@@ -3,21 +3,21 @@ import { fileStorageService } from '../../../../shared/storage/file-storage.serv
 import {
   type NotificationEventService,
   notificationEventService,
-} from '../../../notifications/services/notification-event.service.js';
+} from '../../../notifications/application/services/notification-event.service.js';
 import type { TicketAttachment } from '../../domain/ticket-attachment.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
   type TicketAttachmentsRepository,
   ticketAttachmentsRepository,
-} from '../../repositories/ticket-attachments.repository.js';
+} from '../../infrastructure/repositories/ticket-attachments.repository.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type UploadTicketAttachmentInput = {
   ticketId: string;

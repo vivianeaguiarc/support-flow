@@ -8,8 +8,8 @@ import {
   resetTestDatabase,
 } from '../../../test/integration/database.js';
 import { NotificationType } from '../../notifications/domain/notification-types.js';
+import { slaMonitoringService } from '../application/services/sla-monitoring.service.js';
 import { TicketStatus } from '../domain/ticket-enums.js';
-import { slaMonitoringService } from '../services/sla-monitoring.service.js';
 
 describe.sequential('SLA Monitoring', () => {
   let tenantId: string;

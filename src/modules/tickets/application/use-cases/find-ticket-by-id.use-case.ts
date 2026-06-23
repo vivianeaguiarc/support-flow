@@ -3,7 +3,7 @@ import type { Ticket } from '../../domain/ticket.entity.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 import type { FindTicketByIdInput } from '../inputs/ticket-use-case.inputs.js';
 
 export class FindTicketByIdUseCase {

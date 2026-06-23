@@ -1,18 +1,18 @@
 import {
   type NotificationEventService,
   notificationEventService,
-} from '../../../notifications/services/notification-event.service.js';
+} from '../../../notifications/application/services/notification-event.service.js';
 import { type Ticket, TicketHistoryEvent } from '../../domain/index.js';
 import { assertAssigneeRequiredForInProgress } from '../../domain/ticket-in-progress.rules.js';
 import { assertValidTicketStatusTransition } from '../../domain/ticket-status-transitions.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 import type { UpdateTicketStatusInput } from '../inputs/ticket-use-case.inputs.js';
 import {
   FindTicketByIdUseCase,

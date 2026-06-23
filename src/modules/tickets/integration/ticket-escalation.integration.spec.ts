@@ -7,8 +7,8 @@ import {
   migrateTestDatabase,
   resetTestDatabase,
 } from '../../../test/integration/database.js';
+import { ticketEscalationService } from '../application/services/ticket-escalation.service.js';
 import { TicketHistoryEvent, TicketStatus } from '../domain/ticket-enums.js';
-import { ticketEscalationService } from '../services/ticket-escalation.service.js';
 
 describe.sequential('Ticket Escalation by SLA', () => {
   let tenantId: string;

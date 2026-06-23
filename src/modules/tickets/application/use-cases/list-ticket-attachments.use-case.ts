@@ -3,11 +3,11 @@ import type { TicketAttachmentWithUploader } from '../../domain/ticket-attachmen
 import {
   type TicketAttachmentsRepository,
   ticketAttachmentsRepository,
-} from '../../repositories/ticket-attachments.repository.js';
+} from '../../infrastructure/repositories/ticket-attachments.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type ListTicketAttachmentsInput = {
   ticketId: string;

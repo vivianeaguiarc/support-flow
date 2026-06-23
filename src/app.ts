@@ -2,8 +2,8 @@ import express from 'express';
 
 import { setupSwagger } from './config/setup-swagger.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
-import { notificationsRouter } from './modules/notifications/routes/notifications.routes.js';
-import { ticketsRouter } from './modules/tickets/routes/tickets.routes.js';
+import { notificationsRouter } from './modules/notifications/presentation/routes/notifications.routes.js';
+import { ticketsRouter } from './modules/tickets/presentation/routes/tickets.routes.js';
 import { usersRouter } from './modules/users/routes/users.routes.js';
 import { errorHandler } from './shared/http/middlewares/error-handler.js';
 import { notFoundHandler } from './shared/http/middlewares/not-found-handler.js';

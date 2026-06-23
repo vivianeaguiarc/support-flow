@@ -10,20 +10,26 @@ import {
   TicketStatus,
 } from '../../domain/index.js';
 
-vi.mock('../../repositories/tickets.repository.js', () => ({
+vi.mock('../../infrastructure/repositories/tickets.repository.js', () => ({
   TicketsRepository: vi.fn(),
   ticketsRepository: {},
 }));
 
-vi.mock('../../repositories/ticket-history.repository.js', () => ({
-  TicketHistoryRepository: vi.fn(),
-  ticketHistoryRepository: {},
-}));
+vi.mock(
+  '../../infrastructure/repositories/ticket-history.repository.js',
+  () => ({
+    TicketHistoryRepository: vi.fn(),
+    ticketHistoryRepository: {},
+  }),
+);
 
-vi.mock('../../repositories/ticket-categories.repository.js', () => ({
-  TicketCategoriesRepository: vi.fn(),
-  ticketCategoriesRepository: {},
-}));
+vi.mock(
+  '../../infrastructure/repositories/ticket-categories.repository.js',
+  () => ({
+    TicketCategoriesRepository: vi.fn(),
+    ticketCategoriesRepository: {},
+  }),
+);
 
 vi.mock('../../../users/repositories/users.repository.js', () => ({
   UsersRepository: vi.fn(),
@@ -39,9 +45,9 @@ import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import type { CustomersRepository } from '../../../customers/repositories/customers.repository.js';
 import type { UsersRepository } from '../../../users/repositories/users.repository.js';
-import type { TicketCategoriesRepository } from '../../repositories/ticket-categories.repository.js';
-import type { TicketHistoryRepository } from '../../repositories/ticket-history.repository.js';
-import type { TicketsRepository } from '../../repositories/tickets.repository.js';
+import type { TicketCategoriesRepository } from '../../infrastructure/repositories/ticket-categories.repository.js';
+import type { TicketHistoryRepository } from '../../infrastructure/repositories/ticket-history.repository.js';
+import type { TicketsRepository } from '../../infrastructure/repositories/tickets.repository.js';
 import { AssignTicketUseCase } from './assign-ticket.use-case.js';
 import { CalculateTicketSlaUseCase } from './calculate-ticket-sla.use-case.js';
 import { FindTicketByIdUseCase } from './find-ticket-by-id.use-case.js';

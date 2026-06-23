@@ -2,7 +2,7 @@ import type { NotificationWithTicket } from '../../domain/notification.entity.js
 import {
   type NotificationsRepository,
   notificationsRepository,
-} from '../../repositories/notifications.repository.js';
+} from '../../infrastructure/repositories/notifications.repository.js';
 
 export type ListNotificationsInput = {
   tenantId: string;

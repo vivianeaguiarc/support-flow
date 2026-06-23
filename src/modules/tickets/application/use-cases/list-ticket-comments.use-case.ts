@@ -3,11 +3,11 @@ import type { TicketCommentWithAuthor } from '../../domain/ticket-comment.js';
 import {
   type TicketCommentsRepository,
   ticketCommentsRepository,
-} from '../../repositories/ticket-comments.repository.js';
+} from '../../infrastructure/repositories/ticket-comments.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
-} from '../../repositories/tickets.repository.js';
+} from '../../infrastructure/repositories/tickets.repository.js';
 
 export type ListTicketCommentsInput = {
   ticketId: string;

@@ -1,4 +1,4 @@
-import type { TicketHistoryWithActor } from '../../repositories/ticket-history.repository.js';
+import type { TicketHistoryWithActor } from '../../infrastructure/repositories/ticket-history.repository.js';
 
 export type TicketHistoryActor = {
   name: string;

@@ -1,7 +1,7 @@
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
-} from '../../repositories/ticket-history.repository.js';
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import type { FindTicketByIdInput } from '../inputs/ticket-use-case.inputs.js';
 import {
   type TicketHistoryResult,

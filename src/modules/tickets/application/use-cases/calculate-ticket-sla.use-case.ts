@@ -4,11 +4,11 @@ import { calculateSlaDueAt, resolveSlaHours } from '../../domain/ticket-sla.js';
 import {
   TenantsRepository,
   tenantsRepository as defaultTenantsRepository,
-} from '../../repositories/tenants.repository.js';
+} from '../../infrastructure/repositories/tenants.repository.js';
 import {
   TicketCategoriesRepository,
   ticketCategoriesRepository as defaultTicketCategoriesRepository,
-} from '../../repositories/ticket-categories.repository.js';
+} from '../../infrastructure/repositories/ticket-categories.repository.js';
 
 export type CalculateTicketSlaInput = {
   tenantId: string;

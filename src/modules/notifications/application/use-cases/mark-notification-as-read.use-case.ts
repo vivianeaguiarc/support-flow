@@ -2,7 +2,7 @@ import { AppError } from '../../../../shared/errors/app-error.js';
 import {
   type NotificationsRepository,
   notificationsRepository,
-} from '../../repositories/notifications.repository.js';
+} from '../../infrastructure/repositories/notifications.repository.js';
 
 export type MarkNotificationAsReadInput = {
   notificationId: string;
