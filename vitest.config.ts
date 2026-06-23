@@ -5,6 +5,7 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.spec.ts'],
     exclude: ['src/**/*.integration.spec.ts'],
+    setupFiles: ['src/test/unit/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
