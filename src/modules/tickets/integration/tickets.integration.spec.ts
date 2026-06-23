@@ -1,8 +1,8 @@
-import { TicketHistoryEvent, TicketStatus, UserRole } from '@prisma/client';
 import type { Express } from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../app.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import {
   disconnectTestDatabase,
   migrateTestDatabase,
@@ -14,6 +14,7 @@ import {
   createAuthToken,
   login,
 } from '../../../test/integration/http-client.js';
+import { TicketHistoryEvent, TicketStatus } from '../domain/ticket-enums.js';
 
 describe.sequential('Ticket workflow integration', () => {
   let app: Express;
@@ -83,9 +84,14 @@ describe.sequential('Ticket workflow integration', () => {
 
     const listResponse = await api.get('/api/v1/tickets').expect(200);
 
-    expect(listResponse.body).toHaveLength(1);
-    expect(listResponse.body[0].id).toBe(ticketId);
-    expect(listResponse.body[0].tenantId).toBe(fixtures.tenantA.id);
+    expect(listResponse.body).toMatchObject({
+      total: 1,
+      page: 1,
+      limit: 10,
+    });
+    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data[0].id).toBe(ticketId);
+    expect(listResponse.body.data[0].tenantId).toBe(fixtures.tenantA.id);
 
     const findResponse = await api
       .get(`/api/v1/tickets/${ticketId}`)

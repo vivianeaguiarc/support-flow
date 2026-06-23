@@ -265,23 +265,35 @@ describe('Ticket use cases', () => {
 
   describe('ListTicketsByTenantUseCase', () => {
     it('should list tickets scoped by tenant with filters', async () => {
-      vi.mocked(ticketsRepository.listWithFilters).mockResolvedValue([
-        mockTicket,
-      ]);
+      vi.mocked(ticketsRepository.listWithFilters).mockResolvedValue({
+        data: [mockTicket],
+        total: 1,
+        page: 1,
+        limit: 10,
+      });
 
       const useCase = new ListTicketsByTenantUseCase(ticketsRepository);
       const result = await useCase.execute({
         tenantId: DEFAULT_TENANT_ID,
         status: TicketStatus.OPEN,
         priority: TicketPriority.HIGH,
+        page: 1,
+        limit: 10,
       });
 
       expect(ticketsRepository.listWithFilters).toHaveBeenCalledWith({
         tenantId: DEFAULT_TENANT_ID,
         status: TicketStatus.OPEN,
         priority: TicketPriority.HIGH,
+        page: 1,
+        limit: 10,
       });
-      expect(result).toEqual([mockTicket]);
+      expect(result).toEqual({
+        data: [mockTicket],
+        total: 1,
+        page: 1,
+        limit: 10,
+      });
     });
   });
 

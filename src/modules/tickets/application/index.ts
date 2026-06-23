@@ -1,3 +1,4 @@
+export type { PaginatedTicketList } from '../domain/ticket-paginated-list.js';
 export * from './inputs/ticket-use-case.inputs.js';
 export * from './mappers/to-ticket-history-response.js';
 export * from './use-cases/assign-ticket.use-case.js';

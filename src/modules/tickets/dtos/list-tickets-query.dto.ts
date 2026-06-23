@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+import {
+  DEFAULT_TICKET_LIST_LIMIT,
+  DEFAULT_TICKET_LIST_PAGE,
+  MAX_TICKET_LIST_LIMIT,
+} from '../domain/ticket-list-pagination.js';
+
 const optionalBooleanQuery = z.preprocess(
   (value) => (value === 'true' ? true : value === 'false' ? false : undefined),
   z.boolean().optional(),
@@ -26,8 +32,13 @@ export const listTicketsQuerySchema = z
     search: z.string().trim().min(1, 'Search term is required').optional(),
     createdFrom: z.coerce.date().optional(),
     createdTo: z.coerce.date().optional(),
-    page: z.coerce.number().int().min(1).optional(),
-    limit: z.coerce.number().int().min(1).max(100).optional(),
+    page: z.coerce.number().int().min(1).default(DEFAULT_TICKET_LIST_PAGE),
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_TICKET_LIST_LIMIT)
+      .default(DEFAULT_TICKET_LIST_LIMIT),
   })
   .refine((data) => !(data.unassigned && data.assignedToId), {
     message: 'unassigned cannot be combined with assignedToId',

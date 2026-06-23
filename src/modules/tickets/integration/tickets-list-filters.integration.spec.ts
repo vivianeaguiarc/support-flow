@@ -1,8 +1,8 @@
-import { TicketStatus, UserRole } from '@prisma/client';
 import type { Express } from 'express';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../app.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import {
   disconnectTestDatabase,
   integrationPrisma,
@@ -15,6 +15,7 @@ import {
   createAuthToken,
   login,
 } from '../../../test/integration/http-client.js';
+import { TicketStatus } from '../domain/ticket-enums.js';
 
 describe.sequential('Ticket listing filters integration', () => {
   let app: Express;
@@ -78,17 +79,23 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ status: TicketStatus.OPEN, priority: 'HIGH' })
       .expect(200);
 
-    expect(statusFiltered.body).toHaveLength(1);
-    expect(statusFiltered.body[0].id).toBe(openHighResponse.body.id);
+    expect(statusFiltered.body).toMatchObject({
+      total: 1,
+      page: 1,
+      limit: 10,
+    });
+    expect(statusFiltered.body.data).toHaveLength(1);
+    expect(statusFiltered.body.data[0].id).toBe(openHighResponse.body.id);
 
     const unassignedFiltered = await api
       .get('/api/v1/tickets')
       .query({ unassigned: 'true' })
       .expect(200);
 
-    expect(unassignedFiltered.body).toHaveLength(2);
+    expect(unassignedFiltered.body.total).toBe(2);
+    expect(unassignedFiltered.body.data).toHaveLength(2);
     expect(
-      unassignedFiltered.body.every(
+      unassignedFiltered.body.data.every(
         (ticket: { assignedToId: string | null }) =>
           ticket.assignedToId === null,
       ),
@@ -99,16 +106,18 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ assignedToId: fixtures.agentA.id })
       .expect(200);
 
-    expect(assignedFiltered.body).toHaveLength(1);
-    expect(assignedFiltered.body[0].id).toBe(assignedResponse.body.id);
+    expect(assignedFiltered.body.total).toBe(1);
+    expect(assignedFiltered.body.data).toHaveLength(1);
+    expect(assignedFiltered.body.data[0].id).toBe(assignedResponse.body.id);
 
     const searchFiltered = await api
       .get('/api/v1/tickets')
       .query({ search: 'billing issue' })
       .expect(200);
 
-    expect(searchFiltered.body).toHaveLength(1);
-    expect(searchFiltered.body[0].title).toBe('Billing issue alpha');
+    expect(searchFiltered.body.total).toBe(1);
+    expect(searchFiltered.body.data).toHaveLength(1);
+    expect(searchFiltered.body.data[0].title).toBe('Billing issue alpha');
   });
 
   it('filters overdue tickets and keeps tenant isolation', async () => {
@@ -169,8 +178,60 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ overdue: 'true' })
       .expect(200);
 
-    expect(overdueFiltered.body).toHaveLength(1);
-    expect(overdueFiltered.body[0].id).toBe(overdueResponse.body.id);
-    expect(overdueFiltered.body[0].tenantId).toBe(fixtures.tenantA.id);
+    expect(overdueFiltered.body).toMatchObject({
+      total: 1,
+      page: 1,
+      limit: 10,
+    });
+    expect(overdueFiltered.body.data).toHaveLength(1);
+    expect(overdueFiltered.body.data[0].id).toBe(overdueResponse.body.id);
+    expect(overdueFiltered.body.data[0].tenantId).toBe(fixtures.tenantA.id);
+  });
+
+  it('returns pagination metadata and respects page and limit', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const agentToken = await login(
+      app,
+      fixtures.agentA.email,
+      fixtures.password,
+    );
+    const api = authRequest(app, agentToken);
+
+    for (let index = 0; index < 3; index += 1) {
+      await api
+        .post('/api/v1/tickets')
+        .send({
+          title: `Pagination ticket ${index + 1}`,
+          description: 'Ticket used to validate pagination metadata',
+          customerId: fixtures.customerA.id,
+          priority: 'MEDIUM',
+        })
+        .expect(201);
+    }
+
+    const pageOne = await api
+      .get('/api/v1/tickets')
+      .query({ page: 1, limit: 2 })
+      .expect(200);
+
+    expect(pageOne.body).toEqual({
+      data: expect.any(Array),
+      total: 3,
+      page: 1,
+      limit: 2,
+    });
+    expect(pageOne.body.data).toHaveLength(2);
+
+    const pageTwo = await api
+      .get('/api/v1/tickets')
+      .query({ page: 2, limit: 2 })
+      .expect(200);
+
+    expect(pageTwo.body).toMatchObject({
+      total: 3,
+      page: 2,
+      limit: 2,
+    });
+    expect(pageTwo.body.data).toHaveLength(1);
   });
 });

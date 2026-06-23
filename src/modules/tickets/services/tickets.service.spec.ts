@@ -1,11 +1,13 @@
-import type { Customer, Ticket } from '@prisma/client';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { UserRole } from '../../../shared/types/user-role.js';
+import type { Customer } from '../../customers/domain/customer.entity.js';
+import type { Ticket } from '../domain/ticket.entity.js';
 import {
   TicketHistoryEvent,
   TicketPriority,
   TicketStatus,
-  UserRole,
-} from '@prisma/client';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+} from '../domain/ticket-enums.js';
 
 vi.mock('../repositories/tickets.repository.js', () => ({
   TicketsRepository: vi.fn(),

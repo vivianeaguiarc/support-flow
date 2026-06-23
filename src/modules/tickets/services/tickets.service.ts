@@ -1,9 +1,7 @@
-import type { Ticket, TicketPriority, TicketStatus } from '@prisma/client';
-import { UserRole } from '@prisma/client';
-
 import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
 import { AppError } from '../../../shared/errors/app-error.js';
 import type { AuthenticatedUser } from '../../../shared/types/authenticated-user.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import {
   AssignTicketUseCase,
   assignTicketUseCase,
@@ -17,11 +15,14 @@ import {
   listTicketsByTenantUseCase,
   OpenTicketUseCase,
   openTicketUseCase,
+  type PaginatedTicketList,
   type TicketHistoryResult,
   type TicketStatusTransitionsResult,
   UpdateTicketStatusUseCase,
   updateTicketStatusUseCase,
 } from '../application/index.js';
+import type { Ticket } from '../domain/ticket.entity.js';
+import type { TicketPriority, TicketStatus } from '../domain/ticket-enums.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
 import {
   TicketsRepository,
@@ -99,8 +100,11 @@ export class TicketsService {
 
   async list(
     authUser: AuthenticatedUser,
-    query: ListTicketsQueryDto = {},
-  ): Promise<Ticket[]> {
+    query: ListTicketsQueryDto = {
+      page: 1,
+      limit: 10,
+    },
+  ): Promise<PaginatedTicketList> {
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 
     if (

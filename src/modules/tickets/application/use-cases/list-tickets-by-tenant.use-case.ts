@@ -1,4 +1,4 @@
-import type { Ticket } from '../../domain/ticket.entity.js';
+import type { PaginatedTicketList } from '../../domain/ticket-paginated-list.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -10,7 +10,7 @@ export class ListTicketsByTenantUseCase {
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
   ) {}
 
-  async execute(input: ListTicketsInput): Promise<Ticket[]> {
+  async execute(input: ListTicketsInput): Promise<PaginatedTicketList> {
     return this.ticketsRepository.listWithFilters(input);
   }
 }

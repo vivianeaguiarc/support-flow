@@ -4,6 +4,8 @@ import { TicketPriority } from '@prisma/client';
 import { prisma } from '../../../shared/database/prisma.js';
 import type { CreateTicketDomainInput } from '../domain/ticket.types.js';
 import type { TicketListFilters } from '../domain/ticket-list-filters.js';
+import { resolveTicketListPagination } from '../domain/ticket-list-pagination.js';
+import type { PaginatedTicketList } from '../domain/ticket-paginated-list.js';
 import { buildTicketListWhere } from './build-ticket-list-where.js';
 
 export type CreateTicketInput = CreateTicketDomainInput & {
@@ -42,23 +44,30 @@ export class TicketsRepository {
   }
 
   async listByTenant(tenantId: string): Promise<Ticket[]> {
-    return this.listWithFilters({ tenantId });
+    const result = await this.listWithFilters({ tenantId });
+    return result.data;
   }
 
-  async listWithFilters(filters: TicketListFilters): Promise<Ticket[]> {
-    const page = filters.page ?? 1;
-    const limit = filters.limit;
+  async listWithFilters(
+    filters: TicketListFilters,
+  ): Promise<PaginatedTicketList> {
+    const { page, limit } = resolveTicketListPagination(
+      filters.page,
+      filters.limit,
+    );
+    const where = buildTicketListWhere(filters);
 
-    return prisma.ticket.findMany({
-      where: buildTicketListWhere(filters),
-      orderBy: { createdAt: 'desc' },
-      ...(limit
-        ? {
-            take: limit,
-            skip: (page - 1) * limit,
-          }
-        : {}),
-    });
+    const [data, total] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      prisma.ticket.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 
   async list(): Promise<Ticket[]> {
