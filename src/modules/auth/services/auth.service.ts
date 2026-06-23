@@ -2,6 +2,10 @@ import type { User } from '@prisma/client';
 
 import { AppError } from '../../../shared/errors/app-error.js';
 import {
+  BusinessEvent,
+  logBusinessEvent,
+} from '../../../shared/logger/business-logger.js';
+import {
   getRefreshTokenExpiration,
   signRefreshToken,
   signToken,
@@ -45,6 +49,9 @@ export class AuthService {
     const user = await this.usersRepository.findByEmail(data.email);
 
     if (!user) {
+      logBusinessEvent(BusinessEvent.AUTH_LOGIN_FAILED, {
+        reason: 'invalid_credentials',
+      });
       throw new AppError('Invalid credentials', 401);
     }
 
@@ -54,6 +61,9 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
+      logBusinessEvent(BusinessEvent.AUTH_LOGIN_FAILED, {
+        reason: 'invalid_credentials',
+      });
       throw new AppError('Invalid credentials', 401);
     }
 
@@ -76,6 +86,9 @@ export class AuthService {
     );
 
     if (!user) {
+      logBusinessEvent(BusinessEvent.AUTH_REFRESH_FAILED, {
+        reason: 'user_not_found',
+      });
       throw new AppError('Invalid refresh token', 401);
     }
 
@@ -124,6 +137,9 @@ export class AuthService {
     try {
       return verifyRefreshToken(refreshToken);
     } catch {
+      logBusinessEvent(BusinessEvent.AUTH_REFRESH_FAILED, {
+        reason: 'invalid_token',
+      });
       throw new AppError('Invalid refresh token', 401);
     }
   }
@@ -139,14 +155,23 @@ export class AuthService {
     payload: { id: string; tenantId: string },
   ): void {
     if (!storedToken) {
+      logBusinessEvent(BusinessEvent.AUTH_REFRESH_FAILED, {
+        reason: 'token_not_found',
+      });
       throw new AppError('Invalid refresh token', 401);
     }
 
     if (storedToken.revokedAt) {
+      logBusinessEvent(BusinessEvent.AUTH_REFRESH_FAILED, {
+        reason: 'token_revoked',
+      });
       throw new AppError('Refresh token has been revoked', 401);
     }
 
     if (storedToken.expiresAt.getTime() <= Date.now()) {
+      logBusinessEvent(BusinessEvent.AUTH_REFRESH_FAILED, {
+        reason: 'token_expired',
+      });
       throw new AppError('Refresh token has expired', 401);
     }
 
@@ -154,6 +179,9 @@ export class AuthService {
       storedToken.userId !== payload.id ||
       storedToken.tenantId !== payload.tenantId
     ) {
+      logBusinessEvent(BusinessEvent.AUTH_REFRESH_FAILED, {
+        reason: 'token_mismatch',
+      });
       throw new AppError('Invalid refresh token', 401);
     }
   }

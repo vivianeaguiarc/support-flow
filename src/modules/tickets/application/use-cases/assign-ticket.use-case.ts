@@ -1,4 +1,8 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
+import {
+  BusinessEvent,
+  logBusinessEvent,
+} from '../../../../shared/logger/business-logger.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
 import {
   type NotificationEventService,
@@ -59,6 +63,14 @@ export class AssignTicketUseCase {
       updatedTicket,
       input.assignedToId,
     );
+
+    logBusinessEvent(BusinessEvent.TICKET_ASSIGNED, {
+      tenantId: input.tenantId,
+      ticketId: ticket.id,
+      fromAssigneeId: ticket.assignedToId,
+      toAssigneeId: input.assignedToId,
+      actorId: input.changedById,
+    });
 
     return updatedTicket;
   }

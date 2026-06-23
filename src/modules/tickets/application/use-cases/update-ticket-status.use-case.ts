@@ -1,4 +1,8 @@
 import {
+  BusinessEvent,
+  logBusinessEvent,
+} from '../../../../shared/logger/business-logger.js';
+import {
   type NotificationEventService,
   notificationEventService,
 } from '../../../notifications/application/services/notification-event.service.js';
@@ -56,6 +60,14 @@ export class UpdateTicketStatusUseCase {
       ticket.status,
       input.status,
     );
+
+    logBusinessEvent(BusinessEvent.TICKET_STATUS_CHANGED, {
+      tenantId: input.tenantId,
+      ticketId: ticket.id,
+      fromStatus: ticket.status,
+      toStatus: input.status,
+      actorId: input.changedById,
+    });
 
     return updatedTicket;
   }

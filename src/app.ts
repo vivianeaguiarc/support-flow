@@ -9,6 +9,7 @@ import { usersRouter } from './modules/users/routes/users.routes.js';
 import { errorHandler } from './shared/http/middlewares/error-handler.js';
 import { notFoundHandler } from './shared/http/middlewares/not-found-handler.js';
 import { rateLimitMiddleware } from './shared/http/middlewares/rate-limit.js';
+import { requestTracing } from './shared/http/middlewares/request-tracing.js';
 import { securityMiddleware } from './shared/http/middlewares/security.js';
 import { healthRouter } from './shared/http/routes/health.routes.js';
 import { httpLogger } from './shared/logger/http-logger.js';
@@ -26,6 +27,7 @@ export function createApp(options: CreateAppOptions = {}) {
 
   app.use('/health', healthRouter);
 
+  app.use(requestTracing);
   app.use(httpLogger);
   app.use(...securityMiddleware);
   if (env.RATE_LIMIT_ENABLED) {

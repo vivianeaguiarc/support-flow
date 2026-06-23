@@ -7,6 +7,7 @@ import { buildErrorResponse } from '../../errors/error-response.js';
 import { ValidationError } from '../../errors/http-errors.js';
 import { mapPrismaError } from '../../errors/prisma-error-mapper.js';
 import { logger } from '../../logger/logger.js';
+import { getRequestId } from '../../logger/request-context.js';
 
 function formatZodIssues(error: ZodError): ValidationError {
   const details = error.issues.map((issue) => ({
@@ -41,7 +42,7 @@ export function errorHandler(
 ): void {
   const operationalError = resolveOperationalError(err);
   const includeDetails = env.NODE_ENV !== 'production';
-  const requestId = req.id !== undefined ? String(req.id) : undefined;
+  const requestId = getRequestId(req);
 
   if (operationalError) {
     if (operationalError.statusCode >= 500) {

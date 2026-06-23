@@ -1,4 +1,9 @@
 import {
+  BusinessEvent,
+  logBusinessEvent,
+} from '../../../../shared/logger/business-logger.js';
+import { logger } from '../../../../shared/logger/logger.js';
+import {
   type NotificationEventService,
   notificationEventService,
 } from '../../../notifications/application/services/notification-event.service.js';
@@ -78,11 +83,19 @@ export class EscalateTicketsBySlaUseCase {
         ticket.status,
       );
 
+      logBusinessEvent(BusinessEvent.TICKET_ESCALATED, {
+        tenantId: ticket.tenantId,
+        ticketId: ticket.id,
+        fromStatus: ticket.status,
+        toStatus: TicketStatus.ESCALATED,
+        trigger: 'sla',
+      });
+
       return true;
     } catch (error) {
-      console.error(
-        `[Escalation] Failed to escalate ticket ${ticket.id}:`,
-        error,
+      logger.error(
+        { err: error, ticketId: ticket.id, tenantId: ticket.tenantId },
+        'Failed to escalate ticket by SLA',
       );
       return false;
     }

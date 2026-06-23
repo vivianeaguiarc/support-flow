@@ -177,26 +177,26 @@ Para produção, use `.env.production.example` como referência ao configurar o 
 
 ### Variáveis
 
-| Variável                       | Obrigatória | Padrão (dev)                                | Descrição                                                     |
-| ------------------------------ | ----------- | ------------------------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`                 | **Sim**     | —                                           | Connection string PostgreSQL (Prisma)                         |
-| `JWT_SECRET`                   | **Sim**     | —                                           | Segredo do access token (mín. 32 caracteres em `production`)  |
-| `NODE_ENV`                     | Não         | `development`                               | `development`, `test` ou `production`                         |
-| `PORT`                         | Não         | `3000`                                      | Porta HTTP da API                                             |
-| `JWT_EXPIRES_IN`               | Não         | `1d`                                        | Expiração do access token                                     |
-| `JWT_REFRESH_SECRET`           | **Sim**     | —                                           | Segredo do refresh token (mín. 32 caracteres em `production`) |
-| `JWT_REFRESH_EXPIRES_IN`       | Não         | `7d`                                        | Expiração do refresh token                                    |
-| `CORS_ORIGIN`                  | Não         | `http://localhost:5173`                     | Origem permitida pelo CORS                                    |
-| `RATE_LIMIT_ENABLED`           | Não         | `true`                                      | Habilita rate limit global e em `/auth/login`                 |
-| `RATE_LIMIT_WINDOW_MS`         | Não         | `900000`                                    | Janela do rate limit global (ms)                              |
-| `RATE_LIMIT_MAX_REQUESTS`      | Não         | `100`                                       | Máximo de requisições por janela (global)                     |
-| `AUTH_RATE_LIMIT_WINDOW_MS`    | Não         | `900000`                                    | Janela do rate limit de login (ms)                            |
-| `AUTH_RATE_LIMIT_MAX_REQUESTS` | Não         | `20`                                        | Máximo de tentativas de login por janela                      |
-| `UPLOAD_MAX_SIZE_MB`           | Não         | `10`                                        | Tamanho máximo de upload (MB)                                 |
-| `UPLOAD_DIR`                   | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)             |
-| `LOG_LEVEL`                    | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino                                             |
-| `SWAGGER_ENABLED`              | Não         | ligado fora de `production`                 | Documentação OpenAPI em `/api/docs`                           |
-| `DATABASE_URL_TEST`            | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                        |
+| Variável                       | Obrigatória | Padrão (dev)                                | Descrição                                                              |
+| ------------------------------ | ----------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                 | **Sim**     | —                                           | Connection string PostgreSQL (Prisma)                                  |
+| `JWT_SECRET`                   | **Sim**     | —                                           | Segredo do access token (mín. 32 caracteres em `production`)           |
+| `NODE_ENV`                     | Não         | `development`                               | `development`, `test` ou `production`                                  |
+| `PORT`                         | Não         | `3000`                                      | Porta HTTP da API                                                      |
+| `JWT_EXPIRES_IN`               | Não         | `1d`                                        | Expiração do access token                                              |
+| `JWT_REFRESH_SECRET`           | **Sim**     | —                                           | Segredo do refresh token (mín. 32 caracteres em `production`)          |
+| `JWT_REFRESH_EXPIRES_IN`       | Não         | `7d`                                        | Expiração do refresh token                                             |
+| `CORS_ORIGIN`                  | Não         | `http://localhost:5173`                     | Origem permitida pelo CORS                                             |
+| `RATE_LIMIT_ENABLED`           | Não         | `true`                                      | Habilita rate limit global e em `/auth/login`                          |
+| `RATE_LIMIT_WINDOW_MS`         | Não         | `900000`                                    | Janela do rate limit global (ms)                                       |
+| `RATE_LIMIT_MAX_REQUESTS`      | Não         | `100`                                       | Máximo de requisições por janela (global)                              |
+| `AUTH_RATE_LIMIT_WINDOW_MS`    | Não         | `900000`                                    | Janela do rate limit de login (ms)                                     |
+| `AUTH_RATE_LIMIT_MAX_REQUESTS` | Não         | `20`                                        | Máximo de tentativas de login por janela                               |
+| `UPLOAD_MAX_SIZE_MB`           | Não         | `10`                                        | Tamanho máximo de upload (MB)                                          |
+| `UPLOAD_DIR`                   | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)                      |
+| `LOG_LEVEL`                    | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino (`trace`, `debug`, `info`, `warn`, `error`, `fatal`) |
+| `SWAGGER_ENABLED`              | Não         | ligado fora de `production`                 | Documentação OpenAPI em `/api/docs`                                    |
+| `DATABASE_URL_TEST`            | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                                 |
 
 ### Validar configuração
 
@@ -259,6 +259,55 @@ pnpm dev
 ```
 
 A API ficará disponível em http://localhost:3000.
+
+---
+
+## Observabilidade (logs e tracing)
+
+A API usa **Pino** para logs estruturados em JSON (ou `pino-pretty` em desenvolvimento).
+
+### Request tracing
+
+- Cada requisição recebe um `requestId` (UUID), gerado automaticamente ou reutilizado do header `X-Request-Id`.
+- O mesmo valor é retornado no header de resposta `X-Request-Id` e incluído em respostas de erro (`requestId` no JSON).
+- O contexto da requisição fica disponível via `AsyncLocalStorage` para logs de negócio e erros.
+
+### Níveis de log
+
+Configure com `LOG_LEVEL` (padrão: `debug` em dev, `warn` em testes, `info` em produção).
+
+### Eventos de negócio logados
+
+| Evento                  | Quando                                        |
+| ----------------------- | --------------------------------------------- |
+| `ticket.created`        | Ticket criado com sucesso                     |
+| `ticket.status_changed` | Status alterado                               |
+| `ticket.assigned`       | Ticket atribuído a agente                     |
+| `ticket.escalated`      | Escalonamento por SLA                         |
+| `auth.login_failed`     | Credenciais inválidas no login                |
+| `auth.refresh_failed`   | Refresh token inválido/revogado/expirado      |
+| `auth.unauthorized`     | Falha de autenticação JWT em rotas protegidas |
+
+### Dados sensíveis
+
+Senhas, tokens JWT, refresh tokens, `Authorization` e cookies são **redigidos** nos logs (`[Redacted]`). Campos sensíveis também são omitidos em logs de negócio via `sanitizeLogData`.
+
+### Testar localmente
+
+```bash
+# Logs detalhados
+LOG_LEVEL=debug pnpm dev
+
+# Simular tracing com header customizado
+curl -i -H "X-Request-Id: meu-id-debug" http://localhost:3000/api/v1/health
+
+# Forçar erro e ver requestId na resposta
+curl -i -X POST http://localhost:3000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"x@y.com","password":"wrong"}'
+```
+
+Health checks (`/health`, `/health/ready`, `/api/v1/health`) não geram log HTTP automático para reduzir ruído.
 
 ---
 

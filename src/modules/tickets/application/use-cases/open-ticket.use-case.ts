@@ -1,4 +1,8 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
+import {
+  BusinessEvent,
+  logBusinessEvent,
+} from '../../../../shared/logger/business-logger.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
 import {
   CustomersRepository,
@@ -128,6 +132,16 @@ export class OpenTicketUseCase {
       ticket,
       input.customerId,
     );
+
+    logBusinessEvent(BusinessEvent.TICKET_CREATED, {
+      tenantId: input.tenantId,
+      ticketId: ticket.id,
+      protocol: ticket.protocol,
+      customerId: input.customerId,
+      priority: finalPriority,
+      actorId: input.changedById,
+      assignedToId: input.assignedToId,
+    });
 
     return ticket;
   }
