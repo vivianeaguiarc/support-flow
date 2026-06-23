@@ -11,10 +11,13 @@ import {
   findTicketByIdUseCase,
   GetTicketStatusTransitionsUseCase,
   getTicketStatusTransitionsUseCase,
+  ListTicketHistoryUseCase,
+  listTicketHistoryUseCase,
   ListTicketsByTenantUseCase,
   listTicketsByTenantUseCase,
   OpenTicketUseCase,
   openTicketUseCase,
+  type TicketHistoryResult,
   type TicketStatusTransitionsResult,
   UpdateTicketStatusUseCase,
   updateTicketStatusUseCase,
@@ -42,6 +45,7 @@ export class TicketsService {
     private readonly updateTicketStatus: UpdateTicketStatusUseCase = updateTicketStatusUseCase,
     private readonly assignTicket: AssignTicketUseCase = assignTicketUseCase,
     private readonly getTicketStatusTransitions: GetTicketStatusTransitionsUseCase = getTicketStatusTransitionsUseCase,
+    private readonly listTicketHistory: ListTicketHistoryUseCase = listTicketHistoryUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
   ) {}
 
@@ -84,6 +88,14 @@ export class TicketsService {
   ): Promise<TicketStatusTransitionsResult> {
     const ticket = await this.findById(id, authUser);
     return this.getTicketStatusTransitions.forStatus(ticket.status);
+  }
+
+  async getHistory(
+    id: string,
+    authUser: AuthenticatedUser,
+  ): Promise<TicketHistoryResult> {
+    const ticket = await this.findById(id, authUser);
+    return this.listTicketHistory.forTicket(ticket.id, ticket.tenantId);
   }
 
   async list(authUser: AuthenticatedUser): Promise<Ticket[]> {

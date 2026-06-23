@@ -1,5 +1,10 @@
 import type { Customer, Ticket } from '@prisma/client';
-import { TicketPriority, TicketStatus, UserRole } from '@prisma/client';
+import {
+  TicketHistoryEvent,
+  TicketPriority,
+  TicketStatus,
+  UserRole,
+} from '@prisma/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../repositories/tickets.repository.js', () => ({
@@ -35,6 +40,7 @@ import type { UsersRepository } from '../../users/repositories/users.repository.
 import { AssignTicketUseCase } from '../application/use-cases/assign-ticket.use-case.js';
 import { FindTicketByIdUseCase } from '../application/use-cases/find-ticket-by-id.use-case.js';
 import { GetTicketStatusTransitionsUseCase } from '../application/use-cases/get-ticket-status-transitions.use-case.js';
+import { ListTicketHistoryUseCase } from '../application/use-cases/list-ticket-history.use-case.js';
 import { ListTicketsByTenantUseCase } from '../application/use-cases/list-tickets-by-tenant.use-case.js';
 import { OpenTicketUseCase } from '../application/use-cases/open-ticket.use-case.js';
 import { UpdateTicketStatusUseCase } from '../application/use-cases/update-ticket-status.use-case.js';
@@ -116,6 +122,7 @@ function createTicketHistoryRepositoryMock(): TicketHistoryRepository {
   return {
     create: vi.fn(),
     listByTicketId: vi.fn(),
+    listByTicketIdAndTenant: vi.fn(),
   };
 }
 
@@ -171,6 +178,10 @@ describe('TicketsService', () => {
     const getTicketStatusTransitions = new GetTicketStatusTransitionsUseCase(
       findTicket,
     );
+    const listTicketHistory = new ListTicketHistoryUseCase(
+      ticketHistoryRepository,
+      findTicket,
+    );
 
     service = new TicketsService(
       openTicket,
@@ -179,6 +190,7 @@ describe('TicketsService', () => {
       updateTicketStatus,
       assignTicket,
       getTicketStatusTransitions,
+      listTicketHistory,
       ticketsRepository,
     );
   });
@@ -344,5 +356,54 @@ describe('TicketsService', () => {
     });
     expect(ticketsRepository.updateStatus).not.toHaveBeenCalled();
     expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should return ticket history for an accessible ticket', async () => {
+    vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+      mockTicket,
+    );
+    vi.mocked(
+      ticketHistoryRepository.listByTicketIdAndTenant,
+    ).mockResolvedValue([
+      {
+        id: 'history-1',
+        tenantId: DEFAULT_TENANT_ID,
+        ticketId: 'ticket-1',
+        event: TicketHistoryEvent.STATUS_CHANGED,
+        field: 'status',
+        oldValue: TicketStatus.OPEN,
+        newValue: TicketStatus.IN_PROGRESS,
+        changedById: 'agent-1',
+        createdAt: new Date('2026-06-23T10:00:00.000Z'),
+        changedBy: {
+          id: 'agent-1',
+          name: 'Atendente Demo',
+          email: 'atendente@supportflow.com',
+        },
+      },
+    ]);
+
+    const result = await service.getHistory('ticket-1', agentAuth);
+
+    expect(
+      ticketHistoryRepository.listByTicketIdAndTenant,
+    ).toHaveBeenCalledWith('ticket-1', DEFAULT_TENANT_ID);
+    expect(result).toEqual({
+      ticketId: 'ticket-1',
+      history: [
+        {
+          id: 'history-1',
+          action: TicketHistoryEvent.STATUS_CHANGED,
+          previousValue: TicketStatus.OPEN,
+          newValue: TicketStatus.IN_PROGRESS,
+          performedById: 'agent-1',
+          performedBy: {
+            name: 'Atendente Demo',
+            email: 'atendente@supportflow.com',
+          },
+          createdAt: new Date('2026-06-23T10:00:00.000Z'),
+        },
+      ],
+    });
   });
 });

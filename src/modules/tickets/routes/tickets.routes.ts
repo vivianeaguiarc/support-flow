@@ -55,6 +55,14 @@ ticketsRouter.get(
 );
 
 ticketsRouter.get(
+  '/:id/history',
+  authenticate,
+  authorize(UserRole.AGENT, UserRole.CUSTOMER),
+  validateRequest({ params: ticketIdParamSchema }),
+  ticketsController.getHistory,
+);
+
+ticketsRouter.get(
   '/:id',
   authenticate,
   authorize(UserRole.AGENT, UserRole.CUSTOMER),

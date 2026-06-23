@@ -41,6 +41,7 @@ import type { TicketsRepository } from '../../repositories/tickets.repository.js
 import { AssignTicketUseCase } from './assign-ticket.use-case.js';
 import { FindTicketByIdUseCase } from './find-ticket-by-id.use-case.js';
 import { GetTicketStatusTransitionsUseCase } from './get-ticket-status-transitions.use-case.js';
+import { ListTicketHistoryUseCase } from './list-ticket-history.use-case.js';
 import { ListTicketsByTenantUseCase } from './list-tickets-by-tenant.use-case.js';
 import { OpenTicketUseCase } from './open-ticket.use-case.js';
 import { UpdateTicketStatusUseCase } from './update-ticket-status.use-case.js';
@@ -104,6 +105,7 @@ function createTicketHistoryRepositoryMock(): TicketHistoryRepository {
   return {
     create: vi.fn(),
     listByTicketId: vi.fn(),
+    listByTicketIdAndTenant: vi.fn(),
   };
 }
 
@@ -331,6 +333,100 @@ describe('Ticket use cases', () => {
           ticketId: 'missing',
         }),
       ).rejects.toEqual(new AppError('Ticket not found', 404));
+    });
+  });
+
+  describe('ListTicketHistoryUseCase', () => {
+    it('should return mapped history ordered by tenant scope', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(
+        mockTicket,
+      );
+      vi.mocked(
+        ticketHistoryRepository.listByTicketIdAndTenant,
+      ).mockResolvedValue([
+        {
+          id: 'history-1',
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          event: TicketHistoryEvent.CREATED,
+          field: null,
+          oldValue: null,
+          newValue: null,
+          changedById: 'agent-1',
+          createdAt: new Date('2026-06-23T09:00:00.000Z'),
+          changedBy: {
+            id: 'agent-1',
+            name: 'Atendente Demo',
+            email: 'atendente@supportflow.com',
+          },
+        },
+        {
+          id: 'history-2',
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          event: TicketHistoryEvent.STATUS_CHANGED,
+          field: 'status',
+          oldValue: TicketStatus.OPEN,
+          newValue: TicketStatus.IN_PROGRESS,
+          changedById: 'agent-1',
+          createdAt: new Date('2026-06-23T10:00:00.000Z'),
+          changedBy: {
+            id: 'agent-1',
+            name: 'Atendente Demo',
+            email: 'atendente@supportflow.com',
+          },
+        },
+      ]);
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new ListTicketHistoryUseCase(
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      const result = await useCase.execute({
+        tenantId: DEFAULT_TENANT_ID,
+        ticketId: 'ticket-1',
+      });
+
+      expect(
+        ticketHistoryRepository.listByTicketIdAndTenant,
+      ).toHaveBeenCalledWith('ticket-1', DEFAULT_TENANT_ID);
+      expect(result.ticketId).toBe('ticket-1');
+      expect(result.history).toHaveLength(2);
+      expect(result.history[0]).toEqual({
+        id: 'history-1',
+        action: TicketHistoryEvent.CREATED,
+        previousValue: null,
+        newValue: null,
+        performedById: 'agent-1',
+        performedBy: {
+          name: 'Atendente Demo',
+          email: 'atendente@supportflow.com',
+        },
+        createdAt: new Date('2026-06-23T09:00:00.000Z'),
+      });
+    });
+
+    it('should throw when ticket is not found in tenant', async () => {
+      vi.mocked(ticketsRepository.findByIdAndTenant).mockResolvedValue(null);
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new ListTicketHistoryUseCase(
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'missing',
+        }),
+      ).rejects.toEqual(new AppError('Ticket not found', 404));
+
+      expect(
+        ticketHistoryRepository.listByTicketIdAndTenant,
+      ).not.toHaveBeenCalled();
     });
   });
 

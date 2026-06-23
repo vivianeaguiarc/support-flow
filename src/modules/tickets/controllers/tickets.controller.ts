@@ -121,6 +121,22 @@ export class TicketsController {
       next(error);
     }
   };
+
+  getHistory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const history = await this.service.getHistory(
+        req.params.id as string,
+        getAuthenticatedUser(req),
+      );
+      res.status(200).json(history);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export const ticketsController = new TicketsController();
