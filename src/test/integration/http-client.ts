@@ -1,8 +1,19 @@
 import type { Express } from 'express';
 import request from 'supertest';
 
+import type { ApiSuccessResponse } from '../../shared/http/response/api-response.js';
 import { signToken } from '../../shared/security/jwt.js';
 import type { UserRole } from '../../shared/types/user-role.js';
+
+export function unwrapApiData<T>(body: ApiSuccessResponse<T>): T {
+  return body.data;
+}
+
+export function getApiErrorMessage(body: {
+  error: { message: string };
+}): string {
+  return body.error.message;
+}
 
 export async function login(
   app: Express,
@@ -14,7 +25,7 @@ export async function login(
     .send({ email, password })
     .expect(200);
 
-  return response.body.accessToken as string;
+  return unwrapApiData(response.body).accessToken;
 }
 
 export async function loginWithTokens(
@@ -27,10 +38,7 @@ export async function loginWithTokens(
     .send({ email, password })
     .expect(200);
 
-  return {
-    accessToken: response.body.accessToken as string,
-    refreshToken: response.body.refreshToken as string,
-  };
+  return unwrapApiData(response.body);
 }
 
 export function createAuthToken(input: {

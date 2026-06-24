@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 
+import { UnauthorizedError } from '../../../../shared/errors/http-errors.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import {
   type RecalculateTicketPriorityUseCase,
   recalculateTicketPriorityUseCase,
@@ -23,8 +25,7 @@ export class TicketPriorityController {
       const forceRecalculation = req.body?.forceRecalculation === true;
 
       if (!tenantId) {
-        res.status(401).json({ error: 'Tenant ID not found' });
-        return;
+        throw new UnauthorizedError('Tenant ID not found');
       }
 
       const ticket = await this.recalculateUseCase.execute({
@@ -34,7 +35,9 @@ export class TicketPriorityController {
         forceRecalculation,
       });
 
-      res.status(200).json(ticket);
+      sendSuccess(res, ticket, {
+        message: 'Ticket priority recalculated successfully',
+      });
     } catch (error) {
       next(error);
     }

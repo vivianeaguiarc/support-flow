@@ -1,4 +1,5 @@
 export { AppError } from './app-error.js';
+export { ErrorCode } from './error-codes.js';
 export { type ApiErrorResponse, buildErrorResponse } from './error-response.js';
 export {
   HTTP_ERROR_LABELS,
@@ -8,6 +9,7 @@ export {
   BadRequestError,
   ConflictError,
   ForbiddenError,
+  InternalServerError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,

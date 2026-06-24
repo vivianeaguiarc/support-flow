@@ -4,6 +4,7 @@ import type { AppError } from './app-error.js';
 import {
   BadRequestError,
   ConflictError,
+  InternalServerError,
   NotFoundError,
 } from './http-errors.js';
 
@@ -20,6 +21,6 @@ export function mapPrismaError(error: unknown): AppError | null {
     case 'P2003':
       return new BadRequestError('Invalid reference');
     default:
-      return null;
+      return new InternalServerError('Database operation failed');
   }
 }

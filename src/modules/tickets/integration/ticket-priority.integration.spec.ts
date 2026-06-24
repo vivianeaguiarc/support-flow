@@ -94,11 +94,11 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
 
       const history = await prisma.ticketHistory.findMany({
         where: {
-          ticketId: response.body.id,
+          ticketId: response.body.data.id,
           event: TicketHistoryEvent.PRIORITY_CHANGED,
         },
       });
@@ -119,7 +119,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
     });
 
     it('should set priority to URGENT for billing fraud', async () => {
@@ -133,7 +133,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
     });
 
     it('should set priority to HIGH for ombudsman category', async () => {
@@ -148,7 +148,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.HIGH);
+      expect(response.body.data.priority).toBe(TicketPriority.HIGH);
     });
 
     it('should set priority to MEDIUM for complaint category', async () => {
@@ -163,7 +163,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.MEDIUM);
+      expect(response.body.data.priority).toBe(TicketPriority.MEDIUM);
     });
 
     it('should set priority to MEDIUM when complaint keyword is detected', async () => {
@@ -177,7 +177,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.MEDIUM);
+      expect(response.body.data.priority).toBe(TicketPriority.MEDIUM);
     });
 
     it('should prioritize critical keywords over category', async () => {
@@ -192,7 +192,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
     });
 
     it('should use LOW priority when no rules match', async () => {
@@ -206,7 +206,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.LOW);
+      expect(response.body.data.priority).toBe(TicketPriority.LOW);
     });
   });
 
@@ -229,7 +229,7 @@ describe.sequential('Ticket Priority', () => {
         .set('Authorization', `Bearer ${agentToken}`)
         .expect(200);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
 
       const history = await prisma.ticketHistory.findFirst({
         where: {
@@ -260,7 +260,7 @@ describe.sequential('Ticket Priority', () => {
         .set('Authorization', `Bearer ${agentToken}`)
         .expect(200);
 
-      expect(response.body.priority).toBe(TicketPriority.LOW);
+      expect(response.body.data.priority).toBe(TicketPriority.LOW);
 
       const history = await prisma.ticketHistory.findMany({
         where: {
@@ -302,7 +302,7 @@ describe.sequential('Ticket Priority', () => {
         .set('Authorization', `Bearer ${agentToken}`)
         .expect(200);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
     });
 
     it('should force recalculation when requested', async () => {
@@ -336,7 +336,7 @@ describe.sequential('Ticket Priority', () => {
         .send({ forceRecalculation: true })
         .expect(200);
 
-      expect(response.body.priority).toBe(TicketPriority.LOW);
+      expect(response.body.data.priority).toBe(TicketPriority.LOW);
     });
 
     it('should respect tenant isolation', async () => {
@@ -392,7 +392,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
     });
 
     it('should handle case-insensitive keywords', async () => {
@@ -406,7 +406,7 @@ describe.sequential('Ticket Priority', () => {
         })
         .expect(201);
 
-      expect(response.body.priority).toBe(TicketPriority.URGENT);
+      expect(response.body.data.priority).toBe(TicketPriority.URGENT);
     });
   });
 });

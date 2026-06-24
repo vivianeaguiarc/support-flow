@@ -111,9 +111,9 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsProcessed).toBe(1);
-      expect(response.body.ticketsAssigned).toBe(1);
-      expect(response.body.failedAssignments).toBe(0);
+      expect(response.body.data.ticketsProcessed).toBe(1);
+      expect(response.body.data.ticketsAssigned).toBe(1);
+      expect(response.body.data.failedAssignments).toBe(0);
 
       const updatedTicket = await prisma.ticket.findUnique({
         where: { id: ticket.id },
@@ -157,7 +157,7 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsAssigned).toBe(3);
+      expect(response.body.data.ticketsAssigned).toBe(3);
 
       const assignedTickets = await prisma.ticket.findMany({
         where: {
@@ -293,8 +293,8 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsProcessed).toBe(0);
-      expect(response.body.ticketsAssigned).toBe(0);
+      expect(response.body.data.ticketsProcessed).toBe(0);
+      expect(response.body.data.ticketsAssigned).toBe(0);
 
       const unchangedTicket = await prisma.ticket.findUnique({
         where: { id: ticket.id },
@@ -338,8 +338,8 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsProcessed).toBe(0);
-      expect(response.body.ticketsAssigned).toBe(0);
+      expect(response.body.data.ticketsProcessed).toBe(0);
+      expect(response.body.data.ticketsAssigned).toBe(0);
     });
 
     it('should create history entry for assignment', async () => {
@@ -454,7 +454,7 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsProcessed).toBe(1);
+      expect(response.body.data.ticketsProcessed).toBe(1);
 
       const tenant1Ticket = await prisma.ticket.findFirst({
         where: { protocol: 'AA-040' },
@@ -489,7 +489,7 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${agent1Token}`)
         .expect(200);
 
-      expect(response.body.ticketsAssigned).toBe(1);
+      expect(response.body.data.ticketsAssigned).toBe(1);
     });
 
     it('should return zero when no unassigned tickets exist', async () => {
@@ -498,9 +498,9 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsProcessed).toBe(0);
-      expect(response.body.ticketsAssigned).toBe(0);
-      expect(response.body.failedAssignments).toBe(0);
+      expect(response.body.data.ticketsProcessed).toBe(0);
+      expect(response.body.data.ticketsAssigned).toBe(0);
+      expect(response.body.data.failedAssignments).toBe(0);
     });
 
     it('should handle case with no available agents gracefully', async () => {
@@ -527,9 +527,9 @@ describe.sequential('Ticket Auto-Assignment', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.ticketsProcessed).toBe(1);
-      expect(response.body.ticketsAssigned).toBe(0);
-      expect(response.body.failedAssignments).toBe(1);
+      expect(response.body.data.ticketsProcessed).toBe(1);
+      expect(response.body.data.ticketsAssigned).toBe(0);
+      expect(response.body.data.failedAssignments).toBe(1);
     });
   });
 });

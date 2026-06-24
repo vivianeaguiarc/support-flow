@@ -169,16 +169,16 @@ describe.sequential('Ticket Comments', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body).toMatchObject({
+      expect(response.body.data).toMatchObject({
         ticketId: ticket1Id,
         tenantId: tenant1Id,
         authorId: agent1Id,
         content: 'This is an internal comment',
         visibility: 'INTERNAL',
       });
-      expect(response.body.id).toBeDefined();
-      expect(response.body.createdAt).toBeDefined();
-      expect(response.body.updatedAt).toBeDefined();
+      expect(response.body.data.id).toBeDefined();
+      expect(response.body.data.createdAt).toBeDefined();
+      expect(response.body.data.updatedAt).toBeDefined();
     });
 
     it('should create a comment as an admin', async () => {
@@ -190,7 +190,7 @@ describe.sequential('Ticket Comments', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.content).toBe('Admin internal comment');
+      expect(response.body.data.content).toBe('Admin internal comment');
     });
 
     it('should record COMMENT_ADDED event in ticket history', async () => {
@@ -275,7 +275,7 @@ describe.sequential('Ticket Comments', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.content).toBe('Comment with spaces');
+      expect(response.body.data.content).toBe('Comment with spaces');
     });
   });
 
@@ -313,10 +313,10 @@ describe.sequential('Ticket Comments', () => {
       const response = await api.get(`/api/v1/tickets/${ticket1Id}/comments`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(3);
-      expect(response.body[0].content).toBe('First comment');
-      expect(response.body[1].content).toBe('Second comment');
-      expect(response.body[2].content).toBe('Third comment');
+      expect(response.body.data).toHaveLength(3);
+      expect(response.body.data[0].content).toBe('First comment');
+      expect(response.body.data[1].content).toBe('Second comment');
+      expect(response.body.data[2].content).toBe('Third comment');
     });
 
     it('should include author information', async () => {
@@ -324,7 +324,7 @@ describe.sequential('Ticket Comments', () => {
       const response = await api.get(`/api/v1/tickets/${ticket1Id}/comments`);
 
       expect(response.status).toBe(200);
-      expect(response.body[0].author).toMatchObject({
+      expect(response.body.data[0].author).toMatchObject({
         id: agent1Id,
         name: 'Agent 1 Comments',
         email: 'agent1-comments@test.com',
@@ -338,7 +338,7 @@ describe.sequential('Ticket Comments', () => {
       const response = await api.get(`/api/v1/tickets/${ticket1Id}/comments`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
+      expect(response.body.data).toEqual([]);
     });
 
     it('should allow admin to list comments', async () => {
@@ -346,7 +346,7 @@ describe.sequential('Ticket Comments', () => {
       const response = await api.get(`/api/v1/tickets/${ticket1Id}/comments`);
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(3);
+      expect(response.body.data).toHaveLength(3);
     });
 
     it('should deny customer access to list comments', async () => {
@@ -385,9 +385,9 @@ describe.sequential('Ticket Comments', () => {
       const response1 = await api1.get(`/api/v1/tickets/${ticket1Id}/comments`);
 
       expect(response1.status).toBe(200);
-      expect(response1.body).toHaveLength(3);
+      expect(response1.body.data).toHaveLength(3);
       expect(
-        response1.body.every(
+        response1.body.data.every(
           (c: { content: string }) => c.content !== 'Comment in tenant 2',
         ),
       ).toBe(true);

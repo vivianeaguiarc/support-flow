@@ -79,23 +79,25 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ status: TicketStatus.OPEN, priority: 'HIGH' })
       .expect(200);
 
-    expect(statusFiltered.body).toMatchObject({
+    expect(statusFiltered.body.data).toMatchObject({
       total: 1,
       page: 1,
       limit: 10,
     });
-    expect(statusFiltered.body.data).toHaveLength(1);
-    expect(statusFiltered.body.data[0].id).toBe(openHighResponse.body.id);
+    expect(statusFiltered.body.data.data).toHaveLength(1);
+    expect(statusFiltered.body.data.data[0].id).toBe(
+      openHighResponse.body.data.id,
+    );
 
     const unassignedFiltered = await api
       .get('/api/v1/tickets')
       .query({ unassigned: 'true' })
       .expect(200);
 
-    expect(unassignedFiltered.body.total).toBe(2);
-    expect(unassignedFiltered.body.data).toHaveLength(2);
+    expect(unassignedFiltered.body.data.total).toBe(2);
+    expect(unassignedFiltered.body.data.data).toHaveLength(2);
     expect(
-      unassignedFiltered.body.data.every(
+      unassignedFiltered.body.data.data.every(
         (ticket: { assignedToId: string | null }) =>
           ticket.assignedToId === null,
       ),
@@ -106,18 +108,20 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ assignedToId: fixtures.agentA.id })
       .expect(200);
 
-    expect(assignedFiltered.body.total).toBe(1);
-    expect(assignedFiltered.body.data).toHaveLength(1);
-    expect(assignedFiltered.body.data[0].id).toBe(assignedResponse.body.id);
+    expect(assignedFiltered.body.data.total).toBe(1);
+    expect(assignedFiltered.body.data.data).toHaveLength(1);
+    expect(assignedFiltered.body.data.data[0].id).toBe(
+      assignedResponse.body.data.id,
+    );
 
     const searchFiltered = await api
       .get('/api/v1/tickets')
       .query({ search: 'billing issue' })
       .expect(200);
 
-    expect(searchFiltered.body.total).toBe(1);
-    expect(searchFiltered.body.data).toHaveLength(1);
-    expect(searchFiltered.body.data[0].title).toBe('Billing issue alpha');
+    expect(searchFiltered.body.data.total).toBe(1);
+    expect(searchFiltered.body.data.data).toHaveLength(1);
+    expect(searchFiltered.body.data.data[0].title).toBe('Billing issue alpha');
   });
 
   it('filters overdue tickets and keeps tenant isolation', async () => {
@@ -140,7 +144,7 @@ describe.sequential('Ticket listing filters integration', () => {
       .expect(201);
 
     await integrationPrisma.ticket.update({
-      where: { id: overdueResponse.body.id as string },
+      where: { id: overdueResponse.body.data.id as string },
       data: {
         slaDueAt: new Date('2020-01-01T00:00:00.000Z'),
       },
@@ -178,14 +182,18 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ overdue: 'true' })
       .expect(200);
 
-    expect(overdueFiltered.body).toMatchObject({
+    expect(overdueFiltered.body.data).toMatchObject({
       total: 1,
       page: 1,
       limit: 10,
     });
-    expect(overdueFiltered.body.data).toHaveLength(1);
-    expect(overdueFiltered.body.data[0].id).toBe(overdueResponse.body.id);
-    expect(overdueFiltered.body.data[0].tenantId).toBe(fixtures.tenantA.id);
+    expect(overdueFiltered.body.data.data).toHaveLength(1);
+    expect(overdueFiltered.body.data.data[0].id).toBe(
+      overdueResponse.body.data.id,
+    );
+    expect(overdueFiltered.body.data.data[0].tenantId).toBe(
+      fixtures.tenantA.id,
+    );
   });
 
   it('returns pagination metadata and respects page and limit', async () => {
@@ -214,24 +222,24 @@ describe.sequential('Ticket listing filters integration', () => {
       .query({ page: 1, limit: 2 })
       .expect(200);
 
-    expect(pageOne.body).toEqual({
+    expect(pageOne.body.data).toEqual({
       data: expect.any(Array),
       total: 3,
       page: 1,
       limit: 2,
     });
-    expect(pageOne.body.data).toHaveLength(2);
+    expect(pageOne.body.data.data).toHaveLength(2);
 
     const pageTwo = await api
       .get('/api/v1/tickets')
       .query({ page: 2, limit: 2 })
       .expect(200);
 
-    expect(pageTwo.body).toMatchObject({
+    expect(pageTwo.body.data).toMatchObject({
       total: 3,
       page: 2,
       limit: 2,
     });
-    expect(pageTwo.body.data).toHaveLength(1);
+    expect(pageTwo.body.data.data).toHaveLength(1);
   });
 });

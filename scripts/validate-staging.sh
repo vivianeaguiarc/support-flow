@@ -32,14 +32,14 @@ code=$(curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/api/docs/")
 login_response=$(curl -s -X POST "$BASE_URL/api/v1/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")
-echo "$login_response" | grep -qE 'accessToken|refreshToken|"token"' && pass "POST /api/v1/auth/login" || {
+echo "$login_response" | grep -qE 'accessToken|refreshToken|"token"|"success":true' && pass "POST /api/v1/auth/login" || {
   echo "$login_response"
   fail "POST /api/v1/auth/login"
 }
 
 TOKEN=$(echo "$login_response" | node -e "
 const d=JSON.parse(require('fs').readFileSync(0,'utf8'));
-process.stdout.write(d.accessToken || d.token || '');
+process.stdout.write(d.data?.accessToken || d.accessToken || d.token || '');
 ")
 [[ -n "$TOKEN" ]] && pass "accessToken received" || fail "accessToken missing"
 

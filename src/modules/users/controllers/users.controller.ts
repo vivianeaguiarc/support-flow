@@ -1,7 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
-import { AppError } from '../../../shared/errors/app-error.js';
+import { UnauthorizedError } from '../../../shared/errors/http-errors.js';
+import { sendSuccess } from '../../../shared/http/response/api-response.js';
 import type { CreateUserDto } from '../dtos/create-user.dto.js';
 import { toPublicUser } from '../mappers/to-public-user.js';
 import { UsersService, usersService } from '../services/users.service.js';
@@ -24,7 +25,10 @@ export class UsersController {
         ...body,
         tenantId: getTenantId(req),
       });
-      res.status(201).json(toPublicUser(user));
+      sendSuccess(res, toPublicUser(user), {
+        status: 201,
+        message: 'User created successfully',
+      });
     } catch (error) {
       next(error);
     }
@@ -37,14 +41,14 @@ export class UsersController {
   ): Promise<void> => {
     try {
       if (!req.user) {
-        throw new AppError('Unauthorized', 401);
+        throw new UnauthorizedError();
       }
 
       const user = await this.service.findById(
         req.params.id as string,
         req.user.tenantId,
       );
-      res.status(200).json(toPublicUser(user));
+      sendSuccess(res, toPublicUser(user));
     } catch (error) {
       next(error);
     }
@@ -57,11 +61,11 @@ export class UsersController {
   ): Promise<void> => {
     try {
       if (!req.user) {
-        throw new AppError('Unauthorized', 401);
+        throw new UnauthorizedError();
       }
 
       const users = await this.service.list(req.user.tenantId);
-      res.status(200).json(users.map(toPublicUser));
+      sendSuccess(res, users.map(toPublicUser));
     } catch (error) {
       next(error);
     }

@@ -214,17 +214,17 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
+    expect(response.body.data).toMatchObject({
       resolvedTickets: 3,
       overdueTickets: 2,
     });
 
-    expect(response.body.avgResolutionTimeHours).toBeGreaterThan(0);
-    expect(response.body.slaComplianceRate).toBeGreaterThan(0);
-    expect(response.body.slaComplianceRate).toBeLessThanOrEqual(100);
+    expect(response.body.data.avgResolutionTimeHours).toBeGreaterThan(0);
+    expect(response.body.data.slaComplianceRate).toBeGreaterThan(0);
+    expect(response.body.data.slaComplianceRate).toBeLessThanOrEqual(100);
 
-    expect(response.body.agentPerformance).toBeInstanceOf(Array);
-    expect(response.body.agentPerformance.length).toBeGreaterThan(0);
+    expect(response.body.data.agentPerformance).toBeInstanceOf(Array);
+    expect(response.body.data.agentPerformance.length).toBeGreaterThan(0);
   });
 
   it('should calculate average resolution time correctly', async () => {
@@ -232,8 +232,8 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    expect(response.body.avgResolutionTimeHours).toBeGreaterThan(0);
-    expect(response.body.avgResolutionTimeHours).toBeLessThan(100);
+    expect(response.body.data.avgResolutionTimeHours).toBeGreaterThan(0);
+    expect(response.body.data.avgResolutionTimeHours).toBeLessThan(100);
   });
 
   it('should calculate SLA compliance rate correctly', async () => {
@@ -243,7 +243,10 @@ describe.sequential('GET /tickets/metrics', () => {
     expect(response.status).toBe(200);
 
     const expectedCompliance = (2 / 3) * 100;
-    expect(response.body.slaComplianceRate).toBeCloseTo(expectedCompliance, 1);
+    expect(response.body.data.slaComplianceRate).toBeCloseTo(
+      expectedCompliance,
+      1,
+    );
   });
 
   it('should return agent performance metrics', async () => {
@@ -251,16 +254,16 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    expect(response.body.agentPerformance).toBeInstanceOf(Array);
+    expect(response.body.data.agentPerformance).toBeInstanceOf(Array);
 
-    const agent1Perf = response.body.agentPerformance.find(
+    const agent1Perf = response.body.data.agentPerformance.find(
       (a: { agentId: string }) => a.agentId === agent1Id,
     );
     expect(agent1Perf).toBeDefined();
     expect(agent1Perf.resolvedTickets).toBe(2);
     expect(agent1Perf.avgResolutionTimeHours).toBeGreaterThan(0);
 
-    const agent2Perf = response.body.agentPerformance.find(
+    const agent2Perf = response.body.data.agentPerformance.find(
       (a: { agentId: string }) => a.agentId === agent2Id,
     );
     expect(agent2Perf).toBeDefined();
@@ -272,7 +275,7 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    const performance = response.body.agentPerformance;
+    const performance = response.body.data.agentPerformance;
 
     expect(performance[0].agentId).toBe(agent1Id);
     expect(performance[1].agentId).toBe(agent2Id);
@@ -290,8 +293,8 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    expect(response.body.resolvedTickets).toBe(1);
-    expect(response.body.overdueTickets).toBe(0);
+    expect(response.body.data.resolvedTickets).toBe(1);
+    expect(response.body.data.overdueTickets).toBe(0);
   });
 
   it('should filter metrics by categoryId', async () => {
@@ -301,7 +304,7 @@ describe.sequential('GET /tickets/metrics', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body.resolvedTickets).toBe(1);
+    expect(response.body.data.resolvedTickets).toBe(1);
   });
 
   it('should filter metrics by date range', async () => {
@@ -312,7 +315,7 @@ describe.sequential('GET /tickets/metrics', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body.resolvedTickets).toBeGreaterThanOrEqual(0);
+    expect(response.body.data.resolvedTickets).toBeGreaterThanOrEqual(0);
   });
 
   it('should allow admin to access metrics', async () => {
@@ -320,8 +323,8 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('avgResolutionTimeHours');
-    expect(response.body).toHaveProperty('slaComplianceRate');
+    expect(response.body.data).toHaveProperty('avgResolutionTimeHours');
+    expect(response.body.data).toHaveProperty('slaComplianceRate');
   });
 
   it('should deny customer access to metrics', async () => {
@@ -338,7 +341,7 @@ describe.sequential('GET /tickets/metrics', () => {
     const response = await api.get('/api/v1/tickets/metrics');
 
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
+    expect(response.body.data).toMatchObject({
       avgResolutionTimeHours: 0,
       slaComplianceRate: 0,
       resolvedTickets: 0,

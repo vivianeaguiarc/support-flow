@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import {
   NotificationsService,
   notificationsService,
@@ -29,7 +30,7 @@ export class NotificationsController {
         offset,
       );
 
-      res.status(200).json(notifications);
+      sendSuccess(res, notifications);
     } catch (error) {
       next(error);
     }
@@ -45,7 +46,9 @@ export class NotificationsController {
 
       await this.service.markAsRead(id, getAuthenticatedUser(req));
 
-      res.status(204).send();
+      sendSuccess(res, null, {
+        message: 'Notification marked as read successfully',
+      });
     } catch (error) {
       next(error);
     }
@@ -61,7 +64,9 @@ export class NotificationsController {
         getAuthenticatedUser(req),
       );
 
-      res.status(200).json(result);
+      sendSuccess(res, result, {
+        message: 'All notifications marked as read successfully',
+      });
     } catch (error) {
       next(error);
     }

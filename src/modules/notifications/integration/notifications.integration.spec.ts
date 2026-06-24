@@ -143,10 +143,10 @@ describe.sequential('Notifications', () => {
       const response = await api.get('/api/v1/notifications');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(3);
-      expect(response.body[0].title).toBe('Test Notification 3');
-      expect(response.body[0].ticket).toBeDefined();
-      expect(response.body[0].ticket.protocol).toBe('TN-001');
+      expect(response.body.data).toHaveLength(3);
+      expect(response.body.data[0].title).toBe('Test Notification 3');
+      expect(response.body.data[0].ticket).toBeDefined();
+      expect(response.body.data[0].ticket.protocol).toBe('TN-001');
     });
 
     it('should list only unread notifications', async () => {
@@ -154,9 +154,9 @@ describe.sequential('Notifications', () => {
       const response = await api.get('/api/v1/notifications?unread=true');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
+      expect(response.body.data).toHaveLength(2);
       expect(
-        response.body.every((n: { readAt: Date | null }) => !n.readAt),
+        response.body.data.every((n: { readAt: Date | null }) => !n.readAt),
       ).toBe(true);
     });
 
@@ -165,7 +165,7 @@ describe.sequential('Notifications', () => {
       const response = await api.get('/api/v1/notifications');
 
       expect(response.status).toBe(200);
-      expect(response.body.length).toBeGreaterThan(0);
+      expect(response.body.data.length).toBeGreaterThan(0);
     });
 
     it('should isolate notifications by recipient', async () => {
@@ -173,7 +173,7 @@ describe.sequential('Notifications', () => {
       const response = await api.get('/api/v1/notifications');
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(0);
+      expect(response.body.data).toHaveLength(0);
     });
   });
 
@@ -200,7 +200,7 @@ describe.sequential('Notifications', () => {
         `/api/v1/notifications/${notificationId}/read`,
       );
 
-      expect(response.status).toBe(204);
+      expect(response.status).toBe(200);
 
       const updated = await prisma.notification.findUnique({
         where: { id: notificationId },
@@ -224,7 +224,7 @@ describe.sequential('Notifications', () => {
         `/api/v1/notifications/${notificationId}/read`,
       );
 
-      expect(response.status).toBe(204);
+      expect(response.status).toBe(200);
     });
   });
 
@@ -265,7 +265,7 @@ describe.sequential('Notifications', () => {
       const response = await api.patch('/api/v1/notifications/read-all');
 
       expect(response.status).toBe(200);
-      expect(response.body.count).toBe(3);
+      expect(response.body.data.count).toBe(3);
 
       const unread = await prisma.notification.count({
         where: {
@@ -292,7 +292,7 @@ describe.sequential('Notifications', () => {
       const response = await api.patch('/api/v1/notifications/read-all');
 
       expect(response.status).toBe(200);
-      expect(response.body.count).toBe(3);
+      expect(response.body.data.count).toBe(3);
 
       const agent2Unread = await prisma.notification.count({
         where: {
@@ -318,7 +318,7 @@ describe.sequential('Notifications', () => {
 
       const notifications = await prisma.notification.findMany({
         where: {
-          ticketId: response.body.id,
+          ticketId: response.body.data.id,
           recipientId: agent1Id,
           type: NotificationType.TICKET_CREATED,
         },

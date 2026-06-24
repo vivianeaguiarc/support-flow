@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
 import { AppError } from '../../errors/app-error.js';
+import { ErrorCode } from '../../errors/error-codes.js';
 import { ForbiddenError } from '../../errors/http-errors.js';
 import { errorHandler } from './error-handler.js';
 
@@ -38,9 +39,12 @@ describe('errorHandler', () => {
 
     expect(res.statusCode).toBe(404);
     expect(res.body).toEqual({
-      statusCode: 404,
-      error: 'Not Found',
-      message: 'Ticket not found',
+      success: false,
+      error: {
+        code: ErrorCode.RESOURCE_NOT_FOUND,
+        message: 'Ticket not found',
+        details: [],
+      },
       requestId: 'req-1',
     });
   });
@@ -52,9 +56,12 @@ describe('errorHandler', () => {
     errorHandler(new ForbiddenError(), req, res, vi.fn() as NextFunction);
 
     expect(res.body).toEqual({
-      statusCode: 403,
-      error: 'Forbidden',
-      message: 'Forbidden',
+      success: false,
+      error: {
+        code: ErrorCode.FORBIDDEN,
+        message: 'Forbidden',
+        details: [],
+      },
       requestId: 'req-2',
     });
   });
@@ -71,9 +78,12 @@ describe('errorHandler', () => {
 
     expect(res.statusCode).toBe(409);
     expect(res.body).toMatchObject({
-      statusCode: 409,
-      error: 'Conflict',
-      message: 'Resource already exists',
+      success: false,
+      error: {
+        code: ErrorCode.UNIQUE_CONSTRAINT_VIOLATION,
+        message: 'Resource already exists',
+        details: [],
+      },
     });
   });
 
@@ -90,9 +100,11 @@ describe('errorHandler', () => {
 
     expect(res.statusCode).toBe(400);
     expect(res.body).toMatchObject({
-      statusCode: 400,
-      error: 'Bad Request',
-      details: [{ path: 'email', message: expect.any(String) }],
+      success: false,
+      error: {
+        code: ErrorCode.VALIDATION_ERROR,
+        details: [{ path: 'email', message: expect.any(String) }],
+      },
     });
   });
 
@@ -109,9 +121,12 @@ describe('errorHandler', () => {
 
     expect(res.statusCode).toBe(500);
     expect(res.body).toMatchObject({
-      statusCode: 500,
-      error: 'Internal Server Error',
-      message: 'Internal server error',
+      success: false,
+      error: {
+        code: ErrorCode.INTERNAL_SERVER_ERROR,
+        message: 'Internal server error',
+        details: ['database exploded'],
+      },
       requestId: 'req-3',
     });
     expect(res.body).not.toHaveProperty('stack');

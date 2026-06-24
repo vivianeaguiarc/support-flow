@@ -254,7 +254,7 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary');
 
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({
+    expect(response.body.data).toMatchObject({
       total: 10,
       open: 3,
       inProgress: 3,
@@ -266,7 +266,7 @@ describe.sequential('GET /tickets/summary', () => {
       unassigned: 5,
     });
 
-    expect(response.body.byStatus).toEqual({
+    expect(response.body.data.byStatus).toEqual({
       OPEN: 3,
       IN_PROGRESS: 3,
       WAITING_CUSTOMER: 1,
@@ -275,7 +275,7 @@ describe.sequential('GET /tickets/summary', () => {
       CLOSED: 1,
     });
 
-    expect(response.body.byPriority).toEqual({
+    expect(response.body.data.byPriority).toEqual({
       LOW: 4,
       MEDIUM: 3,
       HIGH: 2,
@@ -288,9 +288,9 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(1);
-    expect(response.body.open).toBe(1);
-    expect(response.body.inProgress).toBe(0);
+    expect(response.body.data.total).toBe(1);
+    expect(response.body.data.open).toBe(1);
+    expect(response.body.data.inProgress).toBe(0);
   });
 
   it('should filter summary by status', async () => {
@@ -298,9 +298,9 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary?status=OPEN');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(3);
-    expect(response.body.open).toBe(3);
-    expect(response.body.inProgress).toBe(0);
+    expect(response.body.data.total).toBe(3);
+    expect(response.body.data.open).toBe(3);
+    expect(response.body.data.inProgress).toBe(0);
   });
 
   it('should filter summary by priority', async () => {
@@ -308,8 +308,8 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary?priority=HIGH');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(2);
-    expect(response.body.byPriority.HIGH).toBe(2);
+    expect(response.body.data.total).toBe(2);
+    expect(response.body.data.byPriority.HIGH).toBe(2);
   });
 
   it('should filter summary by categoryId', async () => {
@@ -319,7 +319,7 @@ describe.sequential('GET /tickets/summary', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(1);
+    expect(response.body.data.total).toBe(1);
   });
 
   it('should filter summary by customerId', async () => {
@@ -329,7 +329,7 @@ describe.sequential('GET /tickets/summary', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(7);
+    expect(response.body.data.total).toBe(7);
   });
 
   it('should filter summary by unassigned', async () => {
@@ -337,8 +337,8 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary?unassigned=true');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(5);
-    expect(response.body.unassigned).toBe(5);
+    expect(response.body.data.total).toBe(5);
+    expect(response.body.data.unassigned).toBe(5);
   });
 
   it('should filter summary by overdue', async () => {
@@ -346,8 +346,8 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary?overdue=true');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(2);
-    expect(response.body.overdue).toBe(2);
+    expect(response.body.data.total).toBe(2);
+    expect(response.body.data.overdue).toBe(2);
   });
 
   it('should filter summary by search term', async () => {
@@ -355,7 +355,7 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary?search=OVERDUE');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(2);
+    expect(response.body.data.total).toBe(2);
   });
 
   it('should filter summary by date range', async () => {
@@ -366,7 +366,7 @@ describe.sequential('GET /tickets/summary', () => {
     );
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(10);
+    expect(response.body.data.total).toBe(10);
   });
 
   it('should allow customer to view their own summary', async () => {
@@ -374,7 +374,7 @@ describe.sequential('GET /tickets/summary', () => {
     const response = await api.get('/api/v1/tickets/summary');
 
     expect(response.status).toBe(200);
-    expect(response.body.total).toBe(7);
+    expect(response.body.data.total).toBe(7);
   });
 
   it('should return validation error for invalid filters', async () => {

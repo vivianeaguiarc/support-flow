@@ -20,6 +20,7 @@ import {
 import {
   authRequest,
   createAuthToken,
+  getApiErrorMessage,
 } from '../../../test/integration/http-client.js';
 import { TicketStatus } from '../domain/ticket-enums.js';
 
@@ -186,16 +187,16 @@ describe.sequential('Ticket Attachments', () => {
         .attach('file', samplePdfBuffer, 'test.pdf');
 
       expect(response.status).toBe(201);
-      expect(response.body).toMatchObject({
+      expect(response.body.data).toMatchObject({
         ticketId: ticket1Id,
         tenantId: tenant1Id,
         uploadedById: agent1Id,
         originalName: 'test.pdf',
         mimeType: 'application/pdf',
       });
-      expect(response.body.id).toBeDefined();
-      expect(response.body.fileName).toBeDefined();
-      expect(response.body.storagePath).toBeDefined();
+      expect(response.body.data.id).toBeDefined();
+      expect(response.body.data.fileName).toBeDefined();
+      expect(response.body.data.storagePath).toBeDefined();
     });
 
     it('should upload PNG image as admin', async () => {
@@ -205,8 +206,8 @@ describe.sequential('Ticket Attachments', () => {
         .attach('file', samplePngBuffer, 'screenshot.png');
 
       expect(response.status).toBe(201);
-      expect(response.body.originalName).toBe('screenshot.png');
-      expect(response.body.mimeType).toBe('image/png');
+      expect(response.body.data.originalName).toBe('screenshot.png');
+      expect(response.body.data.mimeType).toBe('image/png');
     });
 
     it('should record ATTACHMENT_ADDED in history', async () => {
@@ -249,7 +250,7 @@ describe.sequential('Ticket Attachments', () => {
         .attach('file', Buffer.from('exe'), 'virus.exe');
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('not allowed');
+      expect(getApiErrorMessage(response.body)).toContain('not allowed');
     });
 
     it('should return 400 for missing file', async () => {
@@ -259,7 +260,7 @@ describe.sequential('Ticket Attachments', () => {
       );
 
       expect(response.status).toBe(400);
-      expect(response.body.message).toContain('required');
+      expect(getApiErrorMessage(response.body)).toContain('required');
     });
 
     it('should return 404 for non-existent ticket', async () => {
@@ -310,9 +311,9 @@ describe.sequential('Ticket Attachments', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
-      expect(response.body[0].originalName).toBe('document1.pdf');
-      expect(response.body[1].originalName).toBe('image1.png');
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0].originalName).toBe('document1.pdf');
+      expect(response.body.data[1].originalName).toBe('image1.png');
     });
 
     it('should include uploader information', async () => {
@@ -322,7 +323,7 @@ describe.sequential('Ticket Attachments', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(response.body[0].uploadedBy).toMatchObject({
+      expect(response.body.data[0].uploadedBy).toMatchObject({
         id: agent1Id,
         name: 'Agent 1 Attach',
         email: 'agent1-attach@test.com',
@@ -340,7 +341,7 @@ describe.sequential('Ticket Attachments', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(response.body).toEqual([]);
+      expect(response.body.data).toEqual([]);
     });
 
     it('should allow customer to view attachments', async () => {
@@ -350,7 +351,7 @@ describe.sequential('Ticket Attachments', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
+      expect(response.body.data).toHaveLength(2);
     });
 
     it('should deny agent from different tenant', async () => {
@@ -382,9 +383,9 @@ describe.sequential('Ticket Attachments', () => {
       );
 
       expect(response.status).toBe(200);
-      expect(response.body).toHaveLength(2);
+      expect(response.body.data).toHaveLength(2);
       expect(
-        response.body.every(
+        response.body.data.every(
           (a: { originalName: string }) => a.originalName !== 'tenant2.pdf',
         ),
       ).toBe(true);
@@ -421,7 +422,7 @@ describe.sequential('Ticket Attachments', () => {
         `/api/v1/tickets/${ticket1Id}/attachments/${attachmentId}`,
       );
 
-      expect(response.status).toBe(204);
+      expect(response.status).toBe(200);
 
       const deleted = await prisma.ticketAttachment.findUnique({
         where: { id: attachmentId },
@@ -448,7 +449,7 @@ describe.sequential('Ticket Attachments', () => {
         `/api/v1/tickets/${ticket1Id}/attachments/${attachmentId}`,
       );
 
-      expect(response.status).toBe(204);
+      expect(response.status).toBe(200);
     });
 
     it('should deny customer from deleting', async () => {

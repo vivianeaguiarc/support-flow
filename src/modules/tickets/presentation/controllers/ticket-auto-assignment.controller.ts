@@ -1,21 +1,32 @@
-import type { Request, Response } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 
+import { UnauthorizedError } from '../../../../shared/errors/http-errors.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import { ticketAutoAssignmentService } from '../../application/services/ticket-auto-assignment.service.js';
 
 export class TicketAutoAssignmentController {
-  async autoAssign(req: Request, res: Response): Promise<void> {
-    const tenantId = req.user?.tenantId;
+  autoAssign = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const tenantId = req.user?.tenantId;
 
-    if (!tenantId) {
-      res.status(401).json({ error: 'Tenant ID not found' });
-      return;
+      if (!tenantId) {
+        throw new UnauthorizedError('Tenant ID not found');
+      }
+
+      const result =
+        await ticketAutoAssignmentService.autoAssignTickets(tenantId);
+
+      sendSuccess(res, result, {
+        message: 'Auto-assignment completed successfully',
+      });
+    } catch (error) {
+      next(error);
     }
-
-    const result =
-      await ticketAutoAssignmentService.autoAssignTickets(tenantId);
-
-    res.status(200).json(result);
-  }
+  };
 }
 
 export const ticketAutoAssignmentController =

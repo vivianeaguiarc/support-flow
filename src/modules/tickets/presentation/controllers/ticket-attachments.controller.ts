@@ -4,6 +4,7 @@ import { AppError } from '../../../../shared/errors/app-error.js';
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { handleMulterError } from '../../../../shared/http/middlewares/upload.middleware.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import {
   TicketsService,
   ticketsService,
@@ -30,10 +31,17 @@ export class TicketAttachmentsController {
         getAuthenticatedUser(req),
       );
 
-      res.status(201).json({
-        ...attachment,
-        size: attachment.size.toString(),
-      });
+      sendSuccess(
+        res,
+        {
+          ...attachment,
+          size: attachment.size.toString(),
+        },
+        {
+          status: 201,
+          message: 'Attachment uploaded successfully',
+        },
+      );
     } catch (error) {
       handleMulterError(error);
       next(error);
@@ -53,7 +61,8 @@ export class TicketAttachmentsController {
         getAuthenticatedUser(req),
       );
 
-      res.status(200).json(
+      sendSuccess(
+        res,
         attachments.map((attachment) => ({
           ...attachment,
           size: attachment.size.toString(),
@@ -79,7 +88,7 @@ export class TicketAttachmentsController {
         getAuthenticatedUser(req),
       );
 
-      res.status(204).send();
+      sendSuccess(res, null, { message: 'Attachment deleted successfully' });
     } catch (error) {
       next(error);
     }

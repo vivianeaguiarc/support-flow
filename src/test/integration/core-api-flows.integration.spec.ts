@@ -14,7 +14,13 @@ import {
   migrateTestDatabase,
   resetTestDatabase,
 } from './database.js';
-import { authRequest, createAuthToken, login } from './http-client.js';
+import {
+  authRequest,
+  createAuthToken,
+  getApiErrorMessage,
+  login,
+  unwrapApiData,
+} from './http-client.js';
 
 describe.sequential('Core API flows (E2E)', () => {
   let app: Express;
@@ -47,7 +53,7 @@ describe.sequential('Core API flows (E2E)', () => {
         })
         .expect(201);
 
-      expect(registerResponse.body).toMatchObject({
+      expect(registerResponse.body.data).toMatchObject({
         email,
         role: UserRole.CUSTOMER,
         tenantId: fixtures.tenant.id,
@@ -58,10 +64,11 @@ describe.sequential('Core API flows (E2E)', () => {
         .send({ email, password: CORE_FLOW_PASSWORD })
         .expect(200);
 
-      expect(loginResponse.body.accessToken).toEqual(expect.any(String));
-      expect(loginResponse.body.refreshToken).toEqual(expect.any(String));
+      const loginTokens = unwrapApiData(loginResponse.body);
+      expect(loginTokens.accessToken).toEqual(expect.any(String));
+      expect(loginTokens.refreshToken).toEqual(expect.any(String));
 
-      const api = authRequest(app, loginResponse.body.accessToken as string);
+      const api = authRequest(app, loginTokens.accessToken);
       await api.get('/api/v1/tickets').expect(200);
     });
 
@@ -119,25 +126,27 @@ describe.sequential('Core API flows (E2E)', () => {
         })
         .expect(201);
 
-      const ticketId = createResponse.body.id as string;
+      const ticketId = createResponse.body.data.id as string;
 
-      expect(createResponse.body).toMatchObject({
+      expect(createResponse.body.data).toMatchObject({
         status: TicketStatus.OPEN,
         customerId: fixtures.customer.id,
         tenantId: fixtures.tenant.id,
       });
-      expect(createResponse.body.protocol).toMatch(/^SF-\d{8}-[A-Z0-9]{6}$/);
+      expect(createResponse.body.data.protocol).toMatch(
+        /^SF-\d{8}-[A-Z0-9]{6}$/,
+      );
 
       const listResponse = await api.get('/api/v1/tickets').expect(200);
 
-      expect(listResponse.body.total).toBe(1);
-      expect(listResponse.body.data[0].id).toBe(ticketId);
+      expect(listResponse.body.data.total).toBe(1);
+      expect(listResponse.body.data.data[0].id).toBe(ticketId);
 
       const findResponse = await api
         .get(`/api/v1/tickets/${ticketId}`)
         .expect(200);
 
-      expect(findResponse.body.id).toBe(ticketId);
+      expect(findResponse.body.data.id).toBe(ticketId);
 
       await api
         .patch(`/api/v1/tickets/${ticketId}/assign`)
@@ -154,15 +163,15 @@ describe.sequential('Core API flows (E2E)', () => {
         .send({ status: TicketStatus.RESOLVED })
         .expect(200);
 
-      expect(resolvedResponse.body.status).toBe(TicketStatus.RESOLVED);
+      expect(resolvedResponse.body.data.status).toBe(TicketStatus.RESOLVED);
 
       const closedResponse = await api
         .patch(`/api/v1/tickets/${ticketId}/status`)
         .send({ status: TicketStatus.CLOSED })
         .expect(200);
 
-      expect(closedResponse.body.status).toBe(TicketStatus.CLOSED);
-      expect(closedResponse.body.closedAt).toBeTruthy();
+      expect(closedResponse.body.data.status).toBe(TicketStatus.CLOSED);
+      expect(closedResponse.body.data.closedAt).toBeTruthy();
     });
   });
 
@@ -207,7 +216,7 @@ describe.sequential('Core API flows (E2E)', () => {
         })
         .expect(201);
 
-      const ticketId = createResponse.body.id as string;
+      const ticketId = createResponse.body.data.id as string;
 
       await authRequest(app, agentToken)
         .patch(`/api/v1/tickets/${ticketId}/assign`)
@@ -248,7 +257,7 @@ describe.sequential('Core API flows (E2E)', () => {
         })
         .expect(201);
 
-      const otherTicketId = otherTicketResponse.body.id as string;
+      const otherTicketId = otherTicketResponse.body.data.id as string;
 
       await authRequest(app, customerToken)
         .get(`/api/v1/tickets/${otherTicketId}`)
@@ -286,7 +295,7 @@ describe.sequential('Core API flows (E2E)', () => {
       });
 
       await authRequest(app, foreignToken)
-        .get(`/api/v1/tickets/${createResponse.body.id as string}`)
+        .get(`/api/v1/tickets/${createResponse.body.data.id as string}`)
         .expect(403);
     });
   });
@@ -310,14 +319,14 @@ describe.sequential('Core API flows (E2E)', () => {
         })
         .expect(400);
 
-      expect(invalidCreate.body.statusCode).toBe(400);
+      expect(invalidCreate.status).toBe(400);
 
       const invalidLogin = await request(app)
         .post('/api/v1/auth/login')
         .send({ email: 'not-an-email', password: '123' })
         .expect(400);
 
-      expect(invalidLogin.body.statusCode).toBe(400);
+      expect(invalidLogin.status).toBe(400);
     });
 
     it('should return 404 for missing resources', async () => {
@@ -357,14 +366,14 @@ describe.sequential('Core API flows (E2E)', () => {
         })
         .expect(201);
 
-      const ticketId = createResponse.body.id as string;
+      const ticketId = createResponse.body.data.id as string;
 
       const blockedTransition = await api
         .patch(`/api/v1/tickets/${ticketId}/status`)
         .send({ status: TicketStatus.IN_PROGRESS })
         .expect(400);
 
-      expect(blockedTransition.body.message).toBe(
+      expect(getApiErrorMessage(blockedTransition.body)).toBe(
         'Ticket must be assigned before moving to IN_PROGRESS.',
       );
     });

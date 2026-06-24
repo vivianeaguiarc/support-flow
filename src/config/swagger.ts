@@ -59,35 +59,64 @@ const options: Options = {
         },
       },
       schemas: {
-        Error: {
+        ApiSuccessResponse: {
           type: 'object',
-          required: ['statusCode', 'error', 'message'],
+          required: ['success', 'data', 'message'],
           properties: {
-            statusCode: {
-              type: 'integer',
-              description: 'HTTP status code',
-              example: 404,
-            },
-            error: {
-              type: 'string',
-              description: 'HTTP error label',
-              example: 'Not Found',
+            success: { type: 'boolean', example: true },
+            data: {
+              description: 'Payload da operação',
             },
             message: {
               type: 'string',
-              description: 'Mensagem de erro',
-              example: 'Ticket not found',
+              example: 'Operation completed successfully',
+            },
+          },
+        },
+        ApiErrorResponse: {
+          type: 'object',
+          required: ['success', 'error'],
+          properties: {
+            success: { type: 'boolean', example: false },
+            error: {
+              type: 'object',
+              required: ['code', 'message', 'details'],
+              properties: {
+                code: {
+                  type: 'string',
+                  example: 'RESOURCE_NOT_FOUND',
+                  enum: [
+                    'VALIDATION_ERROR',
+                    'BAD_REQUEST',
+                    'UNAUTHORIZED',
+                    'FORBIDDEN',
+                    'RESOURCE_NOT_FOUND',
+                    'UNIQUE_CONSTRAINT_VIOLATION',
+                    'INTERNAL_SERVER_ERROR',
+                  ],
+                },
+                message: {
+                  type: 'string',
+                  example: 'Resource not found',
+                },
+                details: {
+                  type: 'array',
+                  items: {},
+                  example: [],
+                },
+              },
             },
             requestId: {
               type: 'string',
               description: 'Identificador da requisição para rastreamento',
               example: 'req-1',
             },
-            details: {
-              description:
-                'Detalhes adicionais (ex.: validação). Omitido em production.',
-            },
           },
+        },
+        Error: {
+          description:
+            'Alias legado — preferir ApiErrorResponse nas novas integrações',
+          allOf: [{ $ref: '#/components/schemas/ApiErrorResponse' }],
         },
         TicketStatus: {
           type: 'string',

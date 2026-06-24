@@ -14,6 +14,7 @@ import { seedIntegrationFixtures } from '../../../test/integration/fixtures.js';
 import {
   authRequest,
   loginWithTokens,
+  unwrapApiData,
 } from '../../../test/integration/http-client.js';
 
 describe.sequential('Auth refresh token integration', () => {
@@ -43,12 +44,13 @@ describe.sequential('Auth refresh token integration', () => {
       })
       .expect(200);
 
-    expect(response.body.accessToken).toEqual(expect.any(String));
-    expect(response.body.refreshToken).toEqual(expect.any(String));
+    const tokens = unwrapApiData(response.body);
+    expect(tokens.accessToken).toEqual(expect.any(String));
+    expect(tokens.refreshToken).toEqual(expect.any(String));
 
     const storedToken = await integrationPrisma.refreshToken.findUnique({
       where: {
-        tokenHash: hashRefreshToken(response.body.refreshToken as string),
+        tokenHash: hashRefreshToken(tokens.refreshToken),
       },
     });
 
@@ -57,7 +59,7 @@ describe.sequential('Auth refresh token integration', () => {
       tenantId: fixtures.tenantA.id,
       revokedAt: null,
     });
-    expect(storedToken?.tokenHash).not.toBe(response.body.refreshToken);
+    expect(storedToken?.tokenHash).not.toBe(tokens.refreshToken);
   });
 
   it('should refresh tokens and rotate the refresh token', async () => {
@@ -73,11 +75,10 @@ describe.sequential('Auth refresh token integration', () => {
       .send({ refreshToken: initialTokens.refreshToken })
       .expect(200);
 
-    expect(refreshResponse.body.accessToken).toEqual(expect.any(String));
-    expect(refreshResponse.body.refreshToken).toEqual(expect.any(String));
-    expect(refreshResponse.body.refreshToken).not.toBe(
-      initialTokens.refreshToken,
-    );
+    const refreshedTokens = unwrapApiData(refreshResponse.body);
+    expect(refreshedTokens.accessToken).toEqual(expect.any(String));
+    expect(refreshedTokens.refreshToken).toEqual(expect.any(String));
+    expect(refreshedTokens.refreshToken).not.toBe(initialTokens.refreshToken);
 
     const oldToken = await integrationPrisma.refreshToken.findUnique({
       where: {
@@ -91,7 +92,7 @@ describe.sequential('Auth refresh token integration', () => {
       .send({ refreshToken: initialTokens.refreshToken })
       .expect(401);
 
-    const api = authRequest(app, refreshResponse.body.accessToken as string);
+    const api = authRequest(app, refreshedTokens.accessToken);
     await api.get('/api/v1/tickets').expect(200);
   });
 
@@ -108,9 +109,8 @@ describe.sequential('Auth refresh token integration', () => {
       .send({ refreshToken: tokens.refreshToken })
       .expect(200);
 
-    expect(logoutResponse.body).toEqual({
-      message: 'Logged out successfully',
-    });
+    expect(logoutResponse.body.success).toBe(true);
+    expect(logoutResponse.body.message).toBe('Logged out successfully');
 
     const storedToken = await integrationPrisma.refreshToken.findUnique({
       where: { tokenHash: hashRefreshToken(tokens.refreshToken) },

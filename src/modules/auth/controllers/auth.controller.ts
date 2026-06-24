@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 
+import { sendSuccess } from '../../../shared/http/response/api-response.js';
 import type { LoginDto } from '../dtos/login.dto.js';
 import type { LogoutDto } from '../dtos/logout.dto.js';
 import type { RefreshTokenDto } from '../dtos/refresh-token.dto.js';
@@ -15,7 +16,7 @@ export class AuthController {
   ): Promise<void> => {
     try {
       const result = await this.service.login(req.body as LoginDto);
-      res.status(200).json(result);
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }
@@ -28,7 +29,7 @@ export class AuthController {
   ): Promise<void> => {
     try {
       const result = await this.service.refresh(req.body as RefreshTokenDto);
-      res.status(200).json(result);
+      sendSuccess(res, result);
     } catch (error) {
       next(error);
     }
@@ -41,7 +42,7 @@ export class AuthController {
   ): Promise<void> => {
     try {
       const result = await this.service.logout(req.body as LogoutDto);
-      res.status(200).json(result);
+      sendSuccess(res, result, { message: 'Logged out successfully' });
     } catch (error) {
       next(error);
     }

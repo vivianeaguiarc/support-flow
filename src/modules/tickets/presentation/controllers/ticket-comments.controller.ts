@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import {
   TicketsService,
   ticketsService,
@@ -26,7 +27,10 @@ export class TicketCommentsController {
         getAuthenticatedUser(req),
       );
 
-      res.status(201).json(comment);
+      sendSuccess(res, comment, {
+        status: 201,
+        message: 'Comment created successfully',
+      });
     } catch (error) {
       next(error);
     }
@@ -45,7 +49,7 @@ export class TicketCommentsController {
         getAuthenticatedUser(req),
       );
 
-      res.status(200).json(comments);
+      sendSuccess(res, comments);
     } catch (error) {
       next(error);
     }

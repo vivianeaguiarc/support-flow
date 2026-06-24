@@ -3,11 +3,14 @@ import { ZodError } from 'zod';
 
 import { env } from '../../../config/env.js';
 import { AppError } from '../../errors/app-error.js';
-import { buildErrorResponse } from '../../errors/error-response.js';
 import { ValidationError } from '../../errors/http-errors.js';
 import { mapPrismaError } from '../../errors/prisma-error-mapper.js';
 import { logger } from '../../logger/logger.js';
 import { getRequestId } from '../../logger/request-context.js';
+import {
+  buildErrorResponse,
+  buildInternalErrorResponse,
+} from '../response/api-response.js';
 
 function formatZodIssues(error: ZodError): ValidationError {
   const details = error.issues.map((issue) => ({
@@ -68,11 +71,11 @@ export function errorHandler(
     'Unexpected error',
   );
 
-  res.status(500).json({
-    statusCode: 500,
-    error: 'Internal Server Error',
-    message: 'Internal server error',
-    ...(requestId ? { requestId } : {}),
-    ...(includeDetails && err.message ? { details: err.message } : {}),
-  });
+  res.status(500).json(
+    buildInternalErrorResponse('Internal server error', {
+      includeDetails,
+      requestId,
+      details: includeDetails ? err.message : undefined,
+    }),
+  );
 }

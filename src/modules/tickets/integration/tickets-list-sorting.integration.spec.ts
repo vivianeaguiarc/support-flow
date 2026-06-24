@@ -9,7 +9,11 @@ import {
   resetTestDatabase,
 } from '../../../test/integration/database.js';
 import { seedIntegrationFixtures } from '../../../test/integration/fixtures.js';
-import { authRequest, login } from '../../../test/integration/http-client.js';
+import {
+  authRequest,
+  getApiErrorMessage,
+  login,
+} from '../../../test/integration/http-client.js';
 
 describe.sequential('Ticket listing sorting integration', () => {
   let app: Express;
@@ -67,15 +71,15 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(201);
 
     await integrationPrisma.ticket.update({
-      where: { id: oldest.body.id as string },
+      where: { id: oldest.body.data.id as string },
       data: { createdAt: new Date('2026-01-01T10:00:00.000Z') },
     });
     await integrationPrisma.ticket.update({
-      where: { id: middle.body.id as string },
+      where: { id: middle.body.data.id as string },
       data: { createdAt: new Date('2026-01-02T10:00:00.000Z') },
     });
     await integrationPrisma.ticket.update({
-      where: { id: newest.body.id as string },
+      where: { id: newest.body.data.id as string },
       data: { createdAt: new Date('2026-01-03T10:00:00.000Z') },
     });
 
@@ -85,8 +89,8 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      ascResponse.body.data.map((ticket: { id: string }) => ticket.id),
-    ).toEqual([oldest.body.id, middle.body.id, newest.body.id]);
+      ascResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+    ).toEqual([oldest.body.data.id, middle.body.data.id, newest.body.data.id]);
 
     const descResponse = await api
       .get('/api/v1/tickets')
@@ -94,8 +98,8 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      descResponse.body.data.map((ticket: { id: string }) => ticket.id),
-    ).toEqual([newest.body.id, middle.body.id, oldest.body.id]);
+      descResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+    ).toEqual([newest.body.data.id, middle.body.data.id, oldest.body.data.id]);
   });
 
   it('sorts tickets by slaDueAt asc and desc', async () => {
@@ -128,11 +132,11 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(201);
 
     await integrationPrisma.ticket.update({
-      where: { id: soon.body.id as string },
+      where: { id: soon.body.data.id as string },
       data: { slaDueAt: new Date('2026-06-24T10:00:00.000Z') },
     });
     await integrationPrisma.ticket.update({
-      where: { id: later.body.id as string },
+      where: { id: later.body.data.id as string },
       data: { slaDueAt: new Date('2026-06-30T10:00:00.000Z') },
     });
 
@@ -142,8 +146,8 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      ascResponse.body.data.map((ticket: { id: string }) => ticket.id),
-    ).toEqual([soon.body.id, later.body.id]);
+      ascResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+    ).toEqual([soon.body.data.id, later.body.data.id]);
 
     const descResponse = await api
       .get('/api/v1/tickets')
@@ -151,8 +155,8 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      descResponse.body.data.map((ticket: { id: string }) => ticket.id),
-    ).toEqual([later.body.id, soon.body.id]);
+      descResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+    ).toEqual([later.body.data.id, soon.body.data.id]);
   });
 
   it('sorts tickets by priority', async () => {
@@ -190,8 +194,8 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      ascResponse.body.data.map((ticket: { id: string }) => ticket.id),
-    ).toEqual([low.body.id, urgent.body.id]);
+      ascResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+    ).toEqual([low.body.data.id, urgent.body.data.id]);
 
     const descResponse = await api
       .get('/api/v1/tickets')
@@ -199,8 +203,8 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      descResponse.body.data.map((ticket: { id: string }) => ticket.id),
-    ).toEqual([urgent.body.id, low.body.id]);
+      descResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+    ).toEqual([urgent.body.data.id, low.body.data.id]);
   });
 
   it('rejects invalid sortBy and sortOrder query params', async () => {
@@ -217,13 +221,13 @@ describe.sequential('Ticket listing sorting integration', () => {
       .query({ sortBy: 'title' })
       .expect(400);
 
-    expect(invalidSortBy.body.message).toContain('sortBy');
+    expect(getApiErrorMessage(invalidSortBy.body)).toContain('sortBy');
 
     const invalidSortOrder = await api
       .get('/api/v1/tickets')
       .query({ sortOrder: 'invalid' })
       .expect(400);
 
-    expect(invalidSortOrder.body.message).toContain('sortOrder');
+    expect(getApiErrorMessage(invalidSortOrder.body)).toContain('sortOrder');
   });
 });

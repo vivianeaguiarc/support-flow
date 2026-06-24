@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { describe, expect, it } from 'vitest';
 
+import { ErrorCode } from './error-codes.js';
 import { mapPrismaError } from './prisma-error-mapper.js';
 
 describe('mapPrismaError', () => {
@@ -12,7 +13,7 @@ describe('mapPrismaError', () => {
 
     expect(mapPrismaError(error)).toMatchObject({
       statusCode: 409,
-      error: 'Conflict',
+      code: ErrorCode.UNIQUE_CONSTRAINT_VIOLATION,
       message: 'Resource already exists',
     });
   });
@@ -25,7 +26,7 @@ describe('mapPrismaError', () => {
 
     expect(mapPrismaError(error)).toMatchObject({
       statusCode: 404,
-      error: 'Not Found',
+      code: ErrorCode.RESOURCE_NOT_FOUND,
       message: 'Resource not found',
     });
   });
@@ -41,12 +42,25 @@ describe('mapPrismaError', () => {
 
     expect(mapPrismaError(error)).toMatchObject({
       statusCode: 400,
-      error: 'Bad Request',
+      code: ErrorCode.BAD_REQUEST,
       message: 'Invalid reference',
     });
   });
 
-  it('returns null for unknown errors', () => {
+  it('maps unknown prisma errors to internal server error', () => {
+    const error = new Prisma.PrismaClientKnownRequestError('Unknown', {
+      code: 'P9999',
+      clientVersion: 'test',
+    });
+
+    expect(mapPrismaError(error)).toMatchObject({
+      statusCode: 500,
+      code: ErrorCode.INTERNAL_SERVER_ERROR,
+      message: 'Database operation failed',
+    });
+  });
+
+  it('returns null for non-prisma errors', () => {
     expect(mapPrismaError(new Error('boom'))).toBeNull();
   });
 });

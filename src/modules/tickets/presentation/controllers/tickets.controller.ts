@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import {
   TicketsService,
   ticketsService,
@@ -33,7 +34,10 @@ export class TicketsController {
         },
         getAuthenticatedUser(req),
       );
-      res.status(201).json(ticket);
+      sendSuccess(res, ticket, {
+        status: 201,
+        message: 'Ticket created successfully',
+      });
     } catch (error) {
       next(error);
     }
@@ -47,7 +51,7 @@ export class TicketsController {
     try {
       const query = req.query as unknown as ListTicketsQueryDto;
       const tickets = await this.service.list(getAuthenticatedUser(req), query);
-      res.status(200).json(tickets);
+      sendSuccess(res, tickets);
     } catch (error) {
       next(error);
     }
@@ -63,7 +67,7 @@ export class TicketsController {
         req.params.id as string,
         getAuthenticatedUser(req),
       );
-      res.status(200).json(ticket);
+      sendSuccess(res, ticket);
     } catch (error) {
       next(error);
     }
@@ -81,7 +85,9 @@ export class TicketsController {
         status,
         getAuthenticatedUser(req),
       );
-      res.status(200).json(ticket);
+      sendSuccess(res, ticket, {
+        message: 'Ticket status updated successfully',
+      });
     } catch (error) {
       next(error);
     }
@@ -99,7 +105,7 @@ export class TicketsController {
         assignedToId,
         getAuthenticatedUser(req),
       );
-      res.status(200).json(ticket);
+      sendSuccess(res, ticket, { message: 'Ticket assigned successfully' });
     } catch (error) {
       next(error);
     }
@@ -115,7 +121,7 @@ export class TicketsController {
         req.params.id as string,
         getAuthenticatedUser(req),
       );
-      res.status(200).json(transitions);
+      sendSuccess(res, transitions);
     } catch (error) {
       next(error);
     }
@@ -131,7 +137,7 @@ export class TicketsController {
         req.params.id as string,
         getAuthenticatedUser(req),
       );
-      res.status(200).json(history);
+      sendSuccess(res, history);
     } catch (error) {
       next(error);
     }
@@ -148,7 +154,7 @@ export class TicketsController {
         getAuthenticatedUser(req),
         query,
       );
-      res.status(200).json(summary);
+      sendSuccess(res, summary);
     } catch (error) {
       next(error);
     }
@@ -165,7 +171,7 @@ export class TicketsController {
         getAuthenticatedUser(req),
         query,
       );
-      res.status(200).json(metrics);
+      sendSuccess(res, metrics);
     } catch (error) {
       next(error);
     }

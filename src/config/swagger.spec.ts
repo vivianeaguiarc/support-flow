@@ -66,5 +66,7 @@ describe('swaggerSpec', () => {
     expect(schemas.TicketPriority).toBeDefined();
     expect(schemas.UserRole).toBeDefined();
     expect(schemas.NotificationType).toBeDefined();
+    expect(schemas.ApiSuccessResponse).toBeDefined();
+    expect(schemas.ApiErrorResponse).toBeDefined();
   });
 });

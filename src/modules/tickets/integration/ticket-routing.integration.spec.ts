@@ -114,9 +114,9 @@ describe.sequential('Ticket Routing', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.routedTo.id).toBe(adminId);
-      expect(response.body.routedTo.role).toBe(UserRole.ADMIN);
-      expect(response.body.reason).toContain('URGENT');
+      expect(response.body.data.routedTo.id).toBe(adminId);
+      expect(response.body.data.routedTo.role).toBe(UserRole.ADMIN);
+      expect(response.body.data.reason).toContain('URGENT');
 
       const updatedTicket = await prisma.ticket.findUnique({
         where: { id: ticket.id },
@@ -144,8 +144,8 @@ describe.sequential('Ticket Routing', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.routedTo.id).toBe(adminId);
-      expect(response.body.reason).toContain('Ouvidoria');
+      expect(response.body.data.routedTo.id).toBe(adminId);
+      expect(response.body.data.reason).toContain('Ouvidoria');
     });
 
     it('should route to agent with least workload as fallback', async () => {
@@ -191,8 +191,8 @@ describe.sequential('Ticket Routing', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.routedTo.id).toBe(agent2Id);
-      expect(response.body.reason).toContain('menor carga');
+      expect(response.body.data.routedTo.id).toBe(agent2Id);
+      expect(response.body.data.reason).toContain('menor carga');
     });
 
     it('should create history entry for routing', async () => {
@@ -354,7 +354,7 @@ describe.sequential('Ticket Routing', () => {
         .expect(200);
 
       expect([adminId, agent1Id, agent2Id]).toContain(
-        response.body.routedTo.id,
+        response.body.data.routedTo.id,
       );
     });
 
@@ -402,7 +402,7 @@ describe.sequential('Ticket Routing', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.routedTo.id).not.toBe(agent1Id);
+      expect(response.body.data.routedTo.id).not.toBe(agent1Id);
 
       const history = await prisma.ticketHistory.findMany({
         where: {
@@ -415,7 +415,7 @@ describe.sequential('Ticket Routing', () => {
       expect(history.length).toBeGreaterThan(0);
       const lastHistory = history[history.length - 1];
       expect(lastHistory.oldValue).toBe(agent1Id);
-      expect(lastHistory.newValue).toBe(response.body.routedTo.id);
+      expect(lastHistory.newValue).toBe(response.body.data.routedTo.id);
     });
   });
 });

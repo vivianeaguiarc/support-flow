@@ -1,6 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
 
+import { UnauthorizedError } from '../../../../shared/errors/http-errors.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
+import { sendSuccess } from '../../../../shared/http/response/api-response.js';
 import {
   type RouteTicketUseCase,
   routeTicketUseCase,
@@ -22,8 +24,7 @@ export class TicketRoutingController {
       const userId = req.user?.id;
 
       if (!tenantId) {
-        res.status(401).json({ error: 'Tenant ID not found' });
-        return;
+        throw new UnauthorizedError('Tenant ID not found');
       }
 
       const result = await this.routeUseCase.execute({
@@ -32,7 +33,7 @@ export class TicketRoutingController {
         changedById: userId,
       });
 
-      res.status(200).json(result);
+      sendSuccess(res, result, { message: 'Ticket routed successfully' });
     } catch (error) {
       next(error);
     }
