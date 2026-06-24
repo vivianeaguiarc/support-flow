@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 
 import { assertSeedAllowed, resolveSeedConfig } from './seed/config.js';
 import { seedDemoData } from './seed/demo-seed.js';
+import { resetDemoData } from './seed/reset-demo.js';
 
 async function main(): Promise<void> {
   assertSeedAllowed();
@@ -13,7 +14,7 @@ async function main(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error(
-      'DATABASE_URL is required to run the demo seed. Copy .env.example to .env and configure the database URL.',
+      'DATABASE_URL is required to reset demo data. Copy .env.example to .env and configure the database URL.',
     );
   }
 
@@ -22,42 +23,24 @@ async function main(): Promise<void> {
   const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 
   try {
+    console.log(`Resetting demo tenant (${config.tenantId})...`);
+    await resetDemoData(prisma, config.tenantId);
+
     const result = await seedDemoData(prisma, config);
 
-    console.log('Demo seed completed successfully.');
+    console.log('Demo reset completed successfully.');
     console.log('');
     console.log('Tenant');
     console.log(`  id:   ${result.tenantId}`);
     console.log(`  slug: ${result.tenantSlug}`);
     console.log('');
-    console.log('Users (login via POST /api/v1/auth/login)');
+    console.log('Users');
     console.log(`  admin:    ${result.adminEmail}`);
     console.log(`  agent:    ${result.agentEmail}`);
     console.log(`  customer: ${result.customerUserEmail}`);
     console.log(`  password: ${config.adminPassword}`);
     console.log('');
-    console.log('Customer entity (use as customerId when opening tickets)');
-    console.log(`  id:    ${result.customerId}`);
-    console.log(`  email: ${result.customerEmail}`);
-    console.log('');
-    console.log('Ticket categories');
-    for (const name of result.categoryNames) {
-      console.log(`  - ${name}`);
-    }
-    console.log('');
-    console.log(`Demo tickets (${result.ticketProtocols.length})`);
-    for (const protocol of result.ticketProtocols) {
-      console.log(`  - ${protocol}`);
-    }
-    console.log('');
-    console.log(
-      `Interactions: ${result.commentCount} comments, ${result.notificationCount} notifications`,
-    );
-    console.log('');
-    console.log('Swagger (local): http://localhost:3000/api/docs');
-    console.log(
-      'Swagger (production): https://support-flow-uath.onrender.com/api/docs/',
-    );
+    console.log(`Tickets recreated: ${result.ticketProtocols.length}`);
   } finally {
     await prisma.$disconnect();
     await pool.end();
@@ -65,7 +48,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error('Demo seed failed.');
+  console.error('Demo reset failed.');
   console.error(error);
   process.exit(1);
 });

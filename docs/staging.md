@@ -181,11 +181,12 @@ pnpm seed:staging
 
 ### Credenciais demo padrão
 
-| Recurso     | Valor                                              |
-| ----------- | -------------------------------------------------- |
-| Admin       | `admin@demo.supportflow.local` / `DemoSupport123!` |
-| Agent       | `agent@demo.supportflow.local` / `DemoSupport123!` |
-| Customer ID | `00000000-0000-4000-8000-000000000002`             |
+| Recurso     | Valor                                               |
+| ----------- | --------------------------------------------------- |
+| Admin       | `admin.demo@supportflow.com` / `DemoSupport123!`    |
+| Agent       | `agent.demo@supportflow.com` / `DemoSupport123!`    |
+| Customer    | `customer.demo@supportflow.com` / `DemoSupport123!` |
+| Customer ID | `00000000-0000-4000-8000-000000000002`              |
 
 ---
 

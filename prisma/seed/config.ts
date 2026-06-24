@@ -2,10 +2,15 @@ import { DEFAULT_TENANT_ID } from '../../src/shared/constants/tenant.js';
 
 export const DEMO_TENANT_ID = DEFAULT_TENANT_ID;
 export const DEMO_CUSTOMER_ID = '00000000-0000-4000-8000-000000000002';
+export const DEMO_CATEGORY_SAC_ID = '00000000-0000-4000-8000-000000000003';
+export const DEMO_CATEGORY_OUVIDORIA_ID =
+  '00000000-0000-4000-8000-000000000004';
+export const DEMO_CATEGORY_SUPORTE_ID = '00000000-0000-4000-8000-000000000005';
 export const DEMO_ADMIN_USER_ID = '00000000-0000-4000-8000-000000000010';
 export const DEMO_AGENT_USER_ID = '00000000-0000-4000-8000-000000000011';
+export const DEMO_CUSTOMER_USER_ID = '00000000-0000-4000-8000-000000000012';
 
-const DEFAULT_DEMO_PASSWORD = 'DemoSupport123!';
+export const DEFAULT_DEMO_PASSWORD = 'DemoSupport123!';
 
 export type SeedConfig = {
   tenantId: string;
@@ -18,6 +23,9 @@ export type SeedConfig = {
   agentEmail: string;
   agentPassword: string;
   agentName: string;
+  customerUserEmail: string;
+  customerUserPassword: string;
+  customerUserName: string;
   customerId: string;
   customerEmail: string;
   customerName: string;
@@ -34,20 +42,30 @@ export function assertSeedAllowed(env: NodeJS.ProcessEnv = process.env): void {
 export function resolveSeedConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): SeedConfig {
+  const defaultPassword =
+    env.SEED_DEMO_PASSWORD ??
+    env.SEED_DEMO_ADMIN_PASSWORD ??
+    DEFAULT_DEMO_PASSWORD;
+
   return {
     tenantId: env.SEED_DEMO_TENANT_ID ?? DEMO_TENANT_ID,
     tenantName: env.SEED_DEMO_TENANT_NAME ?? 'SupportFlow Demo',
     tenantSlug: env.SEED_DEMO_TENANT_SLUG ?? 'demo',
     defaultSlaHours: Number(env.SEED_DEMO_DEFAULT_SLA_HOURS ?? 72),
-    adminEmail: env.SEED_DEMO_ADMIN_EMAIL ?? 'admin@demo.supportflow.local',
-    adminPassword: env.SEED_DEMO_ADMIN_PASSWORD ?? DEFAULT_DEMO_PASSWORD,
+    adminEmail: env.SEED_DEMO_ADMIN_EMAIL ?? 'admin.demo@supportflow.com',
+    adminPassword: env.SEED_DEMO_ADMIN_PASSWORD ?? defaultPassword,
     adminName: env.SEED_DEMO_ADMIN_NAME ?? 'Demo Admin',
-    agentEmail: env.SEED_DEMO_AGENT_EMAIL ?? 'agent@demo.supportflow.local',
-    agentPassword: env.SEED_DEMO_AGENT_PASSWORD ?? DEFAULT_DEMO_PASSWORD,
+    agentEmail: env.SEED_DEMO_AGENT_EMAIL ?? 'agent.demo@supportflow.com',
+    agentPassword: env.SEED_DEMO_AGENT_PASSWORD ?? defaultPassword,
     agentName: env.SEED_DEMO_AGENT_NAME ?? 'Demo Agent',
+    customerUserEmail:
+      env.SEED_DEMO_CUSTOMER_USER_EMAIL ?? 'customer.demo@supportflow.com',
+    customerUserPassword:
+      env.SEED_DEMO_CUSTOMER_USER_PASSWORD ?? defaultPassword,
+    customerUserName: env.SEED_DEMO_CUSTOMER_USER_NAME ?? 'Demo Customer User',
     customerId: env.SEED_DEMO_CUSTOMER_ID ?? DEMO_CUSTOMER_ID,
     customerEmail:
-      env.SEED_DEMO_CUSTOMER_EMAIL ?? 'customer@demo.supportflow.local',
+      env.SEED_DEMO_CUSTOMER_EMAIL ?? 'customer.demo@supportflow.com',
     customerName: env.SEED_DEMO_CUSTOMER_NAME ?? 'Demo Customer',
   };
 }

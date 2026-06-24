@@ -320,7 +320,7 @@ Ou manualmente:
 | Swagger   | [https://support-flow-uath.onrender.com/api/docs/](https://support-flow-uath.onrender.com/api/docs/) |
 | Login     | `POST https://support-flow-uath.onrender.com/api/v1/auth/login`                                      |
 
-Credenciais demo (após seed): `admin@demo.supportflow.local` / `DemoSupport123!`
+Credenciais demo (após seed): `admin.demo@supportflow.com` / `DemoSupport123!`
 
 Guia detalhado: **[docs/staging.md](docs/staging.md)**
 
@@ -408,51 +408,82 @@ Health checks (`/health`, `/health/ready`, `/api/v1/health`) não geram log HTTP
 
 ## Migrations
 
-| Comando                          | Uso                                                                    |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm prisma:migrate`            | Criar/aplicar migrations em **desenvolvimento** (`prisma migrate dev`) |
-| `pnpm prisma:deploy`             | Aplicar migrations em **produção/CI** (`prisma migrate deploy`)        |
-| `pnpm prisma:validate`           | Validar schema Prisma                                                  |
-| `pnpm prisma:generate`           | Gerar Prisma Client                                                    |
-| `pnpm prisma:studio`             | UI visual do banco                                                     |
-| `pnpm prisma:seed` / `pnpm seed` | Popula dados demo idempotentes (tenant, users, customer, categorias)   |
+| Comando                                           | Uso                                                                    |
+| ------------------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm prisma:migrate`                             | Criar/aplicar migrations em **desenvolvimento** (`prisma migrate dev`) |
+| `pnpm prisma:deploy`                              | Aplicar migrations em **produção/CI** (`prisma migrate deploy`)        |
+| `pnpm prisma:validate`                            | Validar schema Prisma                                                  |
+| `pnpm prisma:generate`                            | Gerar Prisma Client                                                    |
+| `pnpm prisma:studio`                              | UI visual do banco                                                     |
+| `pnpm prisma:seed` / `pnpm db:seed` / `pnpm seed` | Popula dados demo idempotentes                                         |
+| `pnpm db:reset:demo`                              | Remove e recria apenas o tenant demo                                   |
 
 Em Docker/produção, as migrations rodam automaticamente via `scripts/docker-entrypoint.sh`. O **seed não roda automaticamente** — execute manualmente quando necessário.
 
-### Seed demo (dados iniciais)
+## Dados Demo
 
-Popula um conjunto mínimo para testes manuais via Swagger:
+Base fictícia e idempotente para testes locais, validação em staging/produção e apresentação do portfólio. O seed **não roda automaticamente** no deploy — execute manualmente após as migrations.
 
-| Recurso      | Valor padrão                                                              |
-| ------------ | ------------------------------------------------------------------------- |
-| Tenant       | `SupportFlow Demo` (`slug: demo`)                                         |
-| Admin        | `admin@demo.supportflow.local`                                            |
-| Agent        | `agent@demo.supportflow.local`                                            |
-| Customer     | `customer@demo.supportflow.local` (`customerId` fixo para abrir chamados) |
-| Categorias   | SAC Geral (72h), Ouvidoria (48h), Suporte Técnico (24h)                   |
-| Senha padrão | `DemoSupport123!` (admin e agent)                                         |
+### O que é criado
+
+| Recurso                | Detalhes                                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Tenant**             | `SupportFlow Demo` (`slug: demo`)                                                                             |
+| **Usuários**           | Admin, agente e cliente (roles `ADMIN`, `AGENT`, `CUSTOMER`)                                                  |
+| **Cliente (entidade)** | Registro interno usado como `customerId` na abertura de chamados                                              |
+| **Categorias**         | SAC Geral (72h), Ouvidoria (48h), Suporte Técnico (24h)                                                       |
+| **Chamados**           | 6 tickets com status distintos (`OPEN`, `IN_PROGRESS`, `WAITING_CUSTOMER`, `ESCALATED`, `RESOLVED`, `CLOSED`) |
+| **Interações**         | Comentários internos, histórico de eventos e notificações demo                                                |
+
+### Credenciais (somente ambiente demo)
+
+| Perfil          | E-mail                          | Senha padrão      |
+| --------------- | ------------------------------- | ----------------- |
+| Admin           | `admin.demo@supportflow.com`    | `DemoSupport123!` |
+| Agente          | `agent.demo@supportflow.com`    | `DemoSupport123!` |
+| Cliente (login) | `customer.demo@supportflow.com` | `DemoSupport123!` |
+
+| Entidade                      | Valor                                  |
+| ----------------------------- | -------------------------------------- |
+| `customerId` (abrir chamados) | `00000000-0000-4000-8000-000000000002` |
+| Tenant slug                   | `demo`                                 |
+
+Senhas são armazenadas com **bcrypt** (mesmo mecanismo da autenticação da API). Credenciais customizáveis via `SEED_DEMO_*` em [`.env.example`](.env.example).
+
+### Como executar
 
 ```bash
-# Após migrations
+# Local — após migrations
 pnpm prisma:deploy
-pnpm seed
+pnpm db:seed
+# aliases equivalentes: pnpm prisma:seed | pnpm seed
+
+# Staging/produção (exige flag explícita)
+SEED_DEMO_ENABLED=true NODE_ENV=production DATABASE_URL="postgresql://..." pnpm db:seed
 # ou
-pnpm prisma:seed
+pnpm seed:staging
+
+# Recriar do zero apenas os dados demo (remove tenant demo e repopula)
+pnpm db:reset:demo
 ```
 
-O seed é **idempotente** (`upsert` por `id`, `tenantId+email` ou `tenantId+name`). Rodar novamente atualiza nomes/senhas/categorias sem duplicar registros.
+O seed é **idempotente**: `upsert` por chaves estáveis (`id`, `tenantId+email`, `tenantId+protocol`). Rodar novamente atualiza senhas e conteúdo sem duplicar registros.
 
-**Produção:** exige `SEED_DEMO_ENABLED=true` explicitamente. Não é executado no entrypoint Docker.
+**Produção:** exige `SEED_DEMO_ENABLED=true`. Não é executado no entrypoint Docker.
 
-Credenciais customizáveis via `.env` — veja `SEED_DEMO_*` em [`.env.example`](.env.example).
+### Testar no Swagger
 
-#### Testar login no Swagger
-
-Use a [documentação em produção](https://support-flow-uath.onrender.com/api/docs/) (após seed no ambiente) ou localmente em http://localhost:3000/api/docs:
-
-1. `POST /auth/login` com `{ "email": "admin@demo.supportflow.local", "password": "DemoSupport123!" }`
-2. Copie o `accessToken` e clique em **Authorize** (Bearer)
-3. Exemplo: `POST /tickets` com `customerId` exibido no output do seed
+1. Abra a [documentação em produção](https://support-flow-uath.onrender.com/api/docs/) ou http://localhost:3000/api/docs
+2. `POST /auth/login` com:
+   ```json
+   { "email": "admin.demo@supportflow.com", "password": "DemoSupport123!" }
+   ```
+3. Copie o `accessToken` → **Authorize** → `Bearer <token>`
+4. Explore, por exemplo:
+   - `GET /tickets` — lista os 6 chamados demo
+   - `GET /tickets/{id}/comments` — comentários internos
+   - `GET /notifications` — notificações do usuário logado
+   - `POST /tickets` — novo chamado usando o `customerId` acima
 
 ---
 
@@ -542,33 +573,34 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
 ## Scripts disponíveis
 
-| Script                                   | Descrição                                               |
-| ---------------------------------------- | ------------------------------------------------------- |
-| `pnpm dev`                               | Servidor com `tsx watch`                                |
-| `pnpm build`                             | Compila TypeScript (`dist/`)                            |
-| `pnpm start` / `pnpm start:prod`         | Executa build compilado                                 |
-| `pnpm start:docker`                      | Entrypoint Docker (migrate + start)                     |
-| `pnpm migrate:deploy`                    | Aplica migrations em produção (`prisma migrate deploy`) |
-| `pnpm docker:build`                      | Build da imagem Docker                                  |
-| `pnpm docker:run`                        | Executa container local (requer env vars)               |
-| `pnpm env:check`                         | Valida variáveis de ambiente                            |
-| `pnpm lint` / `pnpm lint:fix`            | ESLint                                                  |
-| `pnpm format` / `pnpm format:check`      | Prettier                                                |
-| `pnpm typecheck`                         | `tsc --noEmit`                                          |
-| `pnpm ci:check`                          | Pipeline quality (format, lint, typecheck, test, build) |
-| `pnpm ci:integration`                    | Pipeline integração (prisma generate/deploy + E2E)      |
-| `pnpm ci:full`                           | Pipeline completo local (espelha GitHub Actions)        |
-| `pnpm db:up` / `pnpm db:down`            | Sobe/para containers Docker                             |
-| `pnpm test:db:prepare`                   | Prepara banco para integração                           |
-| `pnpm prisma:migrate`                    | Migrations em desenvolvimento                           |
-| `pnpm prisma:deploy`                     | Migrations em produção/CI                               |
-| `pnpm prisma:validate`                   | Valida schema Prisma                                    |
-| `pnpm prisma:generate`                   | Gera Prisma Client                                      |
-| `pnpm prisma:studio`                     | UI visual do banco                                      |
-| `pnpm prisma:seed` / `pnpm seed`         | Popula dados demo idempotentes                          |
-| `pnpm seed:staging`                      | Seed demo em staging (`SEED_DEMO_ENABLED=true`)         |
-| `pnpm test` / `pnpm test:integration`    | Testes unitários / E2E                                  |
-| `pnpm test:watch` / `pnpm test:coverage` | Watch mode / cobertura                                  |
+| Script                                            | Descrição                                               |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| `pnpm dev`                                        | Servidor com `tsx watch`                                |
+| `pnpm build`                                      | Compila TypeScript (`dist/`)                            |
+| `pnpm start` / `pnpm start:prod`                  | Executa build compilado                                 |
+| `pnpm start:docker`                               | Entrypoint Docker (migrate + start)                     |
+| `pnpm migrate:deploy`                             | Aplica migrations em produção (`prisma migrate deploy`) |
+| `pnpm docker:build`                               | Build da imagem Docker                                  |
+| `pnpm docker:run`                                 | Executa container local (requer env vars)               |
+| `pnpm env:check`                                  | Valida variáveis de ambiente                            |
+| `pnpm lint` / `pnpm lint:fix`                     | ESLint                                                  |
+| `pnpm format` / `pnpm format:check`               | Prettier                                                |
+| `pnpm typecheck`                                  | `tsc --noEmit`                                          |
+| `pnpm ci:check`                                   | Pipeline quality (format, lint, typecheck, test, build) |
+| `pnpm ci:integration`                             | Pipeline integração (prisma generate/deploy + E2E)      |
+| `pnpm ci:full`                                    | Pipeline completo local (espelha GitHub Actions)        |
+| `pnpm db:up` / `pnpm db:down`                     | Sobe/para containers Docker                             |
+| `pnpm test:db:prepare`                            | Prepara banco para integração                           |
+| `pnpm prisma:migrate`                             | Migrations em desenvolvimento                           |
+| `pnpm prisma:deploy`                              | Migrations em produção/CI                               |
+| `pnpm prisma:validate`                            | Valida schema Prisma                                    |
+| `pnpm prisma:generate`                            | Gera Prisma Client                                      |
+| `pnpm prisma:studio`                              | UI visual do banco                                      |
+| `pnpm prisma:seed` / `pnpm db:seed` / `pnpm seed` | Popula dados demo idempotentes                          |
+| `pnpm db:reset:demo`                              | Remove e recria apenas o tenant demo                    |
+| `pnpm seed:staging`                               | Seed demo em staging (`SEED_DEMO_ENABLED=true`)         |
+| `pnpm test` / `pnpm test:integration`             | Testes unitários / E2E                                  |
+| `pnpm test:watch` / `pnpm test:coverage`          | Watch mode / cobertura                                  |
 
 ---
 

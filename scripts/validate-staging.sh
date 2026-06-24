@@ -6,7 +6,7 @@
 set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://localhost:3000}"
-ADMIN_EMAIL="${SEED_DEMO_ADMIN_EMAIL:-admin@demo.supportflow.local}"
+ADMIN_EMAIL="${SEED_DEMO_ADMIN_EMAIL:-admin.demo@supportflow.com}"
 ADMIN_PASSWORD="${SEED_DEMO_ADMIN_PASSWORD:-DemoSupport123!}"
 CUSTOMER_ID="${SEED_DEMO_CUSTOMER_ID:-00000000-0000-4000-8000-000000000002}"
 

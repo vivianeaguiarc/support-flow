@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   assertSeedAllowed,
+  DEFAULT_DEMO_PASSWORD,
   DEMO_CUSTOMER_ID,
   DEMO_TENANT_ID,
   resolveSeedConfig,
@@ -15,10 +16,13 @@ describe('resolveSeedConfig', () => {
 
     expect(config.tenantId).toBe(DEMO_TENANT_ID);
     expect(config.customerId).toBe(DEMO_CUSTOMER_ID);
-    expect(config.adminEmail).toBe('admin@demo.supportflow.local');
-    expect(config.agentEmail).toBe('agent@demo.supportflow.local');
-    expect(config.customerEmail).toBe('customer@demo.supportflow.local');
-    expect(config.adminPassword).toBe('DemoSupport123!');
+    expect(config.adminEmail).toBe('admin.demo@supportflow.com');
+    expect(config.agentEmail).toBe('agent.demo@supportflow.com');
+    expect(config.customerUserEmail).toBe('customer.demo@supportflow.com');
+    expect(config.customerEmail).toBe('customer.demo@supportflow.com');
+    expect(config.adminPassword).toBe(DEFAULT_DEMO_PASSWORD);
+    expect(config.agentPassword).toBe(DEFAULT_DEMO_PASSWORD);
+    expect(config.customerUserPassword).toBe(DEFAULT_DEMO_PASSWORD);
   });
 
   it('should allow overriding credentials via env', () => {
