@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import {
   assertSeedAllowed,
@@ -56,5 +57,9 @@ describe('DEMO_CATEGORIES', () => {
     expect(DEMO_CATEGORIES.map((category) => category.slaHours)).toEqual([
       72, 48, 24,
     ]);
+  });
+
+  it('should use demo customer UUID accepted by API validation (Zod v4)', () => {
+    expect(z.uuid().safeParse(DEMO_CUSTOMER_ID).success).toBe(true);
   });
 });

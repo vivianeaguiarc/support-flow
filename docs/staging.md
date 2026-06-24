@@ -185,7 +185,7 @@ pnpm seed:staging
 | ----------- | -------------------------------------------------- |
 | Admin       | `admin@demo.supportflow.local` / `DemoSupport123!` |
 | Agent       | `agent@demo.supportflow.local` / `DemoSupport123!` |
-| Customer ID | `00000000-0000-0000-0000-000000000002`             |
+| Customer ID | `00000000-0000-4000-8000-000000000002`             |
 
 ---
 
