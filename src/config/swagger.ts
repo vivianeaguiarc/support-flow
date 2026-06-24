@@ -1142,6 +1142,79 @@ const options: Options = {
             },
           },
         },
+        AnalyticsCsat: {
+          type: 'object',
+          properties: {
+            averageRating: { type: 'number', example: 4.2 },
+            totalSurveys: { type: 'integer', example: 50 },
+            distribution: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/CsatRatingDistribution' },
+            },
+            byAgent: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/CsatAgentAverage' },
+            },
+            byPeriod: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/CsatPeriodAverage' },
+            },
+          },
+        },
+        CsatRatingDistribution: {
+          type: 'object',
+          properties: {
+            rating: { type: 'integer', minimum: 1, maximum: 5, example: 5 },
+            count: { type: 'integer', example: 20 },
+          },
+        },
+        CsatAgentAverage: {
+          type: 'object',
+          properties: {
+            agentId: { type: 'string', format: 'uuid' },
+            agentName: { type: 'string', example: 'Maria Santos' },
+            averageRating: { type: 'number', example: 4.5 },
+            totalSurveys: { type: 'integer', example: 12 },
+          },
+        },
+        CsatPeriodAverage: {
+          type: 'object',
+          properties: {
+            period: { type: 'string', example: '2026-06-01' },
+            averageRating: { type: 'number', example: 4.0 },
+            count: { type: 'integer', example: 10 },
+          },
+        },
+        TicketSatisfactionSurvey: {
+          type: 'object',
+          required: [
+            'id',
+            'tenantId',
+            'ticketId',
+            'customerId',
+            'rating',
+            'submittedAt',
+            'createdAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            ticketId: { type: 'string', format: 'uuid' },
+            customerId: { type: 'string', format: 'uuid' },
+            rating: { type: 'integer', minimum: 1, maximum: 5, example: 5 },
+            comment: { type: 'string', nullable: true },
+            submittedAt: { type: 'string', format: 'date-time' },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        SubmitTicketSatisfactionInput: {
+          type: 'object',
+          required: ['rating'],
+          properties: {
+            rating: { type: 'integer', minimum: 1, maximum: 5, example: 5 },
+            comment: { type: 'string', maxLength: 1000 },
+          },
+        },
         TicketStatusTransitions: {
           type: 'object',
           properties: {

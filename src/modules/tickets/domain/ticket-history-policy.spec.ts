@@ -9,10 +9,11 @@ import {
 } from './ticket-history-policy.js';
 
 describe('ticket-history-policy', () => {
-  it('should expose only CREATED and STATUS_CHANGED as public events', () => {
+  it('should expose public events visible to customers', () => {
     expect(PUBLIC_TICKET_HISTORY_EVENTS).toEqual([
       TicketHistoryEvent.CREATED,
       TicketHistoryEvent.STATUS_CHANGED,
+      TicketHistoryEvent.SATISFACTION_SUBMITTED,
     ]);
   });
 
@@ -29,6 +30,9 @@ describe('ticket-history-policy', () => {
     expect(isPublicTicketHistoryEvent(TicketHistoryEvent.STATUS_CHANGED)).toBe(
       true,
     );
+    expect(
+      isPublicTicketHistoryEvent(TicketHistoryEvent.SATISFACTION_SUBMITTED),
+    ).toBe(true);
     expect(isPublicTicketHistoryEvent(TicketHistoryEvent.ASSIGNED)).toBe(false);
     expect(isPublicTicketHistoryEvent(TicketHistoryEvent.COMMENT_ADDED)).toBe(
       false,

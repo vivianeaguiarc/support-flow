@@ -4,6 +4,7 @@ import { TicketHistoryEvent } from './ticket-enums.js';
 export const PUBLIC_TICKET_HISTORY_EVENTS: TicketHistoryEvent[] = [
   TicketHistoryEvent.CREATED,
   TicketHistoryEvent.STATUS_CHANGED,
+  TicketHistoryEvent.SATISFACTION_SUBMITTED,
 ];
 
 export function canViewFullTicketHistory(role: UserRole): boolean {

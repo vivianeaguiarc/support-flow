@@ -40,3 +40,11 @@ analyticsRouter.get(
   ...analyticsAccess,
   analyticsController.agentsPerformance,
 );
+
+const csatAccess = [
+  authenticate,
+  authorize(...ROLE_GROUPS.CSAT_ANALYTICS),
+  validateRequest({ query: analyticsQuerySchema }),
+] as const;
+
+analyticsRouter.get('/csat', ...csatAccess, analyticsController.csat);

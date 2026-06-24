@@ -85,6 +85,22 @@ export class AnalyticsController {
       next(error);
     }
   };
+
+  csat = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const data = await analyticsService.getCsat(
+        getAuthenticatedUser(req),
+        req.query as AnalyticsQueryDto,
+      );
+      sendSuccess(res, data);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 export const analyticsController = new AnalyticsController();

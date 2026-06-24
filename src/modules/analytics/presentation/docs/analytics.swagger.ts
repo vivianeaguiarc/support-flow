@@ -304,4 +304,70 @@
  *         $ref: '#/components/responses/ForbiddenError'
  */
 
+/**
+ * @swagger
+ * /analytics/csat:
+ *   get:
+ *     summary: Métricas CSAT (satisfação do cliente)
+ *     description: |
+ *       Retorna média geral, total de avaliações, distribuição por nota,
+ *       média por atendente e média por período.
+ *       Administradores e supervisores veem todos os dados; atendentes
+ *       visualizam apenas métricas dos próprios chamados.
+ *     tags: [Analytics]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: agentId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filtrar por atendente (admin/supervisor)
+ *     responses:
+ *       200:
+ *         description: Métricas CSAT
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AnalyticsCsat'
+ *             example:
+ *               success: true
+ *               message: Operation completed successfully
+ *               data:
+ *                 averageRating: 4.2
+ *                 totalSurveys: 50
+ *                 distribution:
+ *                   - rating: 1
+ *                     count: 2
+ *                   - rating: 5
+ *                     count: 20
+ *                 byAgent:
+ *                   - agentId: 550e8400-e29b-41d4-a716-446655440000
+ *                     agentName: Maria Santos
+ *                     averageRating: 4.5
+ *                     totalSurveys: 12
+ *                 byPeriod:
+ *                   - period: '2026-06-01'
+ *                     averageRating: 4.0
+ *                     count: 10
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
+
 export {};

@@ -52,3 +52,29 @@ export type AgentPerformanceMetrics = {
 export type AnalyticsAgentsPerformance = {
   agents: AgentPerformanceMetrics[];
 };
+
+export type CsatRatingDistribution = {
+  rating: number;
+  count: number;
+};
+
+export type CsatAgentAverage = {
+  agentId: string;
+  agentName: string;
+  averageRating: number;
+  totalSurveys: number;
+};
+
+export type CsatPeriodAverage = {
+  period: string;
+  averageRating: number;
+  count: number;
+};
+
+export type AnalyticsCsat = {
+  averageRating: number;
+  totalSurveys: number;
+  distribution: CsatRatingDistribution[];
+  byAgent: CsatAgentAverage[];
+  byPeriod: CsatPeriodAverage[];
+};

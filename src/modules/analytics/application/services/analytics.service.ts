@@ -1,16 +1,23 @@
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
+import { UserRole } from '../../../../shared/types/user-role.js';
 import type { AnalyticsFilters } from '../../domain/analytics-filters.js';
 import type {
   AnalyticsAgentsPerformance,
+  AnalyticsCsat,
   AnalyticsOverview,
   AnalyticsSla,
   AnalyticsTicketsByPriority,
   AnalyticsTicketsByStatus,
 } from '../../domain/analytics-types.js';
+import type { CsatFilters } from '../../domain/csat-filters.js';
 import {
   AnalyticsRepository,
   analyticsRepository as defaultAnalyticsRepository,
 } from '../../infrastructure/repositories/analytics.repository.js';
+import {
+  CsatAnalyticsRepository,
+  csatAnalyticsRepository as defaultCsatAnalyticsRepository,
+} from '../../infrastructure/repositories/csat-analytics.repository.js';
 import type { AnalyticsQueryDto } from '../../presentation/dtos/analytics-query.dto.js';
 
 function toFilters(
@@ -27,9 +34,25 @@ function toFilters(
   };
 }
 
+function toCsatFilters(
+  authUser: AuthenticatedUser,
+  query: AnalyticsQueryDto,
+): CsatFilters {
+  const agentId =
+    authUser.role === UserRole.AGENT ? authUser.id : query.agentId;
+
+  return {
+    tenantId: authUser.tenantId,
+    startDate: query.startDate,
+    endDate: query.endDate,
+    agentId,
+  };
+}
+
 export class AnalyticsService {
   constructor(
     private readonly repository: AnalyticsRepository = defaultAnalyticsRepository,
+    private readonly csatRepository: CsatAnalyticsRepository = defaultCsatAnalyticsRepository,
   ) {}
 
   async getOverview(
@@ -65,6 +88,13 @@ export class AnalyticsService {
     query: AnalyticsQueryDto,
   ): Promise<AnalyticsAgentsPerformance> {
     return this.repository.getAgentsPerformance(toFilters(authUser, query));
+  }
+
+  async getCsat(
+    authUser: AuthenticatedUser,
+    query: AnalyticsQueryDto,
+  ): Promise<AnalyticsCsat> {
+    return this.csatRepository.getCsat(toCsatFilters(authUser, query));
   }
 }
 

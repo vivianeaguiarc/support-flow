@@ -42,6 +42,7 @@ enum TicketHistoryEvent {
   ATTACHMENT_REMOVED
   TICKET_ESCALATED
   SLA_BREACHED
+  SATISFACTION_SUBMITTED
 }
 
 enum CommentVisibility {
@@ -99,6 +100,7 @@ model Tenant {
   knowledgeArticles KnowledgeArticle[]
   automationRules   AutomationRule[]
   automationExecutions AutomationRuleExecution[]
+  satisfactionSurveys TicketSatisfactionSurvey[]
 
   @@map("tenants")
 }
@@ -140,6 +142,7 @@ model Customer {
 
   tenant  Tenant   @relation(fields: [tenantId], references: [id])
   tickets Ticket[]
+  satisfactionSurveys TicketSatisfactionSurvey[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -189,6 +192,7 @@ model Ticket {
   attachments   TicketAttachment[]
   notifications Notification[]
   automationExecutions AutomationRuleExecution[]
+  satisfactionSurvey TicketSatisfactionSurvey?
 
   @@unique([tenantId, protocol])
   @@index([tenantId])
@@ -369,4 +373,24 @@ model AutomationRuleExecution {
   @@index([ticketId])
   @@index([createdAt])
   @@map("automation_rule_executions")
+}
+
+model TicketSatisfactionSurvey {
+  id          String   @id @default(uuid())
+  tenantId    String
+  ticketId    String   @unique
+  customerId  String
+  rating      Int
+  comment     String?
+  submittedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  ticket   Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([submittedAt])
+  @@map("ticket_satisfaction_surveys")
 }

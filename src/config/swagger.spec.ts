@@ -26,6 +26,7 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/tickets/{id}/transitions': ['get'],
   '/tickets/{id}/history': ['get'],
   '/tickets/{ticketId}/history': ['get'],
+  '/tickets/{ticketId}/satisfaction': ['post'],
   '/tickets/{id}/comments': ['post', 'get'],
   '/tickets/{ticketId}/internal-comments': ['post', 'get'],
   '/tickets/{id}/attachments': ['post', 'get'],
@@ -45,6 +46,7 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/analytics/tickets-by-priority': ['get'],
   '/analytics/sla': ['get'],
   '/analytics/agents-performance': ['get'],
+  '/analytics/csat': ['get'],
   '/reports/tickets.csv': ['get'],
   '/reports/agents-performance.csv': ['get'],
   '/reports/sla.csv': ['get'],
@@ -98,6 +100,8 @@ describe('swaggerSpec', () => {
     expect(schemas.EmailProviderHealth).toBeDefined();
     expect(schemas.AnalyticsOverview).toBeDefined();
     expect(schemas.AnalyticsSla).toBeDefined();
+    expect(schemas.AnalyticsCsat).toBeDefined();
+    expect(schemas.TicketSatisfactionSurvey).toBeDefined();
     expect(schemas.AutomationRule).toBeDefined();
     expect(schemas.CreateAutomationRuleInput).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();
