@@ -108,11 +108,17 @@ describe.sequential('Core API flows (E2E)', () => {
   describe('Tickets lifecycle', () => {
     it('should create, list, find, assign, update status and close a ticket', async () => {
       const fixtures = await seedCoreFlowFixtures();
+      const adminToken = await login(
+        app,
+        fixtures.admin.email,
+        fixtures.password,
+      );
       const agentToken = await login(
         app,
         fixtures.agent.email,
         fixtures.password,
       );
+      const adminApi = authRequest(app, adminToken);
       const api = authRequest(app, agentToken);
 
       const createResponse = await api
@@ -148,9 +154,9 @@ describe.sequential('Core API flows (E2E)', () => {
 
       expect(findResponse.body.data.id).toBe(ticketId);
 
-      await api
+      await adminApi
         .patch(`/api/v1/tickets/${ticketId}/assign`)
-        .send({ assignedToId: fixtures.agent.id })
+        .send({ agentId: fixtures.agent.id })
         .expect(200);
 
       await api
@@ -195,6 +201,11 @@ describe.sequential('Core API flows (E2E)', () => {
 
     it('should allow agent to manage tickets and block customer from staff actions', async () => {
       const fixtures = await seedCoreFlowFixtures();
+      const adminToken = await login(
+        app,
+        fixtures.admin.email,
+        fixtures.password,
+      );
       const agentToken = await login(
         app,
         fixtures.agent.email,
@@ -220,12 +231,17 @@ describe.sequential('Core API flows (E2E)', () => {
 
       await authRequest(app, agentToken)
         .patch(`/api/v1/tickets/${ticketId}/assign`)
-        .send({ assignedToId: fixtures.agent.id })
+        .send({ agentId: fixtures.agent.id })
+        .expect(403);
+
+      await authRequest(app, adminToken)
+        .patch(`/api/v1/tickets/${ticketId}/assign`)
+        .send({ agentId: fixtures.agent.id })
         .expect(200);
 
       await authRequest(app, customerToken)
         .patch(`/api/v1/tickets/${ticketId}/assign`)
-        .send({ assignedToId: fixtures.agent.id })
+        .send({ agentId: fixtures.agent.id })
         .expect(403);
 
       await authRequest(app, customerToken)

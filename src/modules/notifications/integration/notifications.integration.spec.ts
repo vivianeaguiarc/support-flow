@@ -22,6 +22,7 @@ describe.sequential('Notifications', () => {
   let agent1Id: string;
   let agent2Id: string;
   let agent1Token: string;
+  let supervisorToken: string;
   let customer1Id: string;
   let customerToken: string;
   let ticketId: string;
@@ -67,6 +68,23 @@ describe.sequential('Notifications', () => {
       },
     });
     agent2Id = agent2.id;
+
+    const supervisor = await prisma.user.create({
+      data: {
+        email: 'supervisor-notif@test.com',
+        name: 'Supervisor Notif',
+        password: 'password',
+        role: UserRole.SUPERVISOR,
+        tenantId,
+      },
+    });
+
+    supervisorToken = createAuthToken({
+      id: supervisor.id,
+      email: supervisor.email,
+      role: UserRole.SUPERVISOR,
+      tenantId,
+    });
 
     const customer1 = await prisma.customer.create({
       data: {
@@ -340,11 +358,11 @@ describe.sequential('Notifications', () => {
         },
       });
 
-      const api = authRequest(app, agent1Token);
+      const api = authRequest(app, supervisorToken);
       await api
         .patch(`/api/v1/tickets/${ticketWithoutAssignee.id}/assign`)
         .send({
-          assignedToId: agent1Id,
+          agentId: agent1Id,
         });
 
       const notifications = await prisma.notification.findMany({

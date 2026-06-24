@@ -4,6 +4,7 @@ import { AppError } from '../errors/app-error.js';
 import { TicketStatus } from '../types/ticket-status.js';
 import { UserRole } from '../types/user-role.js';
 import {
+  assertCanAssignTicket,
   assertCanCreateTicket,
   assertCanManageTicket,
   assertTicketAccess,
@@ -120,5 +121,17 @@ describe('rbac', () => {
 
   it('should allow agents to manage tickets', () => {
     expect(() => assertCanManageTicket(agent)).not.toThrow();
+  });
+
+  it('should allow only supervisor and admin to assign tickets', () => {
+    expect(() =>
+      assertCanAssignTicket({
+        ...agent,
+        role: UserRole.SUPERVISOR,
+      }),
+    ).not.toThrow();
+    expect(() => assertCanAssignTicket(agent)).toThrow(
+      new AppError('Forbidden', 403),
+    );
   });
 });

@@ -12,6 +12,7 @@ export * from './use-cases/create-ticket-comment.use-case.js';
 export * from './use-cases/delete-ticket-attachment.use-case.js';
 export * from './use-cases/escalate-tickets-by-sla.use-case.js';
 export * from './use-cases/find-ticket-by-id.use-case.js';
+export * from './use-cases/get-agent-metrics.use-case.js';
 export * from './use-cases/get-ticket-metrics.use-case.js';
 export * from './use-cases/get-ticket-status-transitions.use-case.js';
 export * from './use-cases/get-ticket-summary.use-case.js';

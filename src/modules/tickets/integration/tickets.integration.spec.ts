@@ -119,9 +119,19 @@ describe.sequential('Ticket workflow integration', () => {
       'Ticket must be assigned before moving to IN_PROGRESS.',
     );
 
-    const assignResponse = await api
+    const adminApi = authRequest(
+      app,
+      createAuthToken({
+        id: fixtures.adminA.id,
+        email: fixtures.adminA.email,
+        role: UserRole.ADMIN,
+        tenantId: fixtures.tenantA.id,
+      }),
+    );
+
+    const assignResponse = await adminApi
       .patch(`/api/v1/tickets/${ticketId}/assign`)
-      .send({ assignedToId: fixtures.agentA.id })
+      .send({ agentId: fixtures.agentA.id })
       .expect(200);
 
     expect(assignResponse.body.data.assignedToId).toBe(fixtures.agentA.id);
@@ -166,7 +176,7 @@ describe.sequential('Ticket workflow integration', () => {
 
     expect(assignHistory).toMatchObject({
       newValue: fixtures.agentA.id,
-      actorId: fixtures.agentA.id,
+      actorId: fixtures.adminA.id,
     });
   });
 
@@ -224,9 +234,19 @@ describe.sequential('Ticket workflow integration', () => {
 
     const ticketId = createResponse.body.data.id as string;
 
-    await api
+    const adminApi = authRequest(
+      app,
+      createAuthToken({
+        id: fixtures.adminA.id,
+        email: fixtures.adminA.email,
+        role: UserRole.ADMIN,
+        tenantId: fixtures.tenantA.id,
+      }),
+    );
+
+    await adminApi
       .patch(`/api/v1/tickets/${ticketId}/assign`)
-      .send({ assignedToId: fixtures.agentA.id })
+      .send({ agentId: fixtures.agentA.id })
       .expect(200);
 
     await api

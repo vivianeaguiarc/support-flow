@@ -319,6 +319,7 @@ const options: Options = {
           enum: [
             'CREATED',
             'ASSIGNED',
+            'REASSIGNED',
             'STATUS_CHANGED',
             'PRIORITY_CHANGED',
             'CATEGORY_CHANGED',
@@ -484,13 +485,19 @@ const options: Options = {
         },
         AssignTicketRequest: {
           type: 'object',
-          required: ['assignedToId'],
+          required: ['agentId'],
           properties: {
+            agentId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID do atendente que será responsável',
+              example: '550e8400-e29b-41d4-a716-446655440001',
+            },
             assignedToId: {
               type: 'string',
               format: 'uuid',
-              description: 'ID do agente que será responsável',
-              example: '550e8400-e29b-41d4-a716-446655440001',
+              deprecated: true,
+              description: 'Alias legado de `agentId`',
             },
           },
         },
@@ -725,6 +732,45 @@ const options: Options = {
               type: 'array',
               items: {
                 $ref: '#/components/schemas/TicketHistoryEntry',
+              },
+            },
+          },
+        },
+        AgentMetrics: {
+          type: 'object',
+          properties: {
+            agentId: {
+              type: 'string',
+              format: 'uuid',
+            },
+            agentName: {
+              type: 'string',
+            },
+            assignedTickets: {
+              type: 'integer',
+              description: 'Total de tickets atribuídos ao atendente',
+            },
+            resolvedTickets: {
+              type: 'integer',
+              description: 'Tickets resolvidos ou encerrados',
+            },
+            openTickets: {
+              type: 'integer',
+              description: 'Tickets em aberto atribuídos ao atendente',
+            },
+            slaBreachedTickets: {
+              type: 'integer',
+              description: 'Tickets com SLA violado',
+            },
+          },
+        },
+        AgentMetricsListResponse: {
+          type: 'object',
+          properties: {
+            agents: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/AgentMetrics',
               },
             },
           },
@@ -1075,6 +1121,14 @@ const options: Options = {
       {
         name: 'Ticket History',
         description: 'Histórico de alterações dos chamados',
+      },
+      {
+        name: 'Ticket Queues',
+        description: 'Filas de atendimento — pessoal e não atribuídos',
+      },
+      {
+        name: 'Agent Metrics',
+        description: 'Métricas operacionais por atendente',
       },
       {
         name: 'Ticket Comments',

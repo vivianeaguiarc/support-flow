@@ -12,7 +12,11 @@ import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
-import { type Ticket, TicketHistoryEvent } from '../../domain/index.js';
+import {
+  assertTicketAssignable,
+  resolveAssignmentHistoryEvent,
+} from '../../domain/assign-ticket.rules.js';
+import { type Ticket } from '../../domain/index.js';
 import {
   TicketHistoryRepository,
   ticketHistoryRepository as defaultTicketHistoryRepository,
@@ -42,6 +46,8 @@ export class AssignTicketUseCase {
       ticketId: input.ticketId,
     });
 
+    assertTicketAssignable(ticket.status);
+
     await this.ensureAgent(input.assignedToId, input.tenantId);
 
     const updatedTicket = await this.ticketsRepository.assignTo(
@@ -52,7 +58,7 @@ export class AssignTicketUseCase {
     await this.ticketHistoryRepository.create({
       tenantId: input.tenantId,
       ticketId: ticket.id,
-      event: TicketHistoryEvent.ASSIGNED,
+      event: resolveAssignmentHistoryEvent(ticket.assignedToId),
       field: 'assignedToId',
       oldValue: ticket.assignedToId ?? undefined,
       newValue: input.assignedToId,

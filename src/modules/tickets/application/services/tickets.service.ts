@@ -1,6 +1,8 @@
 import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import {
+  assertCanAccessTicketQueues,
+  assertCanAssignTicket,
   assertCanCreateTicket,
   assertCanManageTicket,
   assertTicketAccess,
@@ -8,6 +10,7 @@ import {
 } from '../../../../shared/security/rbac.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import { UserRole } from '../../../../shared/types/user-role.js';
+import type { AgentMetricsResult } from '../../domain/agent-metrics.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import type {
   TicketAttachment,
@@ -32,6 +35,8 @@ import {
   deleteTicketAttachmentUseCase,
   FindTicketByIdUseCase,
   findTicketByIdUseCase,
+  GetAgentMetricsUseCase,
+  getAgentMetricsUseCase,
   GetTicketMetricsUseCase,
   getTicketMetricsUseCase,
   GetTicketStatusTransitionsUseCase,
@@ -60,6 +65,7 @@ import {
 } from '../index.js';
 import type {
   ListTicketsQueryInput,
+  QueueTicketsQueryInput,
   TicketMetricsQueryInput,
   TicketSummaryQueryInput,
 } from '../inputs/ticket-use-case.inputs.js';
@@ -84,6 +90,7 @@ export class TicketsService {
     private readonly listTicketHistory: ListTicketHistoryUseCase = listTicketHistoryUseCase,
     private readonly getTicketSummary: GetTicketSummaryUseCase = getTicketSummaryUseCase,
     private readonly getTicketMetrics: GetTicketMetricsUseCase = getTicketMetricsUseCase,
+    private readonly getAgentMetrics: GetAgentMetricsUseCase = getAgentMetricsUseCase,
     private readonly createComment: CreateTicketCommentUseCase = createTicketCommentUseCase,
     private readonly listComments: ListTicketCommentsUseCase = listTicketCommentsUseCase,
     private readonly uploadAttachmentUseCase: UploadTicketAttachmentUseCase = uploadTicketAttachmentUseCase,
@@ -178,6 +185,7 @@ export class TicketsService {
       customerId,
       assignedToId: query.assignedToId,
       unassigned: query.unassigned,
+      team: query.team,
       overdue: query.overdue,
       search: query.search,
       createdFrom: query.createdFrom,
@@ -187,6 +195,60 @@ export class TicketsService {
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
     });
+  }
+
+  async listMyQueue(
+    authUser: AuthenticatedUser,
+    query: QueueTicketsQueryInput = {
+      page: 1,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+  ): Promise<PaginatedTicketList> {
+    assertCanAccessTicketQueues(authUser);
+
+    return this.list(authUser, {
+      ...query,
+      assignedToId: authUser.id,
+    });
+  }
+
+  async listUnassigned(
+    authUser: AuthenticatedUser,
+    query: QueueTicketsQueryInput = {
+      page: 1,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+  ): Promise<PaginatedTicketList> {
+    assertCanAccessTicketQueues(authUser);
+
+    if (
+      authUser.role !== UserRole.ADMIN &&
+      authUser.role !== UserRole.SUPERVISOR
+    ) {
+      throw new AppError('Forbidden', 403);
+    }
+
+    return this.list(authUser, {
+      ...query,
+      unassigned: true,
+    });
+  }
+
+  async agentMetrics(authUser: AuthenticatedUser): Promise<AgentMetricsResult> {
+    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+
+    if (
+      authUser.role !== UserRole.ADMIN &&
+      authUser.role !== UserRole.SUPERVISOR
+    ) {
+      throw new AppError('Forbidden', 403);
+    }
+
+    return this.getAgentMetrics.execute(tenantId);
   }
 
   async summary(
@@ -278,8 +340,8 @@ export class TicketsService {
     assignedToId: string,
     authUser: AuthenticatedUser,
   ): Promise<Ticket> {
-    const ticket = await this.findById(id, authUser);
-    assertCanManageTicket(authUser, ticket);
+    assertCanAssignTicket(authUser);
+    await this.findById(id, authUser);
 
     const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
 

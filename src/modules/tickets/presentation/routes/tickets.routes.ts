@@ -18,6 +18,7 @@ import { createTicketSchema } from '../dtos/create-ticket.dto.js';
 import { createTicketCommentSchema } from '../dtos/create-ticket-comment.dto.js';
 import { listBreachedSlaTicketsQuerySchema } from '../dtos/list-breached-sla-tickets-query.dto.js';
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
+import { queueTicketsQuerySchema } from '../dtos/queue-tickets-query.dto.js';
 import { ticketAttachmentParamsSchema } from '../dtos/ticket-attachment-params.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
 import { ticketInternalCommentsParamsSchema } from '../dtos/ticket-internal-comments-params.dto.js';
@@ -41,6 +42,22 @@ ticketsRouter.get(
   authorize(...ROLE_GROUPS.TICKET_LIST),
   validateRequest({ query: listTicketsQuerySchema }),
   ticketsController.list,
+);
+
+ticketsRouter.get(
+  '/my-queue',
+  authenticate,
+  authorize(...ROLE_GROUPS.TICKET_QUEUE),
+  validateRequest({ query: queueTicketsQuerySchema }),
+  ticketsController.myQueue,
+);
+
+ticketsRouter.get(
+  '/unassigned',
+  authenticate,
+  authorize(UserRole.ADMIN, UserRole.SUPERVISOR),
+  validateRequest({ query: queueTicketsQuerySchema }),
+  ticketsController.unassigned,
 );
 
 ticketsRouter.get(

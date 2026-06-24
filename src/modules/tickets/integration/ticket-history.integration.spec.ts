@@ -56,9 +56,19 @@ describe.sequential('Ticket History', () => {
 
     const ticketId = createResponse.body.data.id as string;
 
-    await agentApi
+    const adminApi = authRequest(
+      app,
+      createAuthToken({
+        id: fixtures.adminA.id,
+        email: fixtures.adminA.email,
+        role: UserRole.ADMIN,
+        tenantId: fixtures.tenantA.id,
+      }),
+    );
+
+    await adminApi
       .patch(`/api/v1/tickets/${ticketId}/assign`)
-      .send({ assignedToId: fixtures.agentA.id })
+      .send({ agentId: fixtures.agentA.id })
       .expect(200);
 
     await agentApi

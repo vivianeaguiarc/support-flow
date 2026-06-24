@@ -657,7 +657,7 @@ describe('Ticket use cases', () => {
   });
 
   describe('AssignTicketUseCase', () => {
-    it('should assign agent and record history', async () => {
+    it('should assign agent and record ASSIGNED history', async () => {
       vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
       vi.mocked(usersRepository.findById).mockResolvedValue(mockAgent);
       vi.mocked(ticketsRepository.assignTo).mockResolvedValue({
@@ -688,6 +688,67 @@ describe('Ticket use cases', () => {
       expect(result.assignedToId).toBe('agent-1');
     });
 
+    it('should record REASSIGNED when ticket already has assignee', async () => {
+      vi.mocked(ticketsRepository.findById).mockResolvedValue({
+        ...mockTicket,
+        assignedToId: 'agent-old',
+      });
+      vi.mocked(usersRepository.findById).mockResolvedValue(mockAgent);
+      vi.mocked(ticketsRepository.assignTo).mockResolvedValue({
+        ...mockTicket,
+        assignedToId: 'agent-1',
+      });
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new AssignTicketUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        usersRepository,
+        findTicket,
+      );
+
+      await useCase.execute({
+        tenantId: DEFAULT_TENANT_ID,
+        ticketId: 'ticket-1',
+        assignedToId: 'agent-1',
+      });
+
+      expect(ticketHistoryRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: TicketHistoryEvent.REASSIGNED,
+          oldValue: 'agent-old',
+          newValue: 'agent-1',
+        }),
+      );
+    });
+
+    it('should reject assignment on closed tickets', async () => {
+      vi.mocked(ticketsRepository.findById).mockResolvedValue({
+        ...mockTicket,
+        status: TicketStatus.CLOSED,
+      });
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new AssignTicketUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        usersRepository,
+        findTicket,
+      );
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          assignedToId: 'agent-1',
+        }),
+      ).rejects.toEqual(
+        new AppError('Cannot assign a closed or resolved ticket', 400),
+      );
+
+      expect(ticketHistoryRepository.create).not.toHaveBeenCalled();
+    });
+
     it('should reject agent from another tenant', async () => {
       vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
       vi.mocked(usersRepository.findById).mockResolvedValue({
@@ -710,6 +771,27 @@ describe('Ticket use cases', () => {
           assignedToId: 'agent-1',
         }),
       ).rejects.toEqual(new AppError('Invalid tenant for agent', 403));
+    });
+
+    it('should reject missing agent', async () => {
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
+      vi.mocked(usersRepository.findById).mockResolvedValue(null);
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new AssignTicketUseCase(
+        ticketsRepository,
+        ticketHistoryRepository,
+        usersRepository,
+        findTicket,
+      );
+
+      await expect(
+        useCase.execute({
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          assignedToId: 'agent-1',
+        }),
+      ).rejects.toEqual(new AppError('Agent not found', 404));
     });
   });
 });

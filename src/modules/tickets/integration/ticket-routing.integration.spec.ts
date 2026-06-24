@@ -407,7 +407,7 @@ describe.sequential('Ticket Routing', () => {
       const history = await prisma.ticketHistory.findMany({
         where: {
           ticketId: ticket.id,
-          event: TicketHistoryEvent.ASSIGNED,
+          event: TicketHistoryEvent.REASSIGNED,
         },
         orderBy: { createdAt: 'asc' },
       });

@@ -151,6 +151,12 @@
  *         description: Quando `true`, retorna apenas chamados sem agente atribuído (não combinar com `assignedTo` ou `assignedToId`)
  *         example: true
  *       - in: query
+ *         name: team
+ *         schema:
+ *           type: string
+ *           enum: [AGENT, SUPERVISOR, ADMIN]
+ *         description: Filtrar por papel do atendente responsável
+ *       - in: query
  *         name: overdue
  *         schema:
  *           type: boolean
@@ -577,9 +583,9 @@
  *       - Tickets
  *     summary: Atribuir chamado a um agente
  *     description: |
- *       Atribui ou reatribui o chamado a um agente do mesmo tenant.
+ *       Atribui ou reatribui o chamado a um atendente do mesmo tenant.
  *
- *       **Permissões:** `AGENT`, `SUPERVISOR`, `OMBUDSMAN` (chamados escalados) ou `ADMIN`.
+ *       **Permissões:** `SUPERVISOR` ou `ADMIN`.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -621,7 +627,7 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Apenas AGENT pode atribuir chamados
+ *         description: Apenas SUPERVISOR ou ADMIN podem atribuir chamados
  *         content:
  *           application/json:
  *             schema:

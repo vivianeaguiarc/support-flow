@@ -6,6 +6,7 @@ import type {
   TicketListSortField,
   TicketListSortOrder,
 } from '../../domain/ticket-list-sort.js';
+import type { AssigneeTeamRole } from '../../domain/ticket-queue-filters.js';
 
 export type OpenTicketInput = {
   tenantId: string;
@@ -26,6 +27,7 @@ export type ListTicketsInput = {
   customerId?: string;
   assignedToId?: string;
   unassigned?: boolean;
+  team?: AssigneeTeamRole;
   overdue?: boolean;
   search?: string;
   createdFrom?: Date;
@@ -41,6 +43,11 @@ export type ListTicketsQueryInput = Omit<ListTicketsInput, 'tenantId'>;
 export type TicketSummaryQueryInput = Omit<
   ListTicketsInput,
   'tenantId' | 'page' | 'limit' | 'sortBy' | 'sortOrder'
+>;
+
+export type QueueTicketsQueryInput = Pick<
+  ListTicketsQueryInput,
+  'status' | 'priority' | 'page' | 'limit' | 'sortBy' | 'sortOrder'
 >;
 
 export type TicketMetricsQueryInput = {

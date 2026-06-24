@@ -32,6 +32,12 @@ export function buildTicketListWhere(
     where.assignedToId = filters.assignedToId;
   }
 
+  if (filters.team) {
+    where.assignedTo = {
+      role: filters.team,
+    };
+  }
+
   if (filters.overdue) {
     where.slaDueAt = { lt: new Date() };
     where.status = { notIn: [TicketStatus.RESOLVED, TicketStatus.CLOSED] };

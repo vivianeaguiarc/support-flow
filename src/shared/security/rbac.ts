@@ -26,7 +26,8 @@ export const ROLE_GROUPS = {
     UserRole.ADMIN,
   ],
   TICKET_MANAGE: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
-  TICKET_ASSIGN: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
+  TICKET_ASSIGN: [UserRole.SUPERVISOR, UserRole.ADMIN],
+  TICKET_QUEUE: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
   TICKET_STATUS: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
   ESCALATION_FLOWS: [
     UserRole.SUPERVISOR,
@@ -121,6 +122,18 @@ export function assertCanManageTicket(
   ticket?: { status: string },
 ): void {
   if (!canManageTickets(authUser.role, ticket?.status)) {
+    throw new AppError('Forbidden', 403);
+  }
+}
+
+export function assertCanAssignTicket(authUser: AuthenticatedUser): void {
+  if (!hasAnyRole(authUser.role, [...ROLE_GROUPS.TICKET_ASSIGN])) {
+    throw new AppError('Forbidden', 403);
+  }
+}
+
+export function assertCanAccessTicketQueues(authUser: AuthenticatedUser): void {
+  if (!hasAnyRole(authUser.role, [...ROLE_GROUPS.TICKET_QUEUE])) {
     throw new AppError('Forbidden', 403);
   }
 }

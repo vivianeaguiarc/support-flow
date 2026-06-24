@@ -3,6 +3,7 @@ import type {
   TicketListSortField,
   TicketListSortOrder,
 } from './ticket-list-sort.js';
+import type { AssigneeTeamRole } from './ticket-queue-filters.js';
 
 export type TicketListFilters = {
   tenantId: string;
@@ -12,6 +13,7 @@ export type TicketListFilters = {
   customerId?: string;
   assignedToId?: string;
   unassigned?: boolean;
+  team?: AssigneeTeamRole;
   overdue?: boolean;
   search?: string;
   createdFrom?: Date;

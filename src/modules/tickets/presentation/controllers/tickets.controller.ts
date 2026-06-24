@@ -14,6 +14,7 @@ import {
 import type { AssignTicketDto } from '../dtos/assign-ticket.dto.js';
 import type { CreateTicketDto } from '../dtos/create-ticket.dto.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
+import type { QueueTicketsQueryDto } from '../dtos/queue-tickets-query.dto.js';
 import type { TicketMetricsQueryDto } from '../dtos/ticket-metrics-query.dto.js';
 import type { TicketSummaryQueryDto } from '../dtos/ticket-summary-query.dto.js';
 import type { UpdateTicketStatusDto } from '../dtos/update-ticket-status.dto.js';
@@ -114,13 +115,55 @@ export class TicketsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { assignedToId } = req.body as AssignTicketDto;
+      const { agentId } = req.body as AssignTicketDto;
       const ticket = await this.service.assignAgent(
         req.params.id as string,
-        assignedToId,
+        agentId,
         getAuthenticatedUser(req),
       );
       sendSuccess(res, ticket, { message: 'Ticket assigned successfully' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  myQueue = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const query = req.query as unknown as QueueTicketsQueryDto;
+      const result = await this.service.listMyQueue(
+        getAuthenticatedUser(req),
+        query,
+      );
+      sendPaginatedSuccess(
+        res,
+        result.data,
+        buildPaginationMeta(result.page, result.limit, result.total),
+      );
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  unassigned = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const query = req.query as unknown as QueueTicketsQueryDto;
+      const result = await this.service.listUnassigned(
+        getAuthenticatedUser(req),
+        query,
+      );
+      sendPaginatedSuccess(
+        res,
+        result.data,
+        buildPaginationMeta(result.page, result.limit, result.total),
+      );
     } catch (error) {
       next(error);
     }

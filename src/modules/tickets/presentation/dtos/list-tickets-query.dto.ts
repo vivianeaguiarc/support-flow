@@ -38,6 +38,7 @@ const listTicketsQueryBaseSchema = z
     customerId: z.uuid('Invalid customer ID').optional(),
     assignedToId: z.uuid('Invalid agent ID').optional(),
     unassigned: optionalBooleanQuery,
+    team: z.enum(['AGENT', 'SUPERVISOR', 'ADMIN']).optional(),
     overdue: optionalBooleanQuery,
     search: paginationQueryFields.search,
     createdFrom: createdAtRangeQueryFields.createdFrom,

@@ -168,13 +168,20 @@ describe.sequential('RBAC authorization integration', () => {
       .expect(403);
   });
 
+  it('should block agent from assigning tickets', async () => {
+    await authRequest(app, agentToken)
+      .patch(`/api/v1/tickets/${openTicketId}/assign`)
+      .send({ agentId: agentId })
+      .expect(403);
+  });
+
   it('should allow supervisor to access metrics and assign tickets', async () => {
     const api = authRequest(app, supervisorToken);
 
     await api.get('/api/v1/tickets/metrics').expect(200);
     await api
       .patch(`/api/v1/tickets/${openTicketId}/assign`)
-      .send({ assignedToId: agentId })
+      .send({ agentId: agentId })
       .expect(200);
   });
 

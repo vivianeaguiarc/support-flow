@@ -11,6 +11,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/customers': ['get'],
   '/ticket-categories': ['get'],
   '/tickets': ['post', 'get'],
+  '/tickets/my-queue': ['get'],
+  '/tickets/unassigned': ['get'],
   '/tickets/summary': ['get'],
   '/tickets/metrics': ['get'],
   '/tickets/sla': ['get'],
@@ -31,6 +33,7 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/notifications': ['get'],
   '/notifications/{id}/read': ['patch'],
   '/notifications/read-all': ['patch'],
+  '/metrics/agents': ['get'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };

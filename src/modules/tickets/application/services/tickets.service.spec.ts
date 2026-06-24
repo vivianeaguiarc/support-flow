@@ -375,7 +375,7 @@ describe('TicketsService', () => {
     vi.mocked(usersRepository.findById).mockResolvedValue(null);
 
     await expect(
-      service.assignAgent('ticket-1', 'missing-agent', agentAuth),
+      service.assignAgent('ticket-1', 'missing-agent', adminAuth),
     ).rejects.toEqual(new AppError('Agent not found', 404));
     expect(ticketsRepository.assignTo).not.toHaveBeenCalled();
   });

@@ -5,11 +5,9 @@ import {
   type NotificationEventService,
   notificationEventService,
 } from '../../../notifications/application/services/notification-event.service.js';
+import { resolveAssignmentHistoryEvent } from '../../domain/assign-ticket.rules.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
-import {
-  TicketHistoryEvent,
-  TicketPriority,
-} from '../../domain/ticket-enums.js';
+import { TicketPriority } from '../../domain/ticket-enums.js';
 import {
   type TicketHistoryRepository,
   ticketHistoryRepository,
@@ -232,10 +230,7 @@ export class RouteTicketUseCase {
   ): Promise<Ticket> {
     const updatedTicket = await this.ticketsRepo.assignTo(ticket.id, agentId);
 
-    const historyEvent =
-      ticket.assignedToId === null
-        ? TicketHistoryEvent.ASSIGNED
-        : TicketHistoryEvent.ASSIGNED;
+    const historyEvent = resolveAssignmentHistoryEvent(ticket.assignedToId);
 
     await this.historyRepo.create({
       tenantId,
