@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { NotificationService } from '../../../email/application/services/notification.service.js';
+import { EmailNotificationEvent } from '../../../email/domain/email-notification-event.js';
 import type { Ticket } from '../../../tickets/domain/ticket.entity.js';
 import {
   TicketPriority,
@@ -27,6 +29,7 @@ const baseTicket: Ticket = {
 
 describe('NotificationEventService', () => {
   let createNotification: CreateNotificationUseCase;
+  let emailNotificationService: NotificationService;
   let service: InstanceType<
     (typeof import('./notification-event.service.js'))['NotificationEventService']
   >;
@@ -39,7 +42,14 @@ describe('NotificationEventService', () => {
     createNotification = {
       execute: vi.fn().mockResolvedValue({ id: 'notification-1' }),
     };
-    service = new NotificationEventService(createNotification);
+    emailNotificationService = {
+      sendTicketNotification: vi.fn().mockResolvedValue(undefined),
+      checkHealth: vi.fn(),
+    } as unknown as NotificationService;
+    service = new NotificationEventService(
+      createNotification,
+      emailNotificationService,
+    );
   });
 
   it('should notify assignee when ticket is assigned', async () => {
@@ -53,6 +63,29 @@ describe('NotificationEventService', () => {
       title: 'Chamado atribuído a você',
       message: expect.stringContaining('Reclamação Ouvidoria'),
     });
+    expect(
+      emailNotificationService.sendTicketNotification,
+    ).toHaveBeenCalledWith({
+      event: EmailNotificationEvent.TICKET_ASSIGNED,
+      ticket: baseTicket,
+      recipientId: 'agent-1',
+    });
+  });
+
+  it('should send resolved email when ticket is resolved', async () => {
+    await service.notifyTicketStatusChanged(
+      { ...baseTicket, status: TicketStatus.RESOLVED },
+      TicketStatus.IN_PROGRESS,
+      TicketStatus.RESOLVED,
+    );
+
+    expect(
+      emailNotificationService.sendTicketNotification,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: EmailNotificationEvent.TICKET_RESOLVED,
+      }),
+    );
   });
 
   it('should notify assignee on status change', async () => {

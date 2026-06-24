@@ -8,7 +8,7 @@
  *     description: |
  *       Faz upload de um arquivo ao chamado via `multipart/form-data`.
  *
- *       **Tipos permitidos:** PDF, PNG, JPG, JPEG, TXT
+ *       **Tipos permitidos:** PDF, PNG, JPG, JPEG
  *       **Tamanho máximo:** 10 MB
  *       **Campo do formulário:** `file` (obrigatório)
  *
@@ -41,11 +41,11 @@
  *                 type: string
  *                 format: binary
  *                 description: |
- *                   Arquivo a anexar. Extensões aceitas: `.pdf`, `.png`, `.jpg`, `.jpeg`, `.txt`.
+ *                   Arquivo a anexar. Extensões aceitas: `.pdf`, `.png`, `.jpg`, `.jpeg`.
  *                   Executáveis e outros formatos são rejeitados.
  *           encoding:
  *             file:
- *               contentType: application/pdf, image/png, image/jpeg, text/plain
+ *               contentType: application/pdf, image/png, image/jpeg
  *     responses:
  *       201:
  *         description: Anexo enviado com sucesso
@@ -62,7 +62,7 @@
  *               originalName: "comprovante-estorno.pdf"
  *               mimeType: "application/pdf"
  *               size: "245678"
- *               storagePath: "storage/attachments/1719158400000-comprovante-estorno.pdf"
+ *               fileUrl: "/storage/attachments/1719158400000-comprovante-estorno.pdf"
  *               createdAt: "2026-06-23T15:00:00.000Z"
  *       400:
  *         description: Arquivo ausente, tipo não permitido, executável ou tamanho excedido
@@ -80,7 +80,7 @@
  *                 summary: Extensão não permitida
  *                 value:
  *                   statusCode: 400
- *                   message: "File type not allowed. Allowed types: .pdf, .png, .jpg, .jpeg, .txt"
+ *                   message: "File type not allowed. Allowed types: .pdf, .png, .jpg, .jpeg"
  *               tamanhoExcedido:
  *                 summary: Arquivo maior que 10 MB
  *                 value:
@@ -144,7 +144,7 @@
  *                 originalName: "comprovante-estorno.pdf"
  *                 mimeType: "application/pdf"
  *                 size: "245678"
- *                 storagePath: "storage/attachments/1719158400000-comprovante-estorno.pdf"
+ *                 fileUrl: "/storage/attachments/1719158400000-comprovante-estorno.pdf"
  *                 createdAt: "2026-06-23T15:00:00.000Z"
  *                 uploadedBy:
  *                   id: "880e8400-e29b-41d4-a716-446655440003"
@@ -158,7 +158,7 @@
  *                 originalName: "print-tela-cobranca.png"
  *                 mimeType: "image/png"
  *                 size: "102400"
- *                 storagePath: "storage/attachments/1719158500000-print-tela-cobranca.png"
+ *                 fileUrl: "/storage/attachments/1719158500000-print-tela-cobranca.png"
  *                 createdAt: "2026-06-23T15:05:00.000Z"
  *                 uploadedBy:
  *                   id: "880e8400-e29b-41d4-a716-446655440003"

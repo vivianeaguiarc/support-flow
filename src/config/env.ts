@@ -62,6 +62,22 @@ const envSchema = z
         value === undefined ? undefined : value === 'true',
       ),
     DATABASE_URL_TEST: z.string().optional(),
+    EMAIL_ENABLED: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => parseOptionalBoolean(value, false)),
+    EMAIL_PROVIDER: z
+      .enum(['smtp', 'sendgrid', 'resend', 'aws-ses', 'noop'])
+      .default('smtp'),
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_SECURE: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => parseOptionalBoolean(value, false)),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+    SMTP_FROM: z.string().email().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.NODE_ENV !== 'production') {

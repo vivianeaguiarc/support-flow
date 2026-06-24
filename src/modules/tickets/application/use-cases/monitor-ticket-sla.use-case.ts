@@ -1,7 +1,7 @@
 import {
-  type CreateNotificationUseCase,
-  createNotificationUseCase,
-} from '../../../notifications/application/use-cases/create-notification.use-case.js';
+  type NotificationEventService,
+  notificationEventService,
+} from '../../../notifications/application/services/notification-event.service.js';
 import { NotificationType } from '../../../notifications/domain/notification-types.js';
 import {
   type NotificationsRepository,
@@ -42,7 +42,7 @@ export class MonitorTicketSlaUseCase {
   constructor(
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
     private readonly notificationsRepo: NotificationsRepository = notificationsRepository,
-    private readonly createNotification: CreateNotificationUseCase = createNotificationUseCase,
+    private readonly notificationEvents: NotificationEventService = notificationEventService,
     private readonly historyRepo: TicketHistoryRepository = ticketHistoryRepository,
   ) {}
 
@@ -139,14 +139,7 @@ export class MonitorTicketSlaUseCase {
 
     const hoursRemaining = calculateSlaHoursRemaining(ticket.slaDueAt!, now);
 
-    await this.createNotification.execute({
-      tenantId: ticket.tenantId,
-      recipientId: ticket.assignedToId,
-      ticketId: ticket.id,
-      type: NotificationType.SLA_WARNING,
-      title: 'SLA próximo do vencimento',
-      message: `O chamado "${ticket.title}" (${ticket.protocol}) vencerá em ${hoursRemaining}h.`,
-    });
+    await this.notificationEvents.notifySlaWarning(ticket, { hoursRemaining });
 
     return true;
   }
@@ -170,14 +163,7 @@ export class MonitorTicketSlaUseCase {
 
     const hoursOverdue = calculateSlaHoursOverdue(ticket.slaDueAt!, now);
 
-    await this.createNotification.execute({
-      tenantId: ticket.tenantId,
-      recipientId: ticket.assignedToId,
-      ticketId: ticket.id,
-      type: NotificationType.SLA_EXPIRED,
-      title: 'SLA vencido',
-      message: `O SLA do chamado "${ticket.title}" (${ticket.protocol}) venceu há ${hoursOverdue}h.`,
-    });
+    await this.notificationEvents.notifySlaExpired(ticket, { hoursOverdue });
 
     return true;
   }

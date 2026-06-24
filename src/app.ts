@@ -4,6 +4,7 @@ import { env } from './config/env.js';
 import { setupSwagger } from './config/setup-swagger.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { customersRouter } from './modules/customers/routes/customers.routes.js';
+import { adminRouter } from './modules/email/presentation/routes/admin-notifications.routes.js';
 import { knowledgeRouter } from './modules/knowledge-base/presentation/routes/knowledge.routes.js';
 import { notificationsRouter } from './modules/notifications/presentation/routes/notifications.routes.js';
 import { metricsRouter } from './modules/tickets/presentation/routes/metrics.routes.js';
@@ -49,6 +50,7 @@ export function createApp(options: CreateAppOptions = {}) {
   apiRouter.use('/metrics', metricsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   apiRouter.use('/knowledge', knowledgeRouter);
+  apiRouter.use('/admin', adminRouter);
   app.use('/api/v1', apiRouter);
 
   if (options.swagger) {

@@ -39,6 +39,7 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/knowledge/articles/{id}': ['patch', 'delete'],
   '/knowledge/articles/{id}/publish': ['patch'],
   '/knowledge/articles/{id}/archive': ['patch'],
+  '/admin/notifications/health': ['get'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };
@@ -84,6 +85,7 @@ describe('swaggerSpec', () => {
     expect(schemas.NotificationType).toBeDefined();
     expect(schemas.KnowledgeArticleStatus).toBeDefined();
     expect(schemas.KnowledgeArticle).toBeDefined();
+    expect(schemas.EmailProviderHealth).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();
     expect(schemas.ApiPaginatedSuccessResponse).toBeDefined();
     expect(schemas.PaginationMeta).toBeDefined();

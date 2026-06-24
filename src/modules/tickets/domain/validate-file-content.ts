@@ -19,7 +19,6 @@ const MIME_SIGNATURE_CHECKS: Record<
     buffer[0] === 0xff &&
     buffer[1] === 0xd8 &&
     buffer[2] === 0xff,
-  'text/plain': () => true,
 };
 
 export function assertAllowedFileContent(

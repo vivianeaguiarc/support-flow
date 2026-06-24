@@ -336,6 +336,19 @@ const options: Options = {
             category: { type: 'string', minLength: 2, maxLength: 100 },
           },
         },
+        EmailProviderHealth: {
+          type: 'object',
+          properties: {
+            provider: { type: 'string', example: 'smtp' },
+            enabled: { type: 'boolean', example: true },
+            configured: { type: 'boolean', example: true },
+            ready: { type: 'boolean', example: true },
+            message: {
+              type: 'string',
+              example: 'SMTP connection verified',
+            },
+          },
+        },
         UserSummary: {
           type: 'object',
           properties: {
@@ -664,7 +677,12 @@ const options: Options = {
             },
             storagePath: {
               type: 'string',
-              description: 'Caminho de armazenamento do arquivo',
+              description: 'Caminho interno de armazenamento (uso interno)',
+            },
+            fileUrl: {
+              type: 'string',
+              description: 'URL relativa do arquivo no storage local',
+              example: '/storage/attachments/1703345678901-comprovante.pdf',
             },
             createdAt: {
               type: 'string',

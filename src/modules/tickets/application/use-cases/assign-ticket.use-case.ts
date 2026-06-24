@@ -65,10 +65,17 @@ export class AssignTicketUseCase {
       changedById: input.changedById,
     });
 
-    await this.notificationService.notifyTicketAssigned(
-      updatedTicket,
-      input.assignedToId,
-    );
+    if (ticket.assignedToId) {
+      await this.notificationService.notifyTicketReassigned(
+        updatedTicket,
+        input.assignedToId,
+      );
+    } else {
+      await this.notificationService.notifyTicketAssigned(
+        updatedTicket,
+        input.assignedToId,
+      );
+    }
 
     logBusinessEvent(BusinessEvent.TICKET_ASSIGNED, {
       tenantId: input.tenantId,

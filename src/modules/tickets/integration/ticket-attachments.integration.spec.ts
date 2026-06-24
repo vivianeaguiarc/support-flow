@@ -15,7 +15,6 @@ import {
 import {
   samplePdfBuffer,
   samplePngBuffer,
-  sampleTxtBuffer,
 } from '../../../test/integration/file-fixtures.js';
 import {
   authRequest,
@@ -196,7 +195,8 @@ describe.sequential('Ticket Attachments', () => {
       });
       expect(response.body.data.id).toBeDefined();
       expect(response.body.data.fileName).toBeDefined();
-      expect(response.body.data.storagePath).toBeDefined();
+      expect(response.body.data.fileUrl).toBeDefined();
+      expect(response.body.data).not.toHaveProperty('storagePath');
     });
 
     it('should upload PNG image as admin', async () => {
@@ -214,7 +214,7 @@ describe.sequential('Ticket Attachments', () => {
       const api = authRequest(app, agent1Token);
       await api
         .post(`/api/v1/tickets/${ticket1Id}/attachments`)
-        .attach('file', sampleTxtBuffer, 'doc.txt');
+        .attach('file', samplePdfBuffer, 'doc.pdf');
 
       const history = await prisma.ticketHistory.findMany({
         where: { ticketId: ticket1Id, event: 'ATTACHMENT_ADDED' },
@@ -222,14 +222,14 @@ describe.sequential('Ticket Attachments', () => {
 
       expect(history).toHaveLength(1);
       expect(history[0].field).toBe('attachment');
-      expect(history[0].newValue).toBe('doc.txt');
+      expect(history[0].newValue).toBe('doc.pdf');
     });
 
     it('should deny customer from uploading', async () => {
       const api = authRequest(app, customerToken);
       const response = await api
         .post(`/api/v1/tickets/${ticket1Id}/attachments`)
-        .attach('file', sampleTxtBuffer, 'test.pdf');
+        .attach('file', samplePdfBuffer, 'test.pdf');
 
       expect(response.status).toBe(403);
     });
@@ -238,7 +238,7 @@ describe.sequential('Ticket Attachments', () => {
       const api = authRequest(app, agent2Token);
       const response = await api
         .post(`/api/v1/tickets/${ticket1Id}/attachments`)
-        .attach('file', sampleTxtBuffer, 'test.pdf');
+        .attach('file', samplePdfBuffer, 'test.pdf');
 
       expect(response.status).toBe(403);
     });
@@ -268,7 +268,7 @@ describe.sequential('Ticket Attachments', () => {
       const api = authRequest(app, agent1Token);
       const response = await api
         .post(`/api/v1/tickets/${fakeId}/attachments`)
-        .attach('file', sampleTxtBuffer, 'test.pdf');
+        .attach('file', samplePdfBuffer, 'test.pdf');
 
       expect(response.status).toBe(404);
     });

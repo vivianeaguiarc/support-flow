@@ -242,7 +242,17 @@ export class RouteTicketUseCase {
       changedById,
     });
 
-    await this.notificationService.notifyTicketAssigned(updatedTicket, agentId);
+    if (ticket.assignedToId) {
+      await this.notificationService.notifyTicketReassigned(
+        updatedTicket,
+        agentId,
+      );
+    } else {
+      await this.notificationService.notifyTicketAssigned(
+        updatedTicket,
+        agentId,
+      );
+    }
 
     return updatedTicket;
   }

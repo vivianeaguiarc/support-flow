@@ -9,6 +9,10 @@ import {
   TicketsService,
   ticketsService,
 } from '../../application/services/tickets.service.js';
+import {
+  toTicketAttachmentResponse,
+  toTicketAttachmentWithUploaderResponse,
+} from '../mappers/to-ticket-attachment-response.js';
 
 export class TicketAttachmentsController {
   constructor(private readonly service: TicketsService = ticketsService) {}
@@ -31,17 +35,10 @@ export class TicketAttachmentsController {
         getAuthenticatedUser(req),
       );
 
-      sendSuccess(
-        res,
-        {
-          ...attachment,
-          size: attachment.size.toString(),
-        },
-        {
-          status: 201,
-          message: 'Attachment uploaded successfully',
-        },
-      );
+      sendSuccess(res, toTicketAttachmentResponse(attachment), {
+        status: 201,
+        message: 'Attachment uploaded successfully',
+      });
     } catch (error) {
       handleMulterError(error);
       next(error);
@@ -61,13 +58,7 @@ export class TicketAttachmentsController {
         getAuthenticatedUser(req),
       );
 
-      sendSuccess(
-        res,
-        attachments.map((attachment) => ({
-          ...attachment,
-          size: attachment.size.toString(),
-        })),
-      );
+      sendSuccess(res, attachments.map(toTicketAttachmentWithUploaderResponse));
     } catch (error) {
       next(error);
     }
