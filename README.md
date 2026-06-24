@@ -489,6 +489,29 @@ O seed é **idempotente**: `upsert` por chaves estáveis (`id`, `tenantId+email`
 
 ## Testes
 
+A suíte de testes está dividida em **unitários** (rápidos, com mocks) e **integração/E2E** (Supertest + PostgreSQL real isolado).
+
+### Banco de teste
+
+- Banco dedicado: `supportflow_test` em `localhost:5433`
+- Configurado via `DATABASE_URL_TEST` em `src/test/integration/env-setup.ts`
+- **Não usa dados de produção** nem o seed demo de portfólio
+- Cada arquivo de integração executa `resetTestDatabase()` no `beforeEach` (truncate + cascade)
+- Migrations aplicadas no `beforeAll` (`db push` local / `migrate deploy` no CI)
+
+### Cobertura E2E dos fluxos principais
+
+Arquivo canônico: `src/test/integration/core-api-flows.integration.spec.ts`
+
+| Área             | Cenários cobertos                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Autenticação** | Registro público de `CUSTOMER`, login, JWT em rotas protegidas, 401 sem/ com token inválido                                                       |
+| **Chamados**     | Criar, listar, buscar por ID, atribuir agente, atualizar status, encerrar (`RESOLVED` → `CLOSED`)                                                 |
+| **Permissões**   | Admin em rotas administrativas; agente gerencia tickets; cliente bloqueado em ações staff; cliente não acessa ticket de outro; cross-tenant → 403 |
+| **Validação**    | Payload inválido → 400; recurso inexistente → 404; regra de negócio (status sem atribuição) → 400 controlado                                      |
+
+Outros módulos possuem suites dedicadas em `src/modules/**/integration/*.integration.spec.ts` (auth refresh, RBAC, SLA, comentários, anexos, notificações, métricas, etc.).
+
 ### Validar antes de commitar (espelha o CI do GitHub Actions)
 
 ```bash
@@ -513,10 +536,11 @@ Requisitos para integração: Docker rodando (Postgres em `localhost:5433` via `
 # Preparar banco de teste (Docker + database supportflow_test)
 pnpm test:db:prepare
 
-# Testes unitários (135, inclui cobertura Swagger)
+# Testes unitários (inclui Swagger spec e seed config)
 pnpm test
 
-# Testes de integração/E2E (160) — requer PostgreSQL em localhost:5433
+# Testes de integração/E2E — requer PostgreSQL em localhost:5433
+pnpm test:db:prepare   # primeira vez ou após subir Docker
 pnpm test:integration
 # alias equivalente
 pnpm test:e2e
@@ -524,6 +548,16 @@ pnpm test:e2e
 # Cobertura
 pnpm test:coverage
 ```
+
+| Script                  | Descrição                                                  |
+| ----------------------- | ---------------------------------------------------------- |
+| `pnpm test`             | Unitários (Vitest, exclui `*.integration.spec.ts`)         |
+| `pnpm test:integration` | E2E com banco real (`supportflow_test`)                    |
+| `pnpm test:e2e`         | Alias de `test:integration`                                |
+| `pnpm test:db:prepare`  | Sobe Docker e cria `supportflow_test`                      |
+| `pnpm ci:check`         | Quality: format, lint, typecheck, prisma, unitários, build |
+| `pnpm ci:integration`   | Prisma deploy + E2E (usado no CI)                          |
+| `pnpm ci:full`          | Pipeline completo local                                    |
 
 ---
 
@@ -629,7 +663,7 @@ Executa em paralelo ao job de qualidade, com **PostgreSQL 16** como service cont
 2. `pnpm install --frozen-lockfile`
 3. `pnpm prisma:generate`
 4. `pnpm prisma:deploy` — aplica migrations no Postgres do CI
-5. `pnpm test:integration` — **160** testes E2E com Supertest + banco real
+5. `pnpm test:integration` — **171** testes E2E com Supertest + banco real
 
 Variáveis no CI:
 

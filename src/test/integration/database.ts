@@ -30,7 +30,11 @@ export async function migrateTestDatabase(): Promise<void> {
 export async function resetTestDatabase(): Promise<void> {
   await prisma.$executeRawUnsafe(`
     TRUNCATE TABLE
+      notifications,
+      ticket_attachments,
+      ticket_comments,
       ticket_histories,
+      refresh_tokens,
       tickets,
       ticket_categories,
       customers,
