@@ -25,8 +25,7 @@ services:
         value: production
       - key: APP_ENV
         value: staging
-      - key: PORT
-        value: 3000
+      # PORT is injected by Render — do not hardcode (app binds to process.env.PORT)
       - key: LOG_LEVEL
         value: info
       - key: SWAGGER_ENABLED

@@ -252,6 +252,62 @@ DATABASE_URL="postgresql://..." pnpm seed:staging
 
 ---
 
+## Primeiro deploy no Render (staging)
+
+### O que o Blueprint provisiona
+
+| Recurso     | Nome                          | Detalhe                                       |
+| ----------- | ----------------------------- | --------------------------------------------- |
+| Web Service | `supportflow-api-staging`     | Docker (`Dockerfile`), health `/health/ready` |
+| PostgreSQL  | `supportflow-db-staging`      | Banco `supportflow_staging`                   |
+| Disk        | `supportflow-uploads-staging` | Uploads em `/app/storage/attachments`         |
+
+### Build e start (Docker)
+
+| Fase           | Comando                                               |
+| -------------- | ----------------------------------------------------- |
+| **Build**      | `docker build -f Dockerfile .` (automático no Render) |
+| **Start**      | `./scripts/docker-entrypoint.sh`                      |
+| **Migrations** | `pnpm prisma:deploy` dentro do entrypoint             |
+| **API**        | `node dist/server.js`                                 |
+
+O Render injeta `PORT` automaticamente — a API escuta `process.env.PORT`.
+
+### Publicar via Blueprint
+
+1. Garanta que `main` no GitHub contém `render.yaml` e `Dockerfile`
+2. [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Conecte o repositório `vivianeaguiarc/support-flow`
+4. Defina **`CORS_ORIGIN`** quando solicitado (URL do frontend staging ou placeholder HTTPS)
+5. **Apply** e aguarde o build (~5–10 min no Starter)
+6. Após **Live**, copie a **External Database URL**
+7. Seed manual (da sua máquina):
+   ```bash
+   export DATABASE_URL="postgresql://...?sslmode=require"
+   pnpm seed:staging
+   ```
+
+### Validar após deploy
+
+```bash
+BASE_URL=https://supportflow-api-staging.onrender.com pnpm validate:staging
+```
+
+Ou manualmente:
+
+| Check     | URL                       |
+| --------- | ------------------------- |
+| Liveness  | `GET /health`             |
+| Readiness | `GET /health/ready`       |
+| Swagger   | `GET /api/docs`           |
+| Login     | `POST /api/v1/auth/login` |
+
+Credenciais demo (após seed): `admin@demo.supportflow.local` / `DemoSupport123!`
+
+Guia detalhado: **[docs/staging.md](docs/staging.md)**
+
+---
+
 ## Como rodar localmente
 
 ```bash
