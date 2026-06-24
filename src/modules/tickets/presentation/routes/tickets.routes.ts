@@ -11,10 +11,12 @@ import { ticketAutoAssignmentController } from '../controllers/ticket-auto-assig
 import { ticketCommentsController } from '../controllers/ticket-comments.controller.js';
 import { ticketPriorityController } from '../controllers/ticket-priority.controller.js';
 import { ticketRoutingController } from '../controllers/ticket-routing.controller.js';
+import { ticketSlaController } from '../controllers/ticket-sla.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
 import { createTicketCommentSchema } from '../dtos/create-ticket-comment.dto.js';
+import { listBreachedSlaTicketsQuerySchema } from '../dtos/list-breached-sla-tickets-query.dto.js';
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
 import { ticketAttachmentParamsSchema } from '../dtos/ticket-attachment-params.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
@@ -54,6 +56,21 @@ ticketsRouter.get(
   authorize(...ROLE_GROUPS.METRICS),
   validateRequest({ query: ticketMetricsQuerySchema }),
   ticketsController.metrics,
+);
+
+ticketsRouter.get(
+  '/sla/breached',
+  authenticate,
+  authorize(...ROLE_GROUPS.METRICS),
+  validateRequest({ query: listBreachedSlaTicketsQuerySchema }),
+  ticketSlaController.listBreached,
+);
+
+ticketsRouter.get(
+  '/sla',
+  authenticate,
+  authorize(...ROLE_GROUPS.METRICS),
+  ticketSlaController.summary,
 );
 
 ticketsRouter.post(

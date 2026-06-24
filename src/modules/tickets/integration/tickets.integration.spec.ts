@@ -61,8 +61,8 @@ describe.sequential('Ticket workflow integration', () => {
     const slaDueAt = new Date(createResponse.body.data.slaDueAt as string);
     const slaDiffHours = (slaDueAt.getTime() - Date.now()) / (1000 * 60 * 60);
 
-    expect(slaDiffHours).toBeGreaterThan(23);
-    expect(slaDiffHours).toBeLessThan(25);
+    expect(slaDiffHours).toBeGreaterThan(7);
+    expect(slaDiffHours).toBeLessThan(9);
 
     const ticketId = createResponse.body.data.id as string;
 

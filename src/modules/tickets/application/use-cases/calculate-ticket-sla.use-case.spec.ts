@@ -82,7 +82,7 @@ describe('CalculateTicketSlaUseCase', () => {
       createdAt,
     });
 
-    expect(dueAt.toISOString()).toBe('2026-06-24T10:00:00.000Z');
+    expect(dueAt.toISOString()).toBe('2026-06-23T18:00:00.000Z');
   });
 
   it('should reject category from another tenant', async () => {
@@ -124,6 +124,6 @@ describe('CalculateTicketSlaUseCase', () => {
       createdAt,
     });
 
-    expect(dueAt.toISOString()).toBe('2026-06-25T10:00:00.000Z');
+    expect(dueAt.toISOString()).toBe('2026-06-24T10:00:00.000Z');
   });
 });

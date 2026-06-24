@@ -13,6 +13,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/tickets': ['post', 'get'],
   '/tickets/summary': ['get'],
   '/tickets/metrics': ['get'],
+  '/tickets/sla': ['get'],
+  '/tickets/sla/breached': ['get'],
   '/tickets/auto-assign': ['post'],
   '/tickets/{id}': ['get'],
   '/tickets/{id}/status': ['patch'],
@@ -66,6 +68,8 @@ describe('swaggerSpec', () => {
     const schemas = swaggerSpec.components?.schemas ?? {};
     expect(schemas.TicketStatus).toBeDefined();
     expect(schemas.TicketPriority).toBeDefined();
+    expect(schemas.TicketSlaStatus).toBeDefined();
+    expect(schemas.TicketSlaSummary).toBeDefined();
     expect(schemas.UserRole).toBeDefined();
     expect(schemas.NotificationType).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();

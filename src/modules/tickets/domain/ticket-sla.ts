@@ -2,11 +2,12 @@ import { TicketPriority } from './ticket-enums.js';
 
 export const DEFAULT_SLA_FALLBACK_HOURS = 72;
 
+/** URGENT equivale ao nível CRITICAL do requisito de negócio. */
 export const PRIORITY_SLA_HOURS: Record<TicketPriority, number> = {
   [TicketPriority.LOW]: 72,
-  [TicketPriority.MEDIUM]: 48,
-  [TicketPriority.HIGH]: 24,
-  [TicketPriority.URGENT]: 4,
+  [TicketPriority.MEDIUM]: 24,
+  [TicketPriority.HIGH]: 8,
+  [TicketPriority.URGENT]: 2,
 };
 
 export type ResolveSlaHoursInput = {

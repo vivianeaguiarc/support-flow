@@ -40,6 +40,18 @@ export {
   resolveSlaHours,
 } from './ticket-sla.js';
 export {
+  calculateSlaHoursOverdue,
+  calculateSlaHoursRemaining,
+  isSlaBreached,
+  isSlaWarning,
+  isTicketEligibleForSlaTracking,
+  resolveTicketSlaStatus,
+  SLA_ACTIVE_TICKET_STATUSES,
+  SLA_WARNING_THRESHOLD_HOURS,
+  TicketSlaStatus,
+} from './ticket-sla-status.js';
+export type { TicketSlaSummary } from './ticket-sla-summary.js';
+export {
   assertValidTicketStatusTransition,
   getAllowedTicketStatusTransitions,
 } from './ticket-status-transitions.js';

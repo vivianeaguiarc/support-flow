@@ -2,10 +2,12 @@ import type { Ticket, TicketStatus } from '@prisma/client';
 import { TicketPriority } from '@prisma/client';
 
 import { prisma } from '../../../../shared/database/prisma.js';
+import { resolvePagination } from '../../../../shared/http/pagination/pagination.js';
 import type { CreateTicketDomainInput } from '../../domain/ticket.types.js';
 import type { TicketListFilters } from '../../domain/ticket-list-filters.js';
 import { resolveTicketListPagination } from '../../domain/ticket-list-pagination.js';
 import type { PaginatedTicketList } from '../../domain/ticket-paginated-list.js';
+import { SLA_ACTIVE_TICKET_STATUSES } from '../../domain/ticket-sla-status.js';
 import { buildTicketListOrderBy } from './build-ticket-list-order-by.js';
 import { buildTicketListWhere } from './build-ticket-list-where.js';
 
@@ -178,6 +180,41 @@ export class TicketsRepository {
         createdAt: 'asc',
       },
     });
+  }
+
+  async findActiveWithSlaByTenant(tenantId: string): Promise<Ticket[]> {
+    return prisma.ticket.findMany({
+      where: {
+        tenantId,
+        slaDueAt: { not: null },
+        status: { in: [...SLA_ACTIVE_TICKET_STATUSES] },
+      },
+    });
+  }
+
+  async listBreachedSlaByTenant(input: {
+    tenantId: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: Ticket[]; total: number; page: number; limit: number }> {
+    const { page, limit } = resolvePagination(input.page, input.limit);
+    const where = {
+      tenantId: input.tenantId,
+      slaDueAt: { lt: new Date() },
+      status: { in: [...SLA_ACTIVE_TICKET_STATUSES] },
+    };
+
+    const [data, total] = await Promise.all([
+      prisma.ticket.findMany({
+        where,
+        orderBy: { slaDueAt: 'asc' },
+        take: limit,
+        skip: (page - 1) * limit,
+      }),
+      prisma.ticket.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
   }
 }
 

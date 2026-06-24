@@ -10,6 +10,12 @@ import {
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketStatus } from '../../domain/ticket-enums.js';
 import {
+  calculateSlaHoursOverdue,
+  calculateSlaHoursRemaining,
+  isSlaBreached,
+  isSlaWarning,
+} from '../../domain/ticket-sla-status.js';
+import {
   type TicketsRepository,
   ticketsRepository,
 } from '../../infrastructure/repositories/tickets.repository.js';
@@ -27,8 +33,6 @@ const ELIGIBLE_STATUSES = [
   TicketStatus.ESCALATED,
 ];
 
-const SLA_WARNING_THRESHOLD_HOURS = 24;
-
 export class MonitorTicketSlaUseCase {
   constructor(
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
@@ -38,9 +42,6 @@ export class MonitorTicketSlaUseCase {
 
   async execute(): Promise<MonitorTicketSlaResult> {
     const now = new Date();
-    const warningThreshold = new Date(
-      now.getTime() + SLA_WARNING_THRESHOLD_HOURS * 60 * 60 * 1000,
-    );
 
     const tickets = await this.ticketsRepo.findAll({
       status: ELIGIBLE_STATUSES,
@@ -55,19 +56,13 @@ export class MonitorTicketSlaUseCase {
         continue;
       }
 
-      const isExpired = ticket.slaDueAt < now;
-      const isNearExpiry =
-        !isExpired &&
-        ticket.slaDueAt <= warningThreshold &&
-        ticket.slaDueAt > now;
-
-      if (isExpired) {
-        const created = await this.createExpiredNotification(ticket);
+      if (isSlaBreached(ticket.slaDueAt, now)) {
+        const created = await this.createExpiredNotification(ticket, now);
         if (created) {
           expiredNotificationsCreated++;
         }
-      } else if (isNearExpiry) {
-        const created = await this.createWarningNotification(ticket);
+      } else if (isSlaWarning(ticket.slaDueAt, now)) {
+        const created = await this.createWarningNotification(ticket, now);
         if (created) {
           warningsCreated++;
         }
@@ -81,7 +76,10 @@ export class MonitorTicketSlaUseCase {
     };
   }
 
-  private async createWarningNotification(ticket: Ticket): Promise<boolean> {
+  private async createWarningNotification(
+    ticket: Ticket,
+    now: Date,
+  ): Promise<boolean> {
     if (!ticket.assignedToId) {
       return false;
     }
@@ -95,7 +93,7 @@ export class MonitorTicketSlaUseCase {
       return false;
     }
 
-    const hoursRemaining = this.calculateHoursRemaining(ticket.slaDueAt!);
+    const hoursRemaining = calculateSlaHoursRemaining(ticket.slaDueAt!, now);
 
     await this.createNotification.execute({
       tenantId: ticket.tenantId,
@@ -109,7 +107,10 @@ export class MonitorTicketSlaUseCase {
     return true;
   }
 
-  private async createExpiredNotification(ticket: Ticket): Promise<boolean> {
+  private async createExpiredNotification(
+    ticket: Ticket,
+    now: Date,
+  ): Promise<boolean> {
     if (!ticket.assignedToId) {
       return false;
     }
@@ -123,7 +124,7 @@ export class MonitorTicketSlaUseCase {
       return false;
     }
 
-    const hoursOverdue = this.calculateHoursOverdue(ticket.slaDueAt!);
+    const hoursOverdue = calculateSlaHoursOverdue(ticket.slaDueAt!, now);
 
     await this.createNotification.execute({
       tenantId: ticket.tenantId,
@@ -146,18 +147,6 @@ export class MonitorTicketSlaUseCase {
       type,
     );
     return count > 0;
-  }
-
-  private calculateHoursRemaining(slaDueAt: Date): number {
-    const now = new Date();
-    const diff = slaDueAt.getTime() - now.getTime();
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
-  }
-
-  private calculateHoursOverdue(slaDueAt: Date): number {
-    const now = new Date();
-    const diff = now.getTime() - slaDueAt.getTime();
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60)));
   }
 }
 

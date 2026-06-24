@@ -197,8 +197,60 @@ const options: Options = {
         TicketPriority: {
           type: 'string',
           enum: ['LOW', 'MEDIUM', 'HIGH', 'URGENT'],
-          description: 'Prioridade do chamado',
+          description:
+            'Prioridade do chamado (`URGENT` equivale ao nível crítico de SLA: 2h)',
           example: 'MEDIUM',
+        },
+        TicketSlaStatus: {
+          type: 'string',
+          enum: ['ON_TIME', 'WARNING', 'BREACHED'],
+          description: 'Status operacional do SLA do chamado',
+          example: 'ON_TIME',
+        },
+        TicketSlaSummary: {
+          type: 'object',
+          required: ['onTime', 'warning', 'breached', 'total'],
+          properties: {
+            onTime: {
+              type: 'integer',
+              description: 'Chamados ativos dentro do prazo',
+              example: 12,
+            },
+            warning: {
+              type: 'integer',
+              description: 'Chamados ativos em alerta (vencem em até 24h)',
+              example: 3,
+            },
+            breached: {
+              type: 'integer',
+              description: 'Chamados ativos com SLA violado',
+              example: 2,
+            },
+            total: {
+              type: 'integer',
+              description: 'Total de chamados ativos monitorados',
+              example: 17,
+            },
+          },
+        },
+        BreachedSlaTicket: {
+          allOf: [
+            { $ref: '#/components/schemas/Ticket' },
+            {
+              type: 'object',
+              required: ['slaStatus', 'hoursOverdue'],
+              properties: {
+                slaStatus: {
+                  type: 'string',
+                  enum: ['BREACHED'],
+                },
+                hoursOverdue: {
+                  type: 'integer',
+                  example: 5,
+                },
+              },
+            },
+          ],
         },
         UserRole: {
           type: 'string',
