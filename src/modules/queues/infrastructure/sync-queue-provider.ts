@@ -4,6 +4,9 @@ import { logger } from '../../../shared/logger/logger.js';
 import type {
   AutomationJobData,
   EmailJobData,
+  OutboxDeadLetterJobData,
+  OutboxJobData,
+  OutboxRelayJobData,
   ReportJobData,
   ReportJobResult,
   WebhookJobData,
@@ -11,6 +14,8 @@ import type {
 import { runJobWithTracing } from '../../observability/infrastructure/job-tracing.js';
 import { processAutomationJob } from '../../workers/processors/automation.processor.js';
 import { processEmailJob } from '../../workers/processors/email.processor.js';
+import { processOutboxJob } from '../../workers/processors/outbox.processor.js';
+import { processOutboxRelayJob } from '../../workers/processors/outbox-relay.processor.js';
 import { processReportJob } from '../../workers/processors/report.processor.js';
 import { processWebhookJob } from '../../workers/processors/webhook.processor.js';
 import {
@@ -49,6 +54,7 @@ export class SyncQueueProvider implements QueueProvider {
     [QueueName.WEBHOOK]: emptyCounts(),
     [QueueName.REPORT]: emptyCounts(),
     [QueueName.AUTOMATION]: emptyCounts(),
+    [QueueName.OUTBOX]: emptyCounts(),
   };
 
   isEnabled(): boolean {
@@ -71,6 +77,31 @@ export class SyncQueueProvider implements QueueProvider {
     return this.enqueue(QueueName.AUTOMATION, data, processAutomationJob);
   }
 
+  async addOutboxJob(data: OutboxJobData): Promise<string> {
+    return this.enqueue(QueueName.OUTBOX, data, processOutboxJob);
+  }
+
+  async addOutboxRelayJob(): Promise<string> {
+    return this.enqueue(
+      QueueName.OUTBOX,
+      { triggeredAt: new Date().toISOString() } satisfies OutboxRelayJobData,
+      processOutboxRelayJob,
+    );
+  }
+
+  async addOutboxDeadLetterJob(data: OutboxDeadLetterJobData): Promise<string> {
+    const jobId = randomUUID();
+    this.deadLetterJobs.push({
+      id: jobId,
+      queue: QueueName.OUTBOX,
+      data,
+      status: 'failed',
+    });
+
+    this.counts[QueueName.OUTBOX].failed += 1;
+    return jobId;
+  }
+
   async waitForReportJob(jobId: string): Promise<ReportJobResult> {
     const job = this.jobs.get(jobId);
     if (!job || job.queue !== QueueName.REPORT) {
@@ -90,6 +121,7 @@ export class SyncQueueProvider implements QueueProvider {
       [QueueName.WEBHOOK]: this.pickOverview(QueueName.WEBHOOK),
       [QueueName.REPORT]: this.pickOverview(QueueName.REPORT),
       [QueueName.AUTOMATION]: this.pickOverview(QueueName.AUTOMATION),
+      [QueueName.OUTBOX]: this.pickOverview(QueueName.OUTBOX),
     };
   }
 

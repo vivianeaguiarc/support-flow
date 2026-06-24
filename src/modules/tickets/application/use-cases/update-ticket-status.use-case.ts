@@ -1,12 +1,17 @@
-import {
-  type EventBus,
-  eventBus as defaultEventBus,
-} from '../../../../shared/events/event-bus.js';
+import { prisma } from '../../../../shared/database/prisma.js';
 import {
   createTicketClosedEvent,
   createTicketResolvedEvent,
   createTicketStatusChangedEvent,
 } from '../../../../shared/events/ticket/ticket-events.js';
+import {
+  OutboxService,
+  outboxService,
+} from '../../../outbox/application/services/outbox.service.js';
+import {
+  OutboxRelayService,
+  outboxRelayService,
+} from '../../../outbox/application/services/outbox-relay.service.js';
 import {
   type Ticket,
   TicketHistoryEvent,
@@ -33,7 +38,8 @@ export class UpdateTicketStatusUseCase {
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
-    private readonly eventBus: EventBus = defaultEventBus,
+    private readonly outbox: OutboxService = outboxService,
+    private readonly outboxRelay: OutboxRelayService = outboxRelayService,
   ) {}
 
   async execute(input: UpdateTicketStatusInput): Promise<Ticket> {
@@ -45,52 +51,65 @@ export class UpdateTicketStatusUseCase {
     assertValidTicketStatusTransition(ticket.status, input.status);
     assertAssigneeRequiredForInProgress(ticket, input.status);
 
-    const updatedTicket = await this.ticketsRepository.updateStatus(
-      ticket.id,
-      input.status,
-    );
+    const updatedTicket = await prisma.$transaction(async (tx) => {
+      const nextTicket = await this.ticketsRepository.updateStatus(
+        ticket.id,
+        input.status,
+        tx,
+      );
 
-    await this.ticketHistoryRepository.create({
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      event: TicketHistoryEvent.STATUS_CHANGED,
-      field: 'status',
-      oldValue: ticket.status,
-      newValue: input.status,
-      changedById: input.changedById,
+      await this.ticketHistoryRepository.create(
+        {
+          tenantId: input.tenantId,
+          ticketId: ticket.id,
+          event: TicketHistoryEvent.STATUS_CHANGED,
+          field: 'status',
+          oldValue: ticket.status,
+          newValue: input.status,
+          changedById: input.changedById,
+        },
+        tx,
+      );
+
+      await this.outbox.enqueueInTransaction(
+        createTicketStatusChangedEvent({
+          tenantId: input.tenantId,
+          ticket: nextTicket,
+          previousStatus: ticket.status,
+          newStatus: input.status,
+          actorId: input.changedById,
+        }),
+        tx,
+      );
+
+      if (input.status === TicketStatus.RESOLVED) {
+        await this.outbox.enqueueInTransaction(
+          createTicketResolvedEvent({
+            tenantId: input.tenantId,
+            ticket: nextTicket,
+            previousStatus: ticket.status,
+            actorId: input.changedById,
+          }),
+          tx,
+        );
+      }
+
+      if (input.status === TicketStatus.CLOSED) {
+        await this.outbox.enqueueInTransaction(
+          createTicketClosedEvent({
+            tenantId: input.tenantId,
+            ticket: nextTicket,
+            previousStatus: ticket.status,
+            actorId: input.changedById,
+          }),
+          tx,
+        );
+      }
+
+      return nextTicket;
     });
 
-    await this.eventBus.publish(
-      createTicketStatusChangedEvent({
-        tenantId: input.tenantId,
-        ticket: updatedTicket,
-        previousStatus: ticket.status,
-        newStatus: input.status,
-        actorId: input.changedById,
-      }),
-    );
-
-    if (input.status === TicketStatus.RESOLVED) {
-      await this.eventBus.publish(
-        createTicketResolvedEvent({
-          tenantId: input.tenantId,
-          ticket: updatedTicket,
-          previousStatus: ticket.status,
-          actorId: input.changedById,
-        }),
-      );
-    }
-
-    if (input.status === TicketStatus.CLOSED) {
-      await this.eventBus.publish(
-        createTicketClosedEvent({
-          tenantId: input.tenantId,
-          ticket: updatedTicket,
-          previousStatus: ticket.status,
-          actorId: input.changedById,
-        }),
-      );
-    }
+    await this.outboxRelay.scheduleRelay();
 
     return updatedTicket;
   }

@@ -1,6 +1,8 @@
 import type {
   AutomationJobData,
   EmailJobData,
+  OutboxDeadLetterJobData,
+  OutboxJobData,
   ReportJobData,
   ReportJobResult,
   WebhookJobData,
@@ -32,6 +34,9 @@ export interface QueueProvider {
   addWebhookJob(data: WebhookJobData): Promise<string>;
   addReportJob(data: ReportJobData): Promise<string>;
   addAutomationJob(data: AutomationJobData): Promise<string>;
+  addOutboxJob(data: OutboxJobData): Promise<string>;
+  addOutboxRelayJob(): Promise<string>;
+  addOutboxDeadLetterJob(data: OutboxDeadLetterJobData): Promise<string>;
   waitForReportJob(jobId: string): Promise<ReportJobResult>;
   getJobsOverview(): Promise<QueueJobsOverview>;
   getQueueMetrics(): Promise<QueueMetrics[]>;

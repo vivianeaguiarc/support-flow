@@ -41,6 +41,33 @@ vi.mock('../../../customers/repositories/customers.repository.js', () => ({
   customersRepository: {},
 }));
 
+vi.mock('../../../../shared/database/prisma.js', () => ({
+  prisma: {
+    $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback({
+        ticket: {
+          findUnique: vi.fn().mockResolvedValue(null),
+        },
+      }),
+    ),
+  },
+}));
+
+vi.mock('../../../outbox/application/services/outbox.service.js', () => ({
+  outboxService: {
+    enqueueInTransaction: vi.fn().mockResolvedValue(undefined),
+    recordSideEffect: vi.fn().mockResolvedValue(undefined),
+  },
+  OutboxService: vi.fn(),
+}));
+
+vi.mock('../../../outbox/application/services/outbox-relay.service.js', () => ({
+  outboxRelayService: {
+    scheduleRelay: vi.fn().mockResolvedValue(undefined),
+  },
+  OutboxRelayService: vi.fn(),
+}));
+
 import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import type { CustomersRepository } from '../../../customers/repositories/customers.repository.js';
@@ -56,6 +83,8 @@ import { ListTicketHistoryUseCase } from './list-ticket-history.use-case.js';
 import { ListTicketsByTenantUseCase } from './list-tickets-by-tenant.use-case.js';
 import { OpenTicketUseCase } from './open-ticket.use-case.js';
 import { UpdateTicketStatusUseCase } from './update-ticket-status.use-case.js';
+
+const txMatcher = expect.anything();
 
 const mockCustomer: Customer = {
   id: 'customer-1',
@@ -204,12 +233,14 @@ describe('Ticket use cases', () => {
           slaDueAt,
           protocol: expect.stringMatching(/^SF-\d{8}-[A-Z0-9]{6}$/),
         }),
+        txMatcher,
       );
       expect(ticketHistoryRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           event: TicketHistoryEvent.CREATED,
           ticketId: mockTicket.id,
         }),
+        txMatcher,
       );
       expect(result.slaDueAt).toEqual(slaDueAt);
     });
@@ -352,6 +383,7 @@ describe('Ticket use cases', () => {
           oldValue: TicketStatus.OPEN,
           newValue: TicketStatus.IN_PROGRESS,
         }),
+        txMatcher,
       );
       expect(result.status).toBe(TicketStatus.IN_PROGRESS);
     });
@@ -684,6 +716,7 @@ describe('Ticket use cases', () => {
           event: TicketHistoryEvent.ASSIGNED,
           newValue: 'agent-1',
         }),
+        txMatcher,
       );
       expect(result.assignedToId).toBe('agent-1');
     });
@@ -719,6 +752,7 @@ describe('Ticket use cases', () => {
           oldValue: 'agent-old',
           newValue: 'agent-1',
         }),
+        txMatcher,
       );
     });
 

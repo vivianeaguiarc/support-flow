@@ -133,6 +133,10 @@ const envSchema = z
     QUEUE_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(1000),
     QUEUE_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
     QUEUE_JOB_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
+    OUTBOX_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+    OUTBOX_RELAY_BATCH_SIZE: z.coerce.number().int().positive().default(50),
+    OUTBOX_RELAY_INTERVAL_MS: z.coerce.number().int().positive().default(5000),
+    OUTBOX_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(1000),
     OTEL_ENABLED: z
       .enum(['true', 'false'])
       .optional()

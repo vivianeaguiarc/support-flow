@@ -482,7 +482,65 @@ Eventos persistidos: `LOGIN_FAILED`, `LOGIN_LOCKED`, `ACCESS_DENIED`, `API_KEY_C
 
 ---
 
-## Event Bus interno (Domain Events)
+## Outbox Pattern (eventos transacionais)
+
+Garante que **eventos de domínio nunca sejam perdidos** se a aplicação falhar após persistir o agregado.
+
+### Fluxo
+
+```mermaid
+sequenceDiagram
+  participant UC as Use Case
+  participant DB as PostgreSQL
+  participant Relay as Outbox Relay
+  participant Bus as Event Bus
+  participant Q as BullMQ
+
+  UC->>DB: $transaction(ticket + history + outbox PENDING)
+  Relay->>DB: poll eventos PENDING
+  Relay->>Bus: publish(domain event)
+  Bus->>Q: webhooks / emails / automação
+  Relay->>DB: status PROCESSED
+```
+
+1. **Gravação atômica** — ticket + histórico + `OutboxEvent` na mesma transação Prisma
+2. **Relay** — worker BullMQ (`outbox-queue`) busca pendentes e publica no Event Bus
+3. **Handlers** — notificações, webhooks e automação executam como antes
+4. **Auditoria** — `webhook.dispatched` e `notification.sent` registrados no outbox após entrega
+
+### Entidade `OutboxEvent`
+
+| Campo         | Descrição                                         |
+| ------------- | ------------------------------------------------- |
+| `eventName`   | Ex.: `ticket.created`, `webhook.dispatched`       |
+| `aggregateId` | ID do agregado (ticket, notification, …)          |
+| `payload`     | Evento serializado (JSON)                         |
+| `status`      | `PENDING` → `PROCESSING` → `PROCESSED` / `FAILED` |
+| `attempts`    | Tentativas de processamento                       |
+| `processedAt` | Timestamp de conclusão                            |
+
+### Retries e dead-letter
+
+- Retry com **backoff exponencial** (`OUTBOX_BACKOFF_DELAY_MS * 2^attempts`)
+- Máximo configurável: `OUTBOX_MAX_ATTEMPTS` (default 5)
+- Após esgotar tentativas: status `FAILED` + job em `outbox-queue-dlq`
+
+### Métricas Prometheus
+
+| Métrica                         | Tipo    |
+| ------------------------------- | ------- |
+| `outbox_events_processed_total` | Counter |
+| `outbox_events_failed_total`    | Counter |
+| `outbox_events_pending`         | Gauge   |
+
+### Endpoints admin
+
+| Método | Rota                           |
+| ------ | ------------------------------ |
+| `GET`  | `/api/v1/admin/outbox`         |
+| `GET`  | `/api/v1/admin/outbox/metrics` |
+
+---
 
 O backend usa um **Event Bus in-process** para desacoplar efeitos colaterais dos use cases de tickets. Após persistir o estado e o histórico, o use case publica um **domain event**; handlers registrados reagem de forma assíncrona (sem bloquear a transação principal).
 

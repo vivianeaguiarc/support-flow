@@ -1,4 +1,5 @@
 import type { TicketHistory, TicketHistoryEvent, User } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 import { prisma } from '../../../../shared/database/prisma.js';
 import type { RecordTicketHistoryInput } from '../../domain/ticket.types.js';
@@ -8,8 +9,12 @@ export type TicketHistoryWithActor = TicketHistory & {
 };
 
 export class TicketHistoryRepository {
-  async create(data: RecordTicketHistoryInput): Promise<TicketHistory> {
-    return prisma.ticketHistory.create({ data });
+  async create(
+    data: RecordTicketHistoryInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<TicketHistory> {
+    const client = tx ?? prisma;
+    return client.ticketHistory.create({ data });
   }
 
   async listByTicketId(ticketId: string): Promise<TicketHistory[]> {

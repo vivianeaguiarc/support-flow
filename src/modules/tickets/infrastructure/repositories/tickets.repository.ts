@@ -1,4 +1,5 @@
 import type { Ticket, TicketStatus } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { TicketPriority } from '@prisma/client';
 
 import { prisma } from '../../../../shared/database/prisma.js';
@@ -16,8 +17,12 @@ export type CreateTicketInput = CreateTicketDomainInput & {
 };
 
 export class TicketsRepository {
-  async create(data: CreateTicketInput): Promise<Ticket> {
-    return prisma.ticket.create({
+  async create(
+    data: CreateTicketInput,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Ticket> {
+    const client = tx ?? prisma;
+    return client.ticket.create({
       data: {
         tenantId: data.tenantId,
         protocol: data.protocol,
@@ -92,8 +97,13 @@ export class TicketsRepository {
     });
   }
 
-  async updateStatus(id: string, status: TicketStatus): Promise<Ticket> {
-    return prisma.ticket.update({
+  async updateStatus(
+    id: string,
+    status: TicketStatus,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Ticket> {
+    const client = tx ?? prisma;
+    return client.ticket.update({
       where: { id },
       data: {
         status,
@@ -109,8 +119,13 @@ export class TicketsRepository {
     });
   }
 
-  async assignTo(id: string, assignedToId: string): Promise<Ticket> {
-    return prisma.ticket.update({
+  async assignTo(
+    id: string,
+    assignedToId: string,
+    tx?: Prisma.TransactionClient,
+  ): Promise<Ticket> {
+    const client = tx ?? prisma;
+    return client.ticket.update({
       where: { id },
       data: { assignedToId },
     });

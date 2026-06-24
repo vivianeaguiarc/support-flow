@@ -21,6 +21,12 @@ vi.mock(
   }),
 );
 
+vi.mock('../../../outbox/application/services/outbox.service.js', () => ({
+  outboxService: {
+    recordSideEffect: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 describe('WebhookDispatcher', () => {
   afterEach(() => {
     vi.clearAllMocks();

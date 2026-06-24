@@ -24,6 +24,14 @@ vi.mock('../../workers/processors/report.processor.js', () => ({
   }),
 }));
 
+vi.mock('../../workers/processors/outbox.processor.js', () => ({
+  processOutboxJob: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../workers/processors/outbox-relay.processor.js', () => ({
+  processOutboxRelayJob: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('SyncQueueProvider', () => {
   it('should execute email jobs inline and track completed counts', async () => {
     const provider = new SyncQueueProvider();

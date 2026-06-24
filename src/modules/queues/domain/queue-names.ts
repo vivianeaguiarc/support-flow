@@ -3,6 +3,7 @@ export const QueueName = {
   WEBHOOK: 'webhook-queue',
   REPORT: 'report-queue',
   AUTOMATION: 'automation-queue',
+  OUTBOX: 'outbox-queue',
 } as const;
 
 export type QueueName = (typeof QueueName)[keyof typeof QueueName];
@@ -12,6 +13,7 @@ export const DeadLetterQueueName = {
   WEBHOOK: 'webhook-queue-dlq',
   REPORT: 'report-queue-dlq',
   AUTOMATION: 'automation-queue-dlq',
+  OUTBOX: 'outbox-queue-dlq',
 } as const;
 
 export type DeadLetterQueueName =

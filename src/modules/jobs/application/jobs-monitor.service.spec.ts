@@ -30,6 +30,12 @@ vi.mock('../../queues/queue-provider.js', () => ({
         completed: 3,
         failed: 0,
       },
+      [QueueName.OUTBOX]: {
+        waiting: 0,
+        active: 0,
+        completed: 0,
+        failed: 0,
+      },
     }),
     getQueueMetrics: vi.fn().mockResolvedValue([
       {

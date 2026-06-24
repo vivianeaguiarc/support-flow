@@ -53,6 +53,33 @@ vi.mock('../../../customers/repositories/customers.repository.js', () => ({
   customersRepository: {},
 }));
 
+vi.mock('../../../../shared/database/prisma.js', () => ({
+  prisma: {
+    $transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback({
+        ticket: {
+          findUnique: vi.fn().mockResolvedValue(null),
+        },
+      }),
+    ),
+  },
+}));
+
+vi.mock('../../../outbox/application/services/outbox.service.js', () => ({
+  outboxService: {
+    enqueueInTransaction: vi.fn().mockResolvedValue(undefined),
+    recordSideEffect: vi.fn().mockResolvedValue(undefined),
+  },
+  OutboxService: vi.fn(),
+}));
+
+vi.mock('../../../outbox/application/services/outbox-relay.service.js', () => ({
+  outboxRelayService: {
+    scheduleRelay: vi.fn().mockResolvedValue(undefined),
+  },
+  OutboxRelayService: vi.fn(),
+}));
+
 import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
@@ -69,6 +96,8 @@ import { ListTicketsByTenantUseCase } from '../use-cases/list-tickets-by-tenant.
 import { OpenTicketUseCase } from '../use-cases/open-ticket.use-case.js';
 import { UpdateTicketStatusUseCase } from '../use-cases/update-ticket-status.use-case.js';
 import { TicketsService } from './tickets.service.js';
+
+const txMatcher = expect.anything();
 
 const mockCustomer: Customer = {
   id: 'customer-1',
@@ -262,6 +291,7 @@ describe('TicketsService', () => {
         status: TicketStatus.OPEN,
         protocol: expect.stringMatching(/^SF-\d{8}-[A-Z0-9]{6}$/),
       }),
+      txMatcher,
     );
     expect(ticketHistoryRepository.create).toHaveBeenCalled();
     expect(result).toEqual({
@@ -315,6 +345,7 @@ describe('TicketsService', () => {
     expect(ticketsRepository.updateStatus).toHaveBeenCalledWith(
       'ticket-1',
       TicketStatus.IN_PROGRESS,
+      txMatcher,
     );
     expect(ticketHistoryRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -323,6 +354,7 @@ describe('TicketsService', () => {
         oldValue: TicketStatus.OPEN,
         newValue: TicketStatus.IN_PROGRESS,
       }),
+      txMatcher,
     );
     expect(result.status).toBe(TicketStatus.IN_PROGRESS);
   });

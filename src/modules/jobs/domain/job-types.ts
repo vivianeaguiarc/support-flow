@@ -43,6 +43,22 @@ export type AutomationJobData = {
   previousTicket?: Partial<Ticket>;
 };
 
+export type OutboxJobData = {
+  outboxEventId: string;
+};
+
+export type OutboxRelayJobData = {
+  triggeredAt: string;
+};
+
+export type OutboxDeadLetterJobData = {
+  outboxEventId: string;
+  eventName: string;
+  aggregateId: string;
+  error: string;
+  attempts: number;
+};
+
 export type DeadLetterJobData = {
   originalQueue: string;
   originalJobId: string;

@@ -45,6 +45,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/admin/jobs/metrics': ['get'],
   '/admin/feature-flags': ['post', 'get'],
   '/admin/feature-flags/{key}': ['patch', 'delete'],
+  '/admin/outbox': ['get'],
+  '/admin/outbox/metrics': ['get'],
   '/analytics/overview': ['get'],
   '/analytics/tickets-by-status': ['get'],
   '/analytics/tickets-by-priority': ['get'],

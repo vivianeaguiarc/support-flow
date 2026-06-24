@@ -1,10 +1,15 @@
+import { prisma } from '../../../../shared/database/prisma.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
-import {
-  type EventBus,
-  eventBus as defaultEventBus,
-} from '../../../../shared/events/event-bus.js';
 import { createTicketAssignedEvent } from '../../../../shared/events/ticket/ticket-events.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
+import {
+  OutboxService,
+  outboxService,
+} from '../../../outbox/application/services/outbox.service.js';
+import {
+  OutboxRelayService,
+  outboxRelayService,
+} from '../../../outbox/application/services/outbox-relay.service.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
@@ -34,7 +39,8 @@ export class AssignTicketUseCase {
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
-    private readonly eventBus: EventBus = defaultEventBus,
+    private readonly outbox: OutboxService = outboxService,
+    private readonly outboxRelay: OutboxRelayService = outboxRelayService,
   ) {}
 
   async execute(input: AssignTicketInput): Promise<Ticket> {
@@ -47,31 +53,42 @@ export class AssignTicketUseCase {
 
     await this.ensureAgent(input.assignedToId, input.tenantId);
 
-    const updatedTicket = await this.ticketsRepository.assignTo(
-      ticket.id,
-      input.assignedToId,
-    );
+    const updatedTicket = await prisma.$transaction(async (tx) => {
+      const assignedTicket = await this.ticketsRepository.assignTo(
+        ticket.id,
+        input.assignedToId,
+        tx,
+      );
 
-    await this.ticketHistoryRepository.create({
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      event: resolveAssignmentHistoryEvent(ticket.assignedToId),
-      field: 'assignedToId',
-      oldValue: ticket.assignedToId ?? undefined,
-      newValue: input.assignedToId,
-      changedById: input.changedById,
+      await this.ticketHistoryRepository.create(
+        {
+          tenantId: input.tenantId,
+          ticketId: ticket.id,
+          event: resolveAssignmentHistoryEvent(ticket.assignedToId),
+          field: 'assignedToId',
+          oldValue: ticket.assignedToId ?? undefined,
+          newValue: input.assignedToId,
+          changedById: input.changedById,
+        },
+        tx,
+      );
+
+      await this.outbox.enqueueInTransaction(
+        createTicketAssignedEvent({
+          tenantId: input.tenantId,
+          ticket: assignedTicket,
+          assigneeId: input.assignedToId,
+          previousAssigneeId: ticket.assignedToId,
+          actorId: input.changedById,
+          isReassignment: Boolean(ticket.assignedToId),
+        }),
+        tx,
+      );
+
+      return assignedTicket;
     });
 
-    await this.eventBus.publish(
-      createTicketAssignedEvent({
-        tenantId: input.tenantId,
-        ticket: updatedTicket,
-        assigneeId: input.assignedToId,
-        previousAssigneeId: ticket.assignedToId,
-        actorId: input.changedById,
-        isReassignment: Boolean(ticket.assignedToId),
-      }),
-    );
+    await this.outboxRelay.scheduleRelay();
 
     return updatedTicket;
   }

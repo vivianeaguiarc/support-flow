@@ -28,6 +28,12 @@ vi.mock('../../../queues/queue-provider.js', () => ({
   },
 }));
 
+vi.mock('../../../outbox/application/services/outbox.service.js', () => ({
+  outboxService: {
+    recordSideEffect: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 import type { EmailProvider } from '../../../../shared/email/index.js';
 import type { Ticket } from '../../../tickets/domain/ticket.entity.js';
 import {

@@ -5,6 +5,11 @@ import {
   type EmailProviderHealth,
 } from '../../../../shared/email/index.js';
 import { logger } from '../../../../shared/logger/logger.js';
+import {
+  OutboxService,
+  outboxService,
+} from '../../../outbox/application/services/outbox.service.js';
+import { OutboxEventName } from '../../../outbox/domain/outbox-event-names.js';
 import { queueProvider } from '../../../queues/queue-provider.js';
 import type { Ticket } from '../../../tickets/domain/ticket.entity.js';
 import {
@@ -29,6 +34,7 @@ export class NotificationService {
   constructor(
     private readonly provider: EmailProvider = emailProvider,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
+    private readonly outbox: OutboxService = outboxService,
   ) {}
 
   async sendTicketNotification(input: SendTicketEmailInput): Promise<void> {
@@ -93,6 +99,18 @@ export class NotificationService {
       },
       'email.notification.sent',
     );
+
+    await this.outbox.recordSideEffect({
+      eventName: OutboxEventName.NOTIFICATION_SENT,
+      aggregateId: `${input.ticket.id}:${input.recipientId}:${input.event}`,
+      payload: {
+        tenantId: input.ticket.tenantId,
+        ticketId: input.ticket.id,
+        recipientId: input.recipientId,
+        event: input.event,
+        channel: 'email',
+      },
+    });
   }
 
   async checkHealth(): Promise<EmailProviderHealth> {

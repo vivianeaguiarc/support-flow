@@ -19,6 +19,10 @@ const swaggerApiGlobs = [
     docsRoot,
     `modules/**/presentation/docs/*.swagger.${swaggerExtension}`,
   ),
+  path.join(
+    docsRoot,
+    `modules/outbox/presentation/docs/*.swagger.${swaggerExtension}`,
+  ),
   path.join(docsRoot, `shared/http/docs/*.swagger.${swaggerExtension}`),
 ];
 
@@ -1884,6 +1888,11 @@ const options: Options = {
         name: 'Automation',
         description:
           'Regras de automação de workflow — triggers, condições e ações',
+      },
+      {
+        name: 'Outbox',
+        description:
+          'Outbox transacional — eventos pendentes, processados e métricas',
       },
       {
         name: 'API Keys',

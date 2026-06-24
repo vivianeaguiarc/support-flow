@@ -1,14 +1,19 @@
+import { prisma } from '../../../../shared/database/prisma.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
-import {
-  type EventBus,
-  eventBus as defaultEventBus,
-} from '../../../../shared/events/event-bus.js';
 import { createTicketCreatedEvent } from '../../../../shared/events/ticket/ticket-events.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
 import {
   CustomersRepository,
   customersRepository as defaultCustomersRepository,
 } from '../../../customers/repositories/customers.repository.js';
+import {
+  OutboxService,
+  outboxService,
+} from '../../../outbox/application/services/outbox.service.js';
+import {
+  OutboxRelayService,
+  outboxRelayService,
+} from '../../../outbox/application/services/outbox-relay.service.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
@@ -51,7 +56,8 @@ export class OpenTicketUseCase {
     private readonly ticketCategoriesRepository: TicketCategoriesRepository = defaultTicketCategoriesRepository,
     private readonly calculateTicketSla: CalculateTicketSlaUseCase = calculateTicketSlaUseCase,
     private readonly calculateTicketPriority: CalculateTicketPriorityUseCase = calculateTicketPriorityUseCase,
-    private readonly eventBus: EventBus = defaultEventBus,
+    private readonly outbox: OutboxService = outboxService,
+    private readonly outboxRelay: OutboxRelayService = outboxRelayService,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
@@ -82,65 +88,85 @@ export class OpenTicketUseCase {
       categoryId: input.categoryId,
     });
 
-    const ticket = await this.ticketsRepository.create({
-      tenantId: input.tenantId,
-      protocol: generateTicketProtocol(),
-      title: input.title,
-      description: input.description,
-      customerId: input.customerId,
-      priority: finalPriority,
-      categoryId: input.categoryId,
-      assignedToId: input.assignedToId,
-      slaDueAt,
-      status: TicketStatus.OPEN,
+    const ticket = await prisma.$transaction(async (tx) => {
+      const createdTicket = await this.ticketsRepository.create(
+        {
+          tenantId: input.tenantId,
+          protocol: generateTicketProtocol(),
+          title: input.title,
+          description: input.description,
+          customerId: input.customerId,
+          priority: finalPriority,
+          categoryId: input.categoryId,
+          assignedToId: input.assignedToId,
+          slaDueAt,
+          status: TicketStatus.OPEN,
+        },
+        tx,
+      );
+
+      await this.ticketHistoryRepository.create(
+        {
+          tenantId: input.tenantId,
+          ticketId: createdTicket.id,
+          event: TicketHistoryEvent.CREATED,
+          changedById: input.changedById,
+        },
+        tx,
+      );
+
+      if (priorityResult.priorityChanged && input.priority !== finalPriority) {
+        await this.ticketHistoryRepository.create(
+          {
+            tenantId: input.tenantId,
+            ticketId: createdTicket.id,
+            event: TicketHistoryEvent.PRIORITY_CHANGED,
+            field: 'priority',
+            oldValue: input.priority || TicketPriority.LOW,
+            newValue: finalPriority,
+          },
+          tx,
+        );
+      }
+
+      if (input.assignedToId) {
+        await this.ticketHistoryRepository.create(
+          {
+            tenantId: input.tenantId,
+            ticketId: createdTicket.id,
+            event: TicketHistoryEvent.ASSIGNED,
+            field: 'assignedToId',
+            oldValue: undefined,
+            newValue: input.assignedToId,
+            changedById: input.changedById,
+          },
+          tx,
+        );
+      }
+
+      const refreshedTicket =
+        (await tx.ticket.findUnique({ where: { id: createdTicket.id } })) ??
+        createdTicket;
+
+      await this.outbox.enqueueInTransaction(
+        createTicketCreatedEvent({
+          tenantId: input.tenantId,
+          ticket: refreshedTicket,
+          customerId: input.customerId,
+          actorId: input.changedById,
+          priority: finalPriority,
+          assignedToId: input.assignedToId,
+        }),
+        tx,
+      );
+
+      return refreshedTicket;
     });
 
-    await this.ticketHistoryRepository.create({
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      event: TicketHistoryEvent.CREATED,
-      changedById: input.changedById,
-    });
-
-    if (priorityResult.priorityChanged && input.priority !== finalPriority) {
-      await this.ticketHistoryRepository.create({
-        tenantId: input.tenantId,
-        ticketId: ticket.id,
-        event: TicketHistoryEvent.PRIORITY_CHANGED,
-        field: 'priority',
-        oldValue: input.priority || TicketPriority.LOW,
-        newValue: finalPriority,
-      });
-    }
-
-    if (input.assignedToId) {
-      await this.ticketHistoryRepository.create({
-        tenantId: input.tenantId,
-        ticketId: ticket.id,
-        event: TicketHistoryEvent.ASSIGNED,
-        field: 'assignedToId',
-        oldValue: undefined,
-        newValue: input.assignedToId,
-        changedById: input.changedById,
-      });
-    }
-
-    const refreshedTicket = await this.ticketsRepository.findById(ticket.id);
-    const finalTicket = refreshedTicket ?? ticket;
-
-    await this.eventBus.publish(
-      createTicketCreatedEvent({
-        tenantId: input.tenantId,
-        ticket: finalTicket,
-        customerId: input.customerId,
-        actorId: input.changedById,
-        priority: finalPriority,
-        assignedToId: input.assignedToId,
-      }),
-    );
+    await this.outboxRelay.scheduleRelay();
 
     const ticketAfterEvents =
-      (await this.ticketsRepository.findById(ticket.id)) ?? finalTicket;
+      (await this.ticketsRepository.findById(ticket.id)) ?? ticket;
 
     return ticketAfterEvents;
   }

@@ -6,6 +6,9 @@ import type {
   AutomationJobData,
   DeadLetterJobData,
   EmailJobData,
+  OutboxDeadLetterJobData,
+  OutboxJobData,
+  OutboxRelayJobData,
   ReportJobData,
   ReportJobResult,
   WebhookJobData,
@@ -13,6 +16,8 @@ import type {
 import { runJobWithTracing } from '../../observability/infrastructure/job-tracing.js';
 import { processAutomationJob } from '../../workers/processors/automation.processor.js';
 import { processEmailJob } from '../../workers/processors/email.processor.js';
+import { processOutboxJob } from '../../workers/processors/outbox.processor.js';
+import { processOutboxRelayJob } from '../../workers/processors/outbox-relay.processor.js';
 import { processReportJob } from '../../workers/processors/report.processor.js';
 import { processWebhookJob } from '../../workers/processors/webhook.processor.js';
 import { getDefaultJobOptions } from '../domain/queue-job-options.js';
@@ -108,6 +113,37 @@ export class BullMQQueueProvider implements QueueProvider {
   async addAutomationJob(data: AutomationJobData): Promise<string> {
     const job = await this.getQueue(QueueName.AUTOMATION).add(
       'process-automation',
+      data,
+    );
+    return String(job.id);
+  }
+
+  async addOutboxJob(data: OutboxJobData): Promise<string> {
+    const job = await this.getQueue(QueueName.OUTBOX).add(
+      'process-outbox-event',
+      data,
+      {
+        jobId: data.outboxEventId,
+        ...getDefaultJobOptions(),
+      },
+    );
+    return String(job.id);
+  }
+
+  async addOutboxRelayJob(): Promise<string> {
+    const job = await this.getQueue(QueueName.OUTBOX).add(
+      'relay-outbox-events',
+      { triggeredAt: new Date().toISOString() } satisfies OutboxRelayJobData,
+      {
+        jobId: `outbox-relay-${Date.now()}`,
+      },
+    );
+    return String(job.id);
+  }
+
+  async addOutboxDeadLetterJob(data: OutboxDeadLetterJobData): Promise<string> {
+    const job = await this.getDeadLetterQueue(QueueName.OUTBOX).add(
+      'outbox-dead-letter',
       data,
     );
     return String(job.id);
@@ -219,6 +255,29 @@ export class BullMQQueueProvider implements QueueProvider {
         connection,
         defaultOptions,
       ),
+      this.createWorker(
+        QueueName.OUTBOX,
+        async (data: OutboxJobData | OutboxRelayJobData) => {
+          if ('outboxEventId' in data) {
+            return processOutboxJob(data);
+          }
+
+          return processOutboxRelayJob();
+        },
+        connection,
+        defaultOptions,
+      ),
+    );
+
+    await this.getQueue(QueueName.OUTBOX).add(
+      'relay-outbox-events',
+      { triggeredAt: new Date().toISOString() } satisfies OutboxRelayJobData,
+      {
+        repeat: {
+          every: env.OUTBOX_RELAY_INTERVAL_MS,
+        },
+        jobId: 'outbox-relay-repeatable',
+      },
     );
 
     this.started = true;

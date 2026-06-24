@@ -31,6 +31,9 @@ class MetricsService {
   private readonly jobsProcessedTotal: Counter<'queue' | 'status'>;
   private readonly jobsFailedTotal: Counter<'queue'>;
   private readonly jobProcessingDurationSeconds: Histogram<'queue' | 'status'>;
+  private readonly outboxEventsProcessedTotal: Counter;
+  private readonly outboxEventsFailedTotal: Counter;
+  private readonly outboxEventsPending: Gauge;
   private readonly redisUp: Gauge;
   private readonly databaseUp: Gauge;
   private httpDurationSumMs = 0;
@@ -85,6 +88,24 @@ class MetricsService {
       help: 'Job processing duration in seconds',
       labelNames: ['queue', 'status'],
       buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120],
+      registers: [this.registry],
+    });
+
+    this.outboxEventsProcessedTotal = new Counter({
+      name: 'outbox_events_processed_total',
+      help: 'Total number of outbox events processed successfully',
+      registers: [this.registry],
+    });
+
+    this.outboxEventsFailedTotal = new Counter({
+      name: 'outbox_events_failed_total',
+      help: 'Total number of outbox events moved to failed/dead-letter',
+      registers: [this.registry],
+    });
+
+    this.outboxEventsPending = new Gauge({
+      name: 'outbox_events_pending',
+      help: 'Current number of pending outbox events',
       registers: [this.registry],
     });
 
@@ -148,6 +169,41 @@ class MetricsService {
 
     this.jobProcessedCount += 1;
     this.jobDurationSumMs += durationMs;
+  }
+
+  recordOutboxProcessed(): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    this.outboxEventsProcessedTotal.inc();
+  }
+
+  recordOutboxFailed(): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    this.outboxEventsFailedTotal.inc();
+  }
+
+  setOutboxPending(count: number): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    this.outboxEventsPending.set(count);
+  }
+
+  async refreshOutboxPendingGauge(): Promise<void> {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    const { outboxRepository } =
+      await import('../../outbox/infrastructure/repositories/outbox.repository.js');
+    const byStatus = await outboxRepository.countByStatus();
+    this.setOutboxPending(byStatus.PENDING ?? 0);
   }
 
   setRedisUp(isUp: boolean | null): void {

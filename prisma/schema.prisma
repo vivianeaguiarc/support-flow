@@ -589,6 +589,27 @@ model RolePermission {
   @@map("role_permissions")
 }
 
+enum OutboxEventStatus {
+  PENDING
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+model OutboxEvent {
+  id          String             @id @default(uuid())
+  eventName   String
+  aggregateId String
+  payload     Json
+  status      OutboxEventStatus  @default(PENDING)
+  attempts    Int                @default(0)
+  createdAt   DateTime           @default(now())
+  processedAt DateTime?
+
+  @@index([status, createdAt])
+  @@map("outbox_events")
+}
+
 model UserRoleAssignment {
   id        String   @id @default(uuid())
   userId    String

@@ -5,6 +5,7 @@ import { requirePermission } from '../../../../shared/http/middlewares/require-p
 import { PermissionKey } from '../../../../shared/security/permissions.js';
 import { adminFeatureFlagsRouter } from '../../../feature-flags/presentation/routes/admin-feature-flags.routes.js';
 import { adminJobsRouter } from '../../../jobs/presentation/routes/admin-jobs.routes.js';
+import { adminOutboxRouter } from '../../../outbox/presentation/routes/admin-outbox.routes.js';
 import {
   adminPermissionsRouter,
   adminRolesRouter,
@@ -26,3 +27,4 @@ adminRouter.use('/jobs', adminJobsRouter);
 adminRouter.use('/feature-flags', adminFeatureFlagsRouter);
 adminRouter.use('/roles', adminRolesRouter);
 adminRouter.use('/permissions', adminPermissionsRouter);
+adminRouter.use('/outbox', adminOutboxRouter);

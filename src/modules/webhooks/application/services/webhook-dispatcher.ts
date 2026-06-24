@@ -6,6 +6,11 @@ import {
 } from '../../../../shared/logger/business-logger.js';
 import { featureFlagService } from '../../../feature-flags/application/services/feature-flag.service.js';
 import { FeatureFlagKey } from '../../../feature-flags/domain/feature-flag-keys.js';
+import {
+  OutboxService,
+  outboxService,
+} from '../../../outbox/application/services/outbox.service.js';
+import { OutboxEventName } from '../../../outbox/domain/outbox-event-names.js';
 import { queueProvider } from '../../../queues/queue-provider.js';
 import type {
   WebhookDelivery,
@@ -47,6 +52,7 @@ function isRetryableStatus(status: number): boolean {
 export class WebhookDispatcher {
   constructor(
     private readonly repository: WebhooksRepository = defaultWebhooksRepository,
+    private readonly outbox: OutboxService = outboxService,
   ) {}
 
   async dispatch(
@@ -98,6 +104,16 @@ export class WebhookDispatcher {
         );
       }
     }
+
+    await this.outbox.recordSideEffect({
+      eventName: OutboxEventName.WEBHOOK_DISPATCHED,
+      aggregateId: payload.id,
+      payload: {
+        tenantId,
+        event,
+        endpointCount: endpoints.length,
+      },
+    });
   }
 
   async deliverTest(
