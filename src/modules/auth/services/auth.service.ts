@@ -12,6 +12,8 @@ import {
 import { comparePassword } from '../../../shared/security/password-hash.js';
 import { securityAuditService } from '../../../shared/security/security-audit/security-audit.service.js';
 import { hashRefreshToken } from '../../../shared/security/token-hash.js';
+import { resolveTenantId } from '../../../shared/tenant/get-request-tenant-id.js';
+import type { AuthenticatedUser } from '../../../shared/types/authenticated-user.js';
 import type { User } from '../../users/domain/user.entity.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
 import {
@@ -54,6 +56,19 @@ export class AuthService {
     private readonly loginSecurityRepository: LoginSecurityRepository = defaultLoginSecurityRepository,
     private readonly verifyPassword: VerifyPasswordFn = comparePassword,
   ) {}
+
+  async me(authUser: AuthenticatedUser): Promise<User> {
+    const user = await this.usersRepository.findById(
+      authUser.id,
+      resolveTenantId(authUser),
+    );
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    return user;
+  }
 
   async login(
     data: LoginInput,

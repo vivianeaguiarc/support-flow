@@ -126,6 +126,42 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *
+ * /auth/me:
+ *   get:
+ *     tags:
+ *       - Authentication
+ *     summary: Recuperar usuário autenticado
+ *     description: |
+ *       Retorna o usuário autenticado com base no JWT enviado em
+ *       `Authorization: Bearer <accessToken>`. Não retorna dados sensíveis
+ *       (senha, contadores de segurança, etc.).
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Usuário autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/AuthUserResponse'
+ *       401:
+ *         description: Token ausente, inválido ou expirado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Usuário não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 export {};

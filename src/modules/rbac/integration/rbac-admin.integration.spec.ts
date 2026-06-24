@@ -16,6 +16,24 @@ import {
   login,
 } from '../../../test/integration/http-client.js';
 
+async function waitFor<T>(
+  predicate: () => Promise<T | null>,
+  {
+    attempts = 20,
+    intervalMs = 50,
+  }: { attempts?: number; intervalMs?: number } = {},
+): Promise<T> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const result = await predicate();
+    if (result !== null) {
+      return result;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  throw new Error('waitFor: condition not met within the expected time');
+}
+
 describe.sequential('RBAC admin', () => {
   let app: Express;
 
@@ -77,11 +95,16 @@ describe.sequential('RBAC admin', () => {
       })
       .expect(200);
 
-    const audits = await prisma.securityAuditLog.findMany({
-      where: {
-        event: { in: ['ROLE_CREATED', 'ROLE_PERMISSIONS_UPDATED'] },
-        tenantId: fixtures.tenantA.id,
-      },
+    // Security audit records are written fire-and-forget, so poll until both
+    // events are persisted (or time out) to keep the assertion deterministic.
+    const audits = await waitFor(async () => {
+      const rows = await prisma.securityAuditLog.findMany({
+        where: {
+          event: { in: ['ROLE_CREATED', 'ROLE_PERMISSIONS_UPDATED'] },
+          tenantId: fixtures.tenantA.id,
+        },
+      });
+      return rows.length >= 2 ? rows : null;
     });
 
     expect(audits.length).toBeGreaterThanOrEqual(2);

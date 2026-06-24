@@ -6,6 +6,7 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/auth/login': ['post'],
   '/auth/refresh': ['post'],
   '/auth/logout': ['post'],
+  '/auth/me': ['get'],
   '/users': ['post', 'get'],
   '/users/{id}': ['get'],
   '/customers': ['get'],

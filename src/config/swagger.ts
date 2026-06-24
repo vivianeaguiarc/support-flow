@@ -1837,6 +1837,27 @@ const options: Options = {
             },
           },
         },
+        AuthUserResponse: {
+          type: 'object',
+          required: [
+            'id',
+            'name',
+            'email',
+            'role',
+            'tenantId',
+            'createdAt',
+            'updatedAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            role: { $ref: '#/components/schemas/UserRole' },
+            tenantId: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
       },
     },
     tags: [

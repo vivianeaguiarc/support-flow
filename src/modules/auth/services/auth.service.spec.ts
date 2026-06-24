@@ -109,6 +109,53 @@ describe('AuthService', () => {
     );
   });
 
+  it('should return the authenticated user via me()', async () => {
+    vi.mocked(usersRepository.findById).mockResolvedValue(mockUser);
+
+    const result = await service.me({
+      id: mockUser.id,
+      email: mockUser.email,
+      role: mockUser.role,
+      tenantId: mockUser.tenantId,
+    });
+
+    expect(usersRepository.findById).toHaveBeenCalledWith(
+      mockUser.id,
+      mockUser.tenantId,
+    );
+    expect(result).toEqual(mockUser);
+  });
+
+  it('should throw 404 from me() when user no longer exists', async () => {
+    vi.mocked(usersRepository.findById).mockResolvedValue(null);
+
+    await expect(
+      service.me({
+        id: 'missing-user',
+        email: 'missing@example.com',
+        role: UserRole.AGENT,
+        tenantId: 'tenant-1',
+      }),
+    ).rejects.toEqual(new AppError('User not found', 404));
+  });
+
+  it('should scope me() lookup to the effective tenant for super admins', async () => {
+    vi.mocked(usersRepository.findById).mockResolvedValue(mockUser);
+
+    await service.me({
+      id: mockUser.id,
+      email: mockUser.email,
+      role: UserRole.SUPER_ADMIN,
+      tenantId: 'tenant-1',
+      scopedTenantId: 'tenant-override',
+    });
+
+    expect(usersRepository.findById).toHaveBeenCalledWith(
+      mockUser.id,
+      'tenant-override',
+    );
+  });
+
   it('should login with valid credentials and issue token pair', async () => {
     vi.mocked(usersRepository.findByEmail).mockResolvedValue(mockUser);
     verifyPassword.mockResolvedValue(true);
