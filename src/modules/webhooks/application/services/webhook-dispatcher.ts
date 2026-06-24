@@ -4,6 +4,8 @@ import {
   BusinessEvent,
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
+import { featureFlagService } from '../../../feature-flags/application/services/feature-flag.service.js';
+import { FeatureFlagKey } from '../../../feature-flags/domain/feature-flag-keys.js';
 import { queueProvider } from '../../../queues/queue-provider.js';
 import type {
   WebhookDelivery,
@@ -64,6 +66,13 @@ export class WebhookDispatcher {
     event: WebhookEvent,
     data: Record<string, unknown>,
   ): Promise<void> {
+    const webhooksEnabled = await featureFlagService.isEnabled(
+      FeatureFlagKey.WEBHOOKS,
+    );
+    if (!webhooksEnabled) {
+      return;
+    }
+
     const endpoints = await this.repository.findActiveByTenantAndEvent(
       tenantId,
       event,

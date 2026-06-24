@@ -3,6 +3,8 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import { logger } from '../../../../shared/logger/logger.js';
+import { featureFlagService } from '../../../feature-flags/application/services/feature-flag.service.js';
+import { FeatureFlagKey } from '../../../feature-flags/domain/feature-flag-keys.js';
 import { queueProvider } from '../../../queues/queue-provider.js';
 import type { AutomationEvent } from '../../domain/automation-event.js';
 import { AutomationExecutionStatus } from '../../domain/automation-rule.entity.js';
@@ -34,6 +36,13 @@ export class AutomationEngine {
   }
 
   async processEventDirect(event: AutomationEvent): Promise<void> {
+    const automationEnabled = await featureFlagService.isEnabled(
+      FeatureFlagKey.AUTOMATION,
+    );
+    if (!automationEnabled) {
+      return;
+    }
+
     const rules = await this.rulesRepository.listActiveByTenantAndTrigger(
       event.tenantId,
       event.trigger,

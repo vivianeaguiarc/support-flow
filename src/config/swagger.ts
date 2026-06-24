@@ -1277,6 +1277,38 @@ const options: Options = {
             expiresAt: { type: 'string', format: 'date-time' },
           },
         },
+        FeatureFlag: {
+          type: 'object',
+          required: ['id', 'key', 'enabled', 'createdAt', 'updatedAt'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            key: { type: 'string', example: 'webhooks' },
+            description: {
+              type: 'string',
+              nullable: true,
+              example: 'Controls outbound webhook deliveries',
+            },
+            enabled: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        CreateFeatureFlagInput: {
+          type: 'object',
+          required: ['key'],
+          properties: {
+            key: { type: 'string', example: 'webhooks' },
+            description: { type: 'string', maxLength: 500 },
+            enabled: { type: 'boolean', default: false },
+          },
+        },
+        UpdateFeatureFlagInput: {
+          type: 'object',
+          properties: {
+            description: { type: 'string', nullable: true, maxLength: 500 },
+            enabled: { type: 'boolean' },
+          },
+        },
         WebhookEndpoint: {
           type: 'object',
           required: [

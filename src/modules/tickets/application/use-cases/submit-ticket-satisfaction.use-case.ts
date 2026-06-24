@@ -1,6 +1,8 @@
 import { NotFoundError } from '../../../../shared/errors/http-errors.js';
+import { assertFeatureEnabled } from '../../../../shared/feature-flags/require-feature-flag.js';
 import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
+import { FeatureFlagKey } from '../../../feature-flags/domain/feature-flag-keys.js';
 import { buildCsatWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
 import {
   type WebhookDispatcher,
@@ -45,6 +47,8 @@ export class SubmitTicketSatisfactionUseCase {
   async execute(
     input: SubmitTicketSatisfactionInput,
   ): Promise<TicketSatisfactionSurvey> {
+    await assertFeatureEnabled(FeatureFlagKey.CSAT);
+
     const ticket = await this.ticketsRepo.findById(input.ticketId);
 
     if (!ticket) {

@@ -1,11 +1,13 @@
 import type { Response } from 'express';
 
+import { assertFeatureEnabled } from '../../../../shared/feature-flags/require-feature-flag.js';
 import {
   BusinessEvent,
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import type { AnalyticsQueryDto } from '../../../analytics/presentation/dtos/analytics-query.dto.js';
+import { FeatureFlagKey } from '../../../feature-flags/domain/feature-flag-keys.js';
 import { ReportJobType } from '../../../jobs/domain/job-types.js';
 import { queueProvider } from '../../../queues/queue-provider.js';
 
@@ -20,6 +22,8 @@ export class ReportsService {
     query: AnalyticsQueryDto,
     res: Response,
   ): Promise<void> {
+    await assertFeatureEnabled(FeatureFlagKey.REPORTS_CSV);
+
     logBusinessEvent(BusinessEvent.REPORT_TICKETS_EXPORTED, {
       tenantId: authUser.tenantId,
       userId: authUser.id,
@@ -43,6 +47,8 @@ export class ReportsService {
     query: AnalyticsQueryDto,
     res: Response,
   ): Promise<void> {
+    await assertFeatureEnabled(FeatureFlagKey.REPORTS_CSV);
+
     logBusinessEvent(BusinessEvent.REPORT_AGENTS_PERFORMANCE_EXPORTED, {
       tenantId: authUser.tenantId,
       userId: authUser.id,
@@ -66,6 +72,8 @@ export class ReportsService {
     query: AnalyticsQueryDto,
     res: Response,
   ): Promise<void> {
+    await assertFeatureEnabled(FeatureFlagKey.REPORTS_CSV);
+
     logBusinessEvent(BusinessEvent.REPORT_SLA_EXPORTED, {
       tenantId: authUser.tenantId,
       userId: authUser.id,

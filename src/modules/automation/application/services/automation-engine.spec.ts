@@ -1,5 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock(
+  '../../../feature-flags/application/services/feature-flag.service.js',
+  () => ({
+    featureFlagService: {
+      isEnabled: vi.fn().mockResolvedValue(true),
+    },
+  }),
+);
+
 import type { Ticket } from '../../../tickets/domain/ticket.entity.js';
 import {
   TicketPriority,

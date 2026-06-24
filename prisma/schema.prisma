@@ -86,6 +86,12 @@ enum WebhookDeliveryStatus {
   FAILED
 }
 
+enum FeatureFlagAuditAction {
+  CREATED
+  UPDATED
+  DELETED
+}
+
 model Tenant {
   id               String   @id @default(uuid())
   name             String
@@ -134,6 +140,7 @@ model User {
   knowledgeArticles KnowledgeArticle[] @relation("KnowledgeArticleAuthor")
   apiKeysCreated    ApiKey[]             @relation("ApiKeyCreator")
   webhookEndpoints  WebhookEndpoint[]    @relation("WebhookCreator")
+  featureFlagAudits FeatureFlagAudit[]   @relation("FeatureFlagAuditActor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -470,4 +477,35 @@ model WebhookDelivery {
   @@index([webhookEndpointId])
   @@index([createdAt])
   @@map("webhook_deliveries")
+}
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String?
+  enabled     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  audits FeatureFlagAudit[]
+
+  @@map("feature_flags")
+}
+
+model FeatureFlagAudit {
+  id              String                 @id @default(uuid())
+  featureFlagId   String?
+  key             String
+  action          FeatureFlagAuditAction
+  enabled         Boolean?
+  previousEnabled Boolean?
+  changedById     String?
+  createdAt       DateTime               @default(now())
+
+  featureFlag FeatureFlag? @relation(fields: [featureFlagId], references: [id], onDelete: SetNull)
+  changedBy   User?        @relation("FeatureFlagAuditActor", fields: [changedById], references: [id])
+
+  @@index([key])
+  @@index([createdAt])
+  @@map("feature_flag_audits")
 }

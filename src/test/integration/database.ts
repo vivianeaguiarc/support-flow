@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 
+import { featureFlagCache } from '../../modules/feature-flags/infrastructure/feature-flag-cache.js';
 import { prisma } from '../../shared/database/prisma.js';
 
 const defaultTestDatabaseUrl =
@@ -35,6 +36,8 @@ export async function resetTestDatabase(): Promise<void> {
       ticket_comments,
       ticket_histories,
       refresh_tokens,
+      feature_flag_audits,
+      feature_flags,
       tickets,
       ticket_categories,
       customers,
@@ -42,6 +45,8 @@ export async function resetTestDatabase(): Promise<void> {
       tenants
     RESTART IDENTITY CASCADE;
   `);
+
+  featureFlagCache.clearForTests();
 }
 
 export async function disconnectTestDatabase(): Promise<void> {

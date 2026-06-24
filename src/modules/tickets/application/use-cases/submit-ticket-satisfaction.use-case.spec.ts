@@ -1,5 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock(
+  '../../../feature-flags/application/services/feature-flag.service.js',
+  () => ({
+    featureFlagService: {
+      isEnabled: vi.fn().mockResolvedValue(true),
+    },
+  }),
+);
+
+vi.mock('../../../../shared/feature-flags/require-feature-flag.js', () => ({
+  assertFeatureEnabled: vi.fn().mockResolvedValue(undefined),
+}));
+
 import { ConflictError } from '../../../../shared/errors/http-errors.js';
 import { UserRole } from '../../../../shared/types/user-role.js';
 import type { Ticket } from '../../domain/ticket.entity.js';

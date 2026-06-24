@@ -31,6 +31,9 @@ export const BusinessEvent = {
   WEBHOOK_TEST_SENT: 'webhook.test_sent',
   WEBHOOK_DELIVERED: 'webhook.delivered',
   WEBHOOK_DELIVERY_FAILED: 'webhook.delivery_failed',
+  FEATURE_FLAG_CREATED: 'feature_flag.created',
+  FEATURE_FLAG_UPDATED: 'feature_flag.updated',
+  FEATURE_FLAG_DELETED: 'feature_flag.deleted',
 } as const;
 
 export type BusinessEventName =

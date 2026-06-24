@@ -17,6 +17,19 @@ vi.mock('../../../queues/queue-provider.js', () => ({
   },
 }));
 
+vi.mock(
+  '../../../feature-flags/application/services/feature-flag.service.js',
+  () => ({
+    featureFlagService: {
+      isEnabled: vi.fn().mockResolvedValue(true),
+    },
+  }),
+);
+
+vi.mock('../../../../shared/feature-flags/require-feature-flag.js', () => ({
+  assertFeatureEnabled: vi.fn().mockResolvedValue(undefined),
+}));
+
 describe('ReportsService', () => {
   const authUser = {
     id: 'admin-1',

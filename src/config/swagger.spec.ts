@@ -43,6 +43,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/admin/notifications/health': ['get'],
   '/admin/jobs': ['get'],
   '/admin/jobs/metrics': ['get'],
+  '/admin/feature-flags': ['post', 'get'],
+  '/admin/feature-flags/{key}': ['patch', 'delete'],
   '/analytics/overview': ['get'],
   '/analytics/tickets-by-status': ['get'],
   '/analytics/tickets-by-priority': ['get'],
@@ -119,6 +121,9 @@ describe('swaggerSpec', () => {
     expect(schemas.TicketSatisfactionSurvey).toBeDefined();
     expect(schemas.ApiKey).toBeDefined();
     expect(schemas.CreateApiKeyInput).toBeDefined();
+    expect(schemas.FeatureFlag).toBeDefined();
+    expect(schemas.CreateFeatureFlagInput).toBeDefined();
+    expect(schemas.UpdateFeatureFlagInput).toBeDefined();
     expect(schemas.AutomationRule).toBeDefined();
     expect(schemas.CreateAutomationRuleInput).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();

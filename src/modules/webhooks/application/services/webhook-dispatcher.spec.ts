@@ -4,15 +4,27 @@ import { WebhookDeliveryStatus } from '../../domain/webhook-endpoint.entity.js';
 import { WebhookEvent } from '../../domain/webhook-event.js';
 import { WebhookDispatcher } from './webhook-dispatcher.js';
 
+const isEnabledMock = vi.hoisted(() => vi.fn().mockResolvedValue(true));
+
 vi.mock('../../../queues/queue-provider.js', () => ({
   queueProvider: {
     addWebhookJob: vi.fn().mockResolvedValue('job-1'),
   },
 }));
 
+vi.mock(
+  '../../../feature-flags/application/services/feature-flag.service.js',
+  () => ({
+    featureFlagService: {
+      isEnabled: isEnabledMock,
+    },
+  }),
+);
+
 describe('WebhookDispatcher', () => {
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
+    isEnabledMock.mockResolvedValue(true);
   });
 
   it('should deliver webhook with HMAC headers on success', async () => {
@@ -174,5 +186,28 @@ describe('WebhookDispatcher', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(repository.createDelivery).not.toHaveBeenCalled();
+  });
+
+  it('should skip dispatch when webhooks feature flag is disabled', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const repository = {
+      findActiveByTenantAndEvent: vi.fn(),
+      createDelivery: vi.fn(),
+      updateDelivery: vi.fn(),
+    };
+
+    isEnabledMock.mockResolvedValueOnce(false);
+
+    const dispatcher = new WebhookDispatcher(repository as never);
+    await dispatcher.dispatchDirect(
+      'tenant-1',
+      WebhookEvent.TICKET_CREATED,
+      {},
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(repository.findActiveByTenantAndEvent).not.toHaveBeenCalled();
   });
 });

@@ -450,6 +450,56 @@ Health checks (`/health`, `/health/ready`, `/health/observability`, `/api/v1/hea
 
 ---
 
+## Feature Flags
+
+Feature flags globais permitem habilitar ou desabilitar funcionalidades da plataforma sem deploy.
+
+### Chaves built-in
+
+| Key           | Funcionalidade                 | Padrão (sem registro) |
+| ------------- | ------------------------------ | --------------------- |
+| `webhooks`    | Entregas de webhooks           | habilitado            |
+| `automation`  | Motor de automações            | habilitado            |
+| `reports.csv` | Exportações CSV                | habilitado            |
+| `csat`        | Pesquisas de satisfação (CSAT) | habilitado            |
+
+Chaves desconhecidas sem registro no banco são tratadas como **desabilitadas**.
+
+### Endpoints admin
+
+| Método   | Rota                               | Descrição      |
+| -------- | ---------------------------------- | -------------- |
+| `POST`   | `/api/v1/admin/feature-flags`      | Criar flag     |
+| `GET`    | `/api/v1/admin/feature-flags`      | Listar flags   |
+| `PATCH`  | `/api/v1/admin/feature-flags/:key` | Atualizar flag |
+| `DELETE` | `/api/v1/admin/feature-flags/:key` | Remover flag   |
+
+Apenas usuários com role `ADMIN` podem gerenciar flags.
+
+### Validação em código
+
+```typescript
+import { assertFeatureEnabled } from './shared/feature-flags/require-feature-flag.js';
+import { requireFeatureFlag } from './shared/feature-flags/require-feature-flag.js';
+import { FeatureFlagKey } from './modules/feature-flags/domain/feature-flag-keys.js';
+
+// Em services/use cases
+await assertFeatureEnabled(FeatureFlagKey.CSAT);
+
+// Em rotas Express
+router.get('/path', requireFeatureFlag(FeatureFlagKey.REPORTS_CSV), handler);
+```
+
+### Cache
+
+Leituras usam cache em memória (TTL 60s). Com `QUEUE_ENABLED=true`, o Redis também é usado como cache best-effort. Alterações invalidam o cache automaticamente.
+
+### Auditoria
+
+Toda criação, atualização ou remoção gera registro em `feature_flag_audits` e evento de negócio (`feature_flag.created`, `feature_flag.updated`, `feature_flag.deleted`).
+
+---
+
 ## Migrations
 
 | Comando                                           | Uso                                                                    |
