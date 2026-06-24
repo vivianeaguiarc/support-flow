@@ -279,6 +279,63 @@ const options: Options = {
             'Visibilidade do comentário — atualmente todos são internos (não visíveis ao cliente)',
           example: 'INTERNAL',
         },
+        KnowledgeArticleStatus: {
+          type: 'string',
+          enum: ['DRAFT', 'PUBLISHED', 'ARCHIVED'],
+          example: 'PUBLISHED',
+        },
+        KnowledgeArticleAuthor: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            name: { type: 'string', example: 'Maria Santos' },
+          },
+        },
+        KnowledgeArticle: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            title: { type: 'string', example: 'Como abrir um chamado' },
+            slug: { type: 'string', example: 'como-abrir-um-chamado' },
+            content: { type: 'string' },
+            status: { $ref: '#/components/schemas/KnowledgeArticleStatus' },
+            category: { type: 'string', example: 'Atendimento' },
+            authorId: { type: 'string', format: 'uuid' },
+            author: { $ref: '#/components/schemas/KnowledgeArticleAuthor' },
+            publishedAt: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        CreateKnowledgeArticleRequest: {
+          type: 'object',
+          required: ['title', 'content', 'category'],
+          properties: {
+            title: { type: 'string', minLength: 3, maxLength: 200 },
+            slug: {
+              type: 'string',
+              minLength: 3,
+              maxLength: 200,
+              description:
+                'Opcional — gerado automaticamente a partir do título',
+            },
+            content: { type: 'string' },
+            category: { type: 'string', minLength: 2, maxLength: 100 },
+          },
+        },
+        UpdateKnowledgeArticleRequest: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', minLength: 3, maxLength: 200 },
+            slug: { type: 'string', minLength: 3, maxLength: 200 },
+            content: { type: 'string' },
+            category: { type: 'string', minLength: 2, maxLength: 100 },
+          },
+        },
         UserSummary: {
           type: 'object',
           properties: {

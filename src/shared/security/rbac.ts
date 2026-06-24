@@ -54,6 +54,7 @@ export const ROLE_GROUPS = {
     UserRole.OMBUDSMAN,
     UserRole.ADMIN,
   ],
+  KNOWLEDGE_MANAGE: [UserRole.SUPERVISOR, UserRole.ADMIN],
 } as const satisfies Record<string, UserRole[]>;
 
 export function isAdmin(role: UserRole): boolean {
@@ -134,6 +135,14 @@ export function assertCanAssignTicket(authUser: AuthenticatedUser): void {
 
 export function assertCanAccessTicketQueues(authUser: AuthenticatedUser): void {
   if (!hasAnyRole(authUser.role, [...ROLE_GROUPS.TICKET_QUEUE])) {
+    throw new AppError('Forbidden', 403);
+  }
+}
+
+export function assertCanManageKnowledgeArticles(
+  authUser: AuthenticatedUser,
+): void {
+  if (!hasAnyRole(authUser.role, [...ROLE_GROUPS.KNOWLEDGE_MANAGE])) {
     throw new AppError('Forbidden', 403);
   }
 }

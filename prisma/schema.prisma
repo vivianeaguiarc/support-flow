@@ -58,6 +58,12 @@ enum NotificationType {
   SLA_EXPIRED
 }
 
+enum KnowledgeArticleStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
 model Tenant {
   id               String   @id @default(uuid())
   name             String
@@ -74,7 +80,8 @@ model Tenant {
   histories     TicketHistory[]
   comments      TicketComment[]
   attachments   TicketAttachment[]
-  notifications Notification[]
+  notifications     Notification[]
+  knowledgeArticles KnowledgeArticle[]
 
   @@map("tenants")
 }
@@ -95,7 +102,8 @@ model User {
   ticketComments    TicketComment[]    @relation("CommentAuthor")
   ticketAttachments TicketAttachment[] @relation("AttachmentUploader")
   notifications     Notification[]     @relation("NotificationRecipient")
-  refreshTokens     RefreshToken[]
+  refreshTokens       RefreshToken[]
+  knowledgeArticles KnowledgeArticle[] @relation("KnowledgeArticleAuthor")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -278,4 +286,28 @@ model RefreshToken {
   @@index([tenantId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model KnowledgeArticle {
+  id          String                 @id @default(uuid())
+  tenantId    String
+  title       String
+  slug        String
+  content     String
+  status      KnowledgeArticleStatus @default(DRAFT)
+  category    String
+  authorId    String
+  publishedAt DateTime?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  author User   @relation("KnowledgeArticleAuthor", fields: [authorId], references: [id])
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, category])
+  @@index([authorId])
+  @@map("knowledge_articles")
 }

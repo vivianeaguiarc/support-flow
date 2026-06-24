@@ -10,6 +10,11 @@ export const BusinessEvent = {
   AUTH_LOGIN_FAILED: 'auth.login_failed',
   AUTH_REFRESH_FAILED: 'auth.refresh_failed',
   AUTH_UNAUTHORIZED: 'auth.unauthorized',
+  KNOWLEDGE_ARTICLE_CREATED: 'knowledge.article.created',
+  KNOWLEDGE_ARTICLE_UPDATED: 'knowledge.article.updated',
+  KNOWLEDGE_ARTICLE_PUBLISHED: 'knowledge.article.published',
+  KNOWLEDGE_ARTICLE_ARCHIVED: 'knowledge.article.archived',
+  KNOWLEDGE_ARTICLE_DELETED: 'knowledge.article.deleted',
 } as const;
 
 export type BusinessEventName =
