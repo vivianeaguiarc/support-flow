@@ -1,7 +1,25 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import type { Options } from 'swagger-jsdoc';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 import { env } from './env.js';
+
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const isProductionBuild = configDir.includes(`${path.sep}dist${path.sep}`);
+const docsRoot = path.join(configDir, '..');
+const swaggerExtension = isProductionBuild ? 'js' : 'ts';
+
+const swaggerApiGlobs = [
+  path.join(docsRoot, `modules/auth/docs/*.swagger.${swaggerExtension}`),
+  path.join(docsRoot, `modules/users/docs/*.swagger.${swaggerExtension}`),
+  path.join(
+    docsRoot,
+    `modules/**/presentation/docs/*.swagger.${swaggerExtension}`,
+  ),
+  path.join(docsRoot, `shared/http/docs/*.swagger.${swaggerExtension}`),
+];
 
 const options: Options = {
   definition: {
@@ -886,12 +904,7 @@ const options: Options = {
       },
     ],
   },
-  apis: [
-    './src/modules/auth/docs/*.swagger.ts',
-    './src/modules/users/docs/*.swagger.ts',
-    './src/modules/**/presentation/docs/*.swagger.ts',
-    './src/shared/http/docs/*.swagger.ts',
-  ],
+  apis: swaggerApiGlobs,
 };
 
 export const swaggerSpec = swaggerJsdoc(options);
