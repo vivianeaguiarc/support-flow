@@ -26,12 +26,13 @@ const options: Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'SupportFlow API',
+      title: 'SupportFlow API v1',
       version: '1.0',
       description:
-        'API completa para gerenciamento de atendimento ao cliente, SAC e Ouvidoria. ' +
+        'API v1 (estável) para gerenciamento de atendimento ao cliente, SAC e Ouvidoria. ' +
         'Clientes (`Customer`) são entidades internas referenciadas por `customerId` na criação de chamados — não há endpoints REST públicos de CRUD de clientes. ' +
-        'Segurança: rate limits por endpoint sensível, lock de login após tentativas inválidas, payloads Zod strict, sanitização de texto e auditoria em `security_audit_logs`.',
+        'Segurança: rate limits por endpoint sensível, lock de login após tentativas inválidas, payloads Zod strict, sanitização de texto e auditoria em `security_audit_logs`. ' +
+        'Para a versão em evolução, consulte `/api/docs/v2`.',
       contact: {
         name: 'SupportFlow Team',
         email: 'support@supportflow.com',
@@ -44,11 +45,11 @@ const options: Options = {
     servers: [
       {
         url: `http://localhost:${env.PORT}/api/v1`,
-        description: 'Development server',
+        description: 'Development server (v1)',
       },
       {
         url: 'https://api.supportflow.com/api/v1',
-        description: 'Production server',
+        description: 'Production server (v1)',
       },
     ],
     components: {

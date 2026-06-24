@@ -844,6 +844,46 @@ pnpm test:coverage
 
 ---
 
+## API Versioning
+
+A API REST é versionada por **prefixo de URL** (`/api/v1`, `/api/v2`). A v1 permanece estável e totalmente compatível com clientes existentes.
+
+### Estratégia
+
+| Aspecto | Decisão                                                        |
+| ------- | -------------------------------------------------------------- |
+| Estilo  | URL path versioning (`/api/{version}`)                         |
+| v1      | Superfície completa atual (auth, tickets, admin, analytics, …) |
+| v2      | Evolução incremental — POC com `GET /health` e `GET /tickets`  |
+| Auth    | Compartilhado — login permanece em `/api/v1/auth/login`        |
+| Header  | `X-API-Version` em todas as respostas versionadas              |
+
+### Estrutura de código
+
+```
+src/routes/v1/index.ts   → createApiV1Router() — composição dos módulos atuais
+src/routes/v2/index.ts   → createApiV2Router() — rotas da nova versão
+src/shared/http/api-version.ts → constantes e helpers de path
+src/shared/http/middlewares/attach-api-version.ts → header e req.apiVersion
+```
+
+### Como acessar
+
+| Versão                | Base URL  | Exemplo                           |
+| --------------------- | --------- | --------------------------------- |
+| v1                    | `/api/v1` | `GET /api/v1/tickets`             |
+| v2                    | `/api/v2` | `GET /api/v2/health`              |
+| Liveness (sem versão) | `/health` | Probes Kubernetes / load balancer |
+
+### Swagger por versão
+
+| Versão | UI             | JSON                |
+| ------ | -------------- | ------------------- |
+| v1     | `/api/docs`    | `/api/docs.json`    |
+| v2     | `/api/docs/v2` | `/api/docs/v2.json` |
+
+---
+
 ## Swagger / OpenAPI
 
 Documentação interativa gerada a partir de JSDoc em `*.swagger.ts` (validada por `src/config/swagger.spec.ts`).
@@ -860,11 +900,13 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
 ### Local
 
-| Recurso       | URL                                 |
-| ------------- | ----------------------------------- |
-| UI interativa | http://localhost:3000/api/docs      |
-| Spec JSON     | http://localhost:3000/api/docs.json |
-| Redirects     | `/api-docs` → `/api/docs`           |
+| Recurso      | URL                                    |
+| ------------ | -------------------------------------- |
+| UI v1        | http://localhost:3000/api/docs         |
+| Spec JSON v1 | http://localhost:3000/api/docs.json    |
+| UI v2        | http://localhost:3000/api/docs/v2      |
+| Spec JSON v2 | http://localhost:3000/api/docs/v2.json |
+| Redirects    | `/api-docs` → `/api/docs`              |
 
 **Habilitado por padrão** (`SWAGGER_ENABLED=true`). Para desligar: `SWAGGER_ENABLED=false`.
 

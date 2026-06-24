@@ -1,9 +1,16 @@
 import type { Express } from 'express';
 import request from 'supertest';
 
+import {
+  API_VERSION,
+  apiVersionBasePath,
+} from '../../shared/http/api-version.js';
 import type { ApiSuccessResponse } from '../../shared/http/response/api-response.js';
 import { signToken } from '../../shared/security/jwt.js';
 import type { UserRole } from '../../shared/types/user-role.js';
+
+export const API_V1_BASE = apiVersionBasePath(API_VERSION.V1);
+export const API_V2_BASE = apiVersionBasePath(API_VERSION.V2);
 
 export function unwrapApiData<T>(body: ApiSuccessResponse<T>): T {
   return body.data;
@@ -21,7 +28,7 @@ export async function login(
   password: string,
 ): Promise<string> {
   const response = await request(app)
-    .post('/api/v1/auth/login')
+    .post(`${API_V1_BASE}/auth/login`)
     .send({ email, password })
     .expect(200);
 
@@ -34,7 +41,7 @@ export async function loginWithTokens(
   password: string,
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const response = await request(app)
-    .post('/api/v1/auth/login')
+    .post(`${API_V1_BASE}/auth/login`)
     .send({ email, password })
     .expect(200);
 

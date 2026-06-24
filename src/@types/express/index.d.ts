@@ -10,6 +10,7 @@ declare global {
       authMethod?: 'jwt' | 'api_key';
       tenantId?: string;
       organization?: Organization;
+      apiVersion?: string;
     }
   }
 }
