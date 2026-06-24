@@ -31,6 +31,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "seed": "tsx prisma/seed.ts",
+    "seed:staging": "SEED_DEMO_ENABLED=true NODE_ENV=production tsx prisma/seed.ts",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "test:db:prepare": "docker compose up -d && node --import tsx src/test/integration/prepare-database.ts",

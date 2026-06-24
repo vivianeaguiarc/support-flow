@@ -1,13 +1,25 @@
-# Render blueprint — SupportFlow Backend
+# Render blueprint — SupportFlow Backend (STAGING)
 # https://render.com/docs/blueprint-spec
+#
+# Usage:
+#   1. Push this repo to GitHub
+#   2. Render Dashboard → New → Blueprint → connect repo
+#   3. Set CORS_ORIGIN to your staging frontend URL (or * for API-only testing)
+#   4. After first deploy, run demo seed manually (see docs/staging.md)
+#
+# Migrations run automatically on every deploy via scripts/docker-entrypoint.sh
+# (prisma migrate deploy). Seed NEVER runs automatically.
 
 services:
   - type: web
-    name: supportflow-api
+    name: supportflow-api-staging
     runtime: docker
     plan: starter
+    region: oregon
+    branch: main
     healthCheckPath: /health/ready
     dockerfilePath: ./Dockerfile
+    # Docker CMD: ./scripts/docker-entrypoint.sh (migrate deploy → node dist/server.js)
     envVars:
       - key: NODE_ENV
         value: production
@@ -16,28 +28,39 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: SWAGGER_ENABLED
-        value: true
+        value: 'true'
       - key: RATE_LIMIT_ENABLED
-        value: true
+        value: 'true'
       - key: UPLOAD_DIR
         value: storage/attachments
+      - key: UPLOAD_MAX_SIZE_MB
+        value: '10'
+      # Seed is manual only — never auto-run in staging/production
+      - key: SEED_DEMO_ENABLED
+        value: 'false'
+      - key: SKIP_MIGRATIONS
+        value: 'false'
       - key: DATABASE_URL
         fromDatabase:
-          name: supportflow-db
+          name: supportflow-db-staging
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_REFRESH_SECRET
         generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
       - key: CORS_ORIGIN
         sync: false
     disk:
-      name: supportflow-uploads
+      name: supportflow-uploads-staging
       mountPath: /app/storage/attachments
       sizeGB: 1
 
 databases:
-  - name: supportflow-db
+  - name: supportflow-db-staging
     plan: starter
-    databaseName: supportflow
+    databaseName: supportflow_staging
     user: supportflow

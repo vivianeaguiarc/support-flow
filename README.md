@@ -135,6 +135,7 @@ supportflow-backend/
 ├── docs/
 │   ├── API_DOCUMENTATION.md    # Guia da API e Swagger
 │   ├── deploy.md               # Deploy em produção
+│   ├── staging.md              # Deploy em staging (Render/Railway)
 │   └── DOCKER.md               # Guia de container
 ├── render.yaml                 # Blueprint Render
 ├── Dockerfile                  # Multi-stage (pnpm + Node 22)
@@ -231,19 +232,22 @@ O mesmo erro aparece ao executar `pnpm dev`, `pnpm start` ou `pnpm build` (o mó
 
 ## Deploy em produção
 
-Guia completo: **[docs/deploy.md](docs/deploy.md)**
+Guia completo: **[docs/deploy.md](docs/deploy.md)** · Staging: **[docs/staging.md](docs/staging.md)**
 
 Resumo:
 
 - Imagem Docker multi-stage (`Dockerfile`) com `NODE_ENV=production`
-- Entrypoint: `prisma migrate deploy` → `node dist/server.js`
-- Variáveis de exemplo: [`.env.production.example`](.env.production.example)
-- Blueprint Render: [`render.yaml`](render.yaml)
+- Entrypoint: `prisma migrate deploy` → `node dist/server.js` (seed **nunca** automático)
+- Variáveis: [`.env.production.example`](.env.production.example) · Staging: [`.env.staging.example`](.env.staging.example)
+- Blueprint Render (staging): [`render.yaml`](render.yaml) · Railway: [`railway.json`](railway.json)
 - Health: `GET /health` (liveness) · `GET /health/ready` (readiness + banco)
 
 ```bash
 pnpm docker:build
 docker compose up --build   # stack local API + Postgres
+
+# Seed demo em staging (manual, após deploy):
+DATABASE_URL="postgresql://..." pnpm seed:staging
 ```
 
 ---
@@ -474,6 +478,7 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 | `pnpm prisma:generate`                   | Gera Prisma Client                                      |
 | `pnpm prisma:studio`                     | UI visual do banco                                      |
 | `pnpm prisma:seed` / `pnpm seed`         | Popula dados demo idempotentes                          |
+| `pnpm seed:staging`                      | Seed demo em staging (`SEED_DEMO_ENABLED=true`)         |
 | `pnpm test` / `pnpm test:integration`    | Testes unitários / E2E                                  |
 | `pnpm test:watch` / `pnpm test:coverage` | Watch mode / cobertura                                  |
 
@@ -512,7 +517,7 @@ Variáveis no CI:
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/supportflow_test?schema=public
 ```
 
-Deploy automatizado via blueprint Render ([`render.yaml`](render.yaml)). Guia completo em [docs/deploy.md](docs/deploy.md).
+Deploy staging via blueprint Render ([`render.yaml`](render.yaml)) ou Railway ([`railway.json`](railway.json)). Guias: [docs/staging.md](docs/staging.md) · [docs/deploy.md](docs/deploy.md).
 
 ---
 
@@ -541,7 +546,7 @@ Deploy automatizado via blueprint Render ([`render.yaml`](render.yaml)). Guia co
 - [ ] Refatorar módulos `auth` e `users` para Clean Architecture
 - [ ] Scheduler/cron para SLA e escalação em background
 - [x] Seed de dados iniciais (tenant + admin) para deploy
-- [ ] Deploy automatizado staging (GitHub Actions → Render/Railway)
+- [x] Deploy automatizado staging (blueprint Render + Railway + docs/staging.md)
 
 ---
 

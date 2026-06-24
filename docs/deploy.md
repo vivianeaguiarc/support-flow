@@ -2,6 +2,8 @@
 
 Guia para publicar a API em **Render**, **Railway**, **VPS** ou qualquer ambiente **Docker-based**.
 
+> **Staging:** valide primeiro em ambiente real — veja **[docs/staging.md](./staging.md)** (blueprint `render.yaml`, seed manual, checklist).
+
 ## Visão geral
 
 | Etapa               | O que acontece                                                             |
@@ -129,7 +131,7 @@ pnpm env:check
 
 ## Deploy no Render
 
-Um blueprint está disponível em [`render.yaml`](../render.yaml).
+Um blueprint de **staging** está disponível em [`render.yaml`](../render.yaml). Guia passo a passo: **[staging.md](./staging.md)**.
 
 ### Passos manuais
 
@@ -245,6 +247,7 @@ Para desabilitar em produção: `SWAGGER_ENABLED=false`.
 - [ ] Volume persistente para `storage/attachments` (se uploads)
 - [ ] `pnpm env:check` passa com as variáveis de produção
 - [ ] Migrations aplicadas (`prisma migrate deploy`)
+- [ ] Seed demo executado manualmente se necessário (`pnpm seed:staging` — ver [staging.md](./staging.md))
 
 ---
 
