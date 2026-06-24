@@ -393,4 +393,88 @@ describe.sequential('Ticket Comments', () => {
       ).toBe(true);
     });
   });
+
+  describe('POST /tickets/:ticketId/internal-comments', () => {
+    it('should create an internal comment using the canonical route', async () => {
+      const api = authRequest(app, agent1Token);
+      const response = await api
+        .post(`/api/v1/tickets/${ticket1Id}/internal-comments`)
+        .send({
+          content: 'Canonical internal comment route',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data).toMatchObject({
+        ticketId: ticket1Id,
+        authorId: agent1Id,
+        content: 'Canonical internal comment route',
+        visibility: 'INTERNAL',
+      });
+    });
+
+    it('should deny customer access on internal-comments route', async () => {
+      const api = authRequest(app, customerToken);
+      const response = await api
+        .post(`/api/v1/tickets/${ticket1Id}/internal-comments`)
+        .send({ content: 'Customer blocked' });
+
+      expect(response.status).toBe(403);
+    });
+
+    it('should return 404 for non-existent ticket on internal-comments route', async () => {
+      const api = authRequest(app, agent1Token);
+      const fakeId = '00000000-0000-0000-0000-000000000000';
+      const response = await api
+        .post(`/api/v1/tickets/${fakeId}/internal-comments`)
+        .send({ content: 'Missing ticket' });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 400 for empty content on internal-comments route', async () => {
+      const api = authRequest(app, agent1Token);
+      const response = await api
+        .post(`/api/v1/tickets/${ticket1Id}/internal-comments`)
+        .send({ content: '   ' });
+
+      expect(response.status).toBe(400);
+    });
+  });
+
+  describe('GET /tickets/:ticketId/internal-comments', () => {
+    beforeEach(async () => {
+      await prisma.ticketComment.deleteMany({ where: { ticketId: ticket1Id } });
+      await prisma.ticketComment.create({
+        data: {
+          tenantId: tenant1Id,
+          ticketId: ticket1Id,
+          authorId: agent1Id,
+          content: 'Internal via canonical route',
+        },
+      });
+    });
+
+    it('should list internal comments using the canonical route', async () => {
+      const api = authRequest(app, agent1Token);
+      const response = await api.get(
+        `/api/v1/tickets/${ticket1Id}/internal-comments`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].content).toBe(
+        'Internal via canonical route',
+      );
+      expect(response.body.data[0].author.id).toBe(agent1Id);
+    });
+
+    it('should deny customer access to list internal comments', async () => {
+      const api = authRequest(app, customerToken);
+      const response = await api.get(
+        `/api/v1/tickets/${ticket1Id}/internal-comments`,
+      );
+
+      expect(response.status).toBe(403);
+    });
+  });
 });

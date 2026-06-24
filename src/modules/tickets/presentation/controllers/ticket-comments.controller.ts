@@ -9,6 +9,14 @@ import {
 } from '../../application/services/tickets.service.js';
 import type { CreateTicketCommentDto } from '../dtos/create-ticket-comment.dto.js';
 
+function resolveTicketId(req: Request): string {
+  if (typeof req.params.ticketId === 'string') {
+    return getRouteParam(req.params, 'ticketId');
+  }
+
+  return getRouteParam(req.params, 'id');
+}
+
 export class TicketCommentsController {
   constructor(private readonly service: TicketsService = ticketsService) {}
 
@@ -18,11 +26,11 @@ export class TicketCommentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const id = getRouteParam(req.params, 'id');
+      const ticketId = resolveTicketId(req);
       const { content } = req.body as CreateTicketCommentDto;
 
       const comment = await this.service.addComment(
-        id,
+        ticketId,
         content,
         getAuthenticatedUser(req),
       );
@@ -42,10 +50,10 @@ export class TicketCommentsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const id = getRouteParam(req.params, 'id');
+      const ticketId = resolveTicketId(req);
 
       const comments = await this.service.getComments(
-        id,
+        ticketId,
         getAuthenticatedUser(req),
       );
 

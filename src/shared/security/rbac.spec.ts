@@ -52,6 +52,9 @@ describe('rbac', () => {
   it('should block customers from internal comments', () => {
     expect(canAccessInternalComments(UserRole.CUSTOMER)).toBe(false);
     expect(canAccessInternalComments(UserRole.AGENT)).toBe(true);
+    expect(canAccessInternalComments(UserRole.ADMIN)).toBe(true);
+    expect(canAccessInternalComments(UserRole.SUPERVISOR)).toBe(true);
+    expect(canAccessInternalComments(UserRole.OMBUDSMAN)).toBe(false);
   });
 
   it('should allow ombudsman to manage only escalated tickets', () => {

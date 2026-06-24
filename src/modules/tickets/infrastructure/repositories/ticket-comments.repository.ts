@@ -41,6 +41,7 @@ export class TicketCommentsRepository {
       where: {
         ticketId,
         tenantId,
+        visibility: CommentVisibility.INTERNAL,
       },
       include: {
         author: {

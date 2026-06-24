@@ -20,6 +20,7 @@ import { listBreachedSlaTicketsQuerySchema } from '../dtos/list-breached-sla-tic
 import { listTicketsQuerySchema } from '../dtos/list-tickets-query.dto.js';
 import { ticketAttachmentParamsSchema } from '../dtos/ticket-attachment-params.dto.js';
 import { ticketIdParamSchema } from '../dtos/ticket-id-param.dto.js';
+import { ticketInternalCommentsParamsSchema } from '../dtos/ticket-internal-comments-params.dto.js';
 import { ticketMetricsQuerySchema } from '../dtos/ticket-metrics-query.dto.js';
 import { ticketSummaryQuerySchema } from '../dtos/ticket-summary-query.dto.js';
 import { updateTicketStatusSchema } from '../dtos/update-ticket-status.dto.js';
@@ -71,6 +72,25 @@ ticketsRouter.get(
   authenticate,
   authorize(...ROLE_GROUPS.METRICS),
   ticketSlaController.summary,
+);
+
+ticketsRouter.post(
+  '/:ticketId/internal-comments',
+  authenticate,
+  authorize(...ROLE_GROUPS.INTERNAL_COMMENTS),
+  validateRequest({
+    params: ticketInternalCommentsParamsSchema,
+    body: createTicketCommentSchema,
+  }),
+  ticketCommentsController.create,
+);
+
+ticketsRouter.get(
+  '/:ticketId/internal-comments',
+  authenticate,
+  authorize(...ROLE_GROUPS.INTERNAL_COMMENTS),
+  validateRequest({ params: ticketInternalCommentsParamsSchema }),
+  ticketCommentsController.list,
 );
 
 ticketsRouter.post(
