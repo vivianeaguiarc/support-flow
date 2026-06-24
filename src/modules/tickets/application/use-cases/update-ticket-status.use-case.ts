@@ -3,6 +3,11 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import {
+  type AutomationEngine,
+  automationEngine,
+} from '../../../automation/application/services/automation-engine.js';
+import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
+import {
   type NotificationEventService,
   notificationEventService,
 } from '../../../notifications/application/services/notification-event.service.js';
@@ -29,6 +34,7 @@ export class UpdateTicketStatusUseCase {
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
     private readonly notificationService: NotificationEventService = notificationEventService,
+    private readonly automation: AutomationEngine = automationEngine,
   ) {}
 
   async execute(input: UpdateTicketStatusInput): Promise<Ticket> {
@@ -66,6 +72,15 @@ export class UpdateTicketStatusUseCase {
       ticketId: ticket.id,
       fromStatus: ticket.status,
       toStatus: input.status,
+      actorId: input.changedById,
+    });
+
+    await this.automation.processEvent({
+      tenantId: input.tenantId,
+      ticketId: ticket.id,
+      trigger: AutomationTrigger.STATUS_CHANGED,
+      ticket: updatedTicket,
+      previousTicket: { status: ticket.status },
       actorId: input.changedById,
     });
 

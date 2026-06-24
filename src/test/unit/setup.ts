@@ -59,4 +59,27 @@ vi.mock(
   }),
 );
 
-export { emailNotificationServiceMock, notificationEventServiceMock };
+const automationEngineMock = {
+  processEvent: vi.fn().mockResolvedValue(undefined),
+};
+
+vi.mock(
+  import('../../modules/automation/application/services/automation-engine.js'),
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../../modules/automation/application/services/automation-engine.js')
+      >();
+
+    return {
+      ...actual,
+      automationEngine: automationEngineMock,
+    };
+  },
+);
+
+export {
+  automationEngineMock,
+  emailNotificationServiceMock,
+  notificationEventServiceMock,
+};

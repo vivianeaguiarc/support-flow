@@ -1228,6 +1228,130 @@ const options: Options = {
             },
           },
         },
+        AutomationTrigger: {
+          type: 'string',
+          enum: [
+            'TICKET_CREATED',
+            'TICKET_UPDATED',
+            'STATUS_CHANGED',
+            'SLA_WARNING',
+            'SLA_BREACHED',
+          ],
+        },
+        AutomationCondition: {
+          type: 'object',
+          required: ['type'],
+          properties: {
+            type: {
+              type: 'string',
+              enum: [
+                'priority_equals',
+                'status_equals',
+                'category_equals',
+                'assigned_to_exists',
+                'ticket_age_greater_than',
+              ],
+            },
+            value: {
+              description: 'Valor da condição conforme o tipo',
+            },
+          },
+        },
+        AutomationAction: {
+          type: 'object',
+          required: ['type'],
+          properties: {
+            type: {
+              type: 'string',
+              enum: [
+                'assign_agent',
+                'assign_team',
+                'change_priority',
+                'send_notification',
+                'close_ticket',
+              ],
+            },
+            agentId: { type: 'string', format: 'uuid' },
+            team: { $ref: '#/components/schemas/UserRole' },
+            priority: { $ref: '#/components/schemas/TicketPriority' },
+            title: { type: 'string' },
+            message: { type: 'string' },
+            recipientId: { type: 'string', format: 'uuid' },
+          },
+        },
+        AutomationRule: {
+          type: 'object',
+          required: [
+            'id',
+            'tenantId',
+            'name',
+            'active',
+            'trigger',
+            'conditions',
+            'actions',
+            'createdAt',
+            'updatedAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            name: {
+              type: 'string',
+              example: 'Atribuir urgente automaticamente',
+            },
+            description: { type: 'string', nullable: true },
+            active: { type: 'boolean', example: true },
+            trigger: { $ref: '#/components/schemas/AutomationTrigger' },
+            conditions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationCondition' },
+            },
+            actions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationAction' },
+            },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        CreateAutomationRuleInput: {
+          type: 'object',
+          required: ['name', 'trigger', 'actions'],
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            description: { type: 'string', maxLength: 500 },
+            active: { type: 'boolean', default: true },
+            trigger: { $ref: '#/components/schemas/AutomationTrigger' },
+            conditions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationCondition' },
+              default: [],
+            },
+            actions: {
+              type: 'array',
+              minItems: 1,
+              items: { $ref: '#/components/schemas/AutomationAction' },
+            },
+          },
+        },
+        UpdateAutomationRuleInput: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            description: { type: 'string', maxLength: 500 },
+            active: { type: 'boolean' },
+            trigger: { $ref: '#/components/schemas/AutomationTrigger' },
+            conditions: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AutomationCondition' },
+            },
+            actions: {
+              type: 'array',
+              minItems: 1,
+              items: { $ref: '#/components/schemas/AutomationAction' },
+            },
+          },
+        },
         HealthStatusResponse: {
           type: 'object',
           properties: {
@@ -1324,6 +1448,11 @@ const options: Options = {
       {
         name: 'Health',
         description: 'Health checks da aplicação',
+      },
+      {
+        name: 'Automation',
+        description:
+          'Regras de automação de workflow — triggers, condições e ações',
       },
     ],
   },

@@ -5,6 +5,11 @@ import {
 } from '../../../../shared/logger/business-logger.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
 import {
+  type AutomationEngine,
+  automationEngine,
+} from '../../../automation/application/services/automation-engine.js';
+import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
+import {
   CustomersRepository,
   customersRepository as defaultCustomersRepository,
 } from '../../../customers/repositories/customers.repository.js';
@@ -55,6 +60,7 @@ export class OpenTicketUseCase {
     private readonly calculateTicketSla: CalculateTicketSlaUseCase = calculateTicketSlaUseCase,
     private readonly calculateTicketPriority: CalculateTicketPriorityUseCase = calculateTicketPriorityUseCase,
     private readonly notificationService: NotificationEventService = notificationEventService,
+    private readonly automation: AutomationEngine = automationEngine,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
@@ -143,7 +149,17 @@ export class OpenTicketUseCase {
       assignedToId: input.assignedToId,
     });
 
-    return ticket;
+    await this.automation.processEvent({
+      tenantId: input.tenantId,
+      ticketId: ticket.id,
+      trigger: AutomationTrigger.TICKET_CREATED,
+      ticket,
+      actorId: input.changedById,
+    });
+
+    const refreshedTicket = await this.ticketsRepository.findById(ticket.id);
+
+    return refreshedTicket ?? ticket;
   }
 
   private async ensureCustomer(

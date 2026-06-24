@@ -18,6 +18,10 @@ export const BusinessEvent = {
   REPORT_TICKETS_EXPORTED: 'report.tickets.exported',
   REPORT_AGENTS_PERFORMANCE_EXPORTED: 'report.agents_performance.exported',
   REPORT_SLA_EXPORTED: 'report.sla.exported',
+  AUTOMATION_RULE_CREATED: 'automation.rule.created',
+  AUTOMATION_RULE_UPDATED: 'automation.rule.updated',
+  AUTOMATION_RULE_DELETED: 'automation.rule.deleted',
+  AUTOMATION_RULE_EXECUTED: 'automation.rule.executed',
 } as const;
 
 export type BusinessEventName =

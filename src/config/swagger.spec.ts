@@ -48,6 +48,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/reports/tickets.csv': ['get'],
   '/reports/agents-performance.csv': ['get'],
   '/reports/sla.csv': ['get'],
+  '/automation/rules': ['post', 'get'],
+  '/automation/rules/{id}': ['patch', 'delete'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };
@@ -96,6 +98,8 @@ describe('swaggerSpec', () => {
     expect(schemas.EmailProviderHealth).toBeDefined();
     expect(schemas.AnalyticsOverview).toBeDefined();
     expect(schemas.AnalyticsSla).toBeDefined();
+    expect(schemas.AutomationRule).toBeDefined();
+    expect(schemas.CreateAutomationRuleInput).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();
     expect(schemas.ApiPaginatedSuccessResponse).toBeDefined();
     expect(schemas.PaginationMeta).toBeDefined();

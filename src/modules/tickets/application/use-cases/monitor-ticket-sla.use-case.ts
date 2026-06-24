@@ -1,4 +1,9 @@
 import {
+  type AutomationEngine,
+  automationEngine,
+} from '../../../automation/application/services/automation-engine.js';
+import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
+import {
   type NotificationEventService,
   notificationEventService,
 } from '../../../notifications/application/services/notification-event.service.js';
@@ -44,6 +49,7 @@ export class MonitorTicketSlaUseCase {
     private readonly notificationsRepo: NotificationsRepository = notificationsRepository,
     private readonly notificationEvents: NotificationEventService = notificationEventService,
     private readonly historyRepo: TicketHistoryRepository = ticketHistoryRepository,
+    private readonly automation: AutomationEngine = automationEngine,
   ) {}
 
   async execute(): Promise<MonitorTicketSlaResult> {
@@ -141,6 +147,14 @@ export class MonitorTicketSlaUseCase {
 
     await this.notificationEvents.notifySlaWarning(ticket, { hoursRemaining });
 
+    await this.automation.processEvent({
+      tenantId: ticket.tenantId,
+      ticketId: ticket.id,
+      trigger: AutomationTrigger.SLA_WARNING,
+      ticket,
+      metadata: { hoursRemaining },
+    });
+
     return true;
   }
 
@@ -164,6 +178,14 @@ export class MonitorTicketSlaUseCase {
     const hoursOverdue = calculateSlaHoursOverdue(ticket.slaDueAt!, now);
 
     await this.notificationEvents.notifySlaExpired(ticket, { hoursOverdue });
+
+    await this.automation.processEvent({
+      tenantId: ticket.tenantId,
+      ticketId: ticket.id,
+      trigger: AutomationTrigger.SLA_BREACHED,
+      ticket,
+      metadata: { hoursOverdue },
+    });
 
     return true;
   }

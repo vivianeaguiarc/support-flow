@@ -64,6 +64,21 @@ enum KnowledgeArticleStatus {
   ARCHIVED
 }
 
+enum AutomationTrigger {
+  TICKET_CREATED
+  TICKET_UPDATED
+  STATUS_CHANGED
+  SLA_WARNING
+  SLA_BREACHED
+}
+
+enum AutomationExecutionStatus {
+  MATCHED
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
 model Tenant {
   id               String   @id @default(uuid())
   name             String
@@ -82,6 +97,8 @@ model Tenant {
   attachments   TicketAttachment[]
   notifications     Notification[]
   knowledgeArticles KnowledgeArticle[]
+  automationRules   AutomationRule[]
+  automationExecutions AutomationRuleExecution[]
 
   @@map("tenants")
 }
@@ -171,6 +188,7 @@ model Ticket {
   comments      TicketComment[]
   attachments   TicketAttachment[]
   notifications Notification[]
+  automationExecutions AutomationRuleExecution[]
 
   @@unique([tenantId, protocol])
   @@index([tenantId])
@@ -310,4 +328,45 @@ model KnowledgeArticle {
   @@index([tenantId, category])
   @@index([authorId])
   @@map("knowledge_articles")
+}
+
+model AutomationRule {
+  id          String            @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  active      Boolean           @default(true)
+  trigger     AutomationTrigger
+  conditions  Json
+  actions     Json
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  tenant     Tenant                    @relation(fields: [tenantId], references: [id])
+  executions AutomationRuleExecution[]
+
+  @@index([tenantId])
+  @@index([tenantId, active, trigger])
+  @@map("automation_rules")
+}
+
+model AutomationRuleExecution {
+  id        String                    @id @default(uuid())
+  tenantId  String
+  ruleId    String
+  ticketId  String
+  trigger   AutomationTrigger
+  status    AutomationExecutionStatus
+  details   Json?
+  createdAt DateTime                  @default(now())
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id])
+  rule   AutomationRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  ticket Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([ruleId])
+  @@index([ticketId])
+  @@index([createdAt])
+  @@map("automation_rule_executions")
 }

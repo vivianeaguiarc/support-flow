@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AutomationEngine } from '../../../automation/application/services/automation-engine.js';
 import type { NotificationEventService } from '../../../notifications/application/services/notification-event.service.js';
 import type { NotificationsRepository } from '../../../notifications/infrastructure/repositories/notifications.repository.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
@@ -32,6 +33,7 @@ describe('MonitorTicketSlaUseCase', () => {
   let notificationsRepo: NotificationsRepository;
   let notificationEvents: NotificationEventService;
   let historyRepo: TicketHistoryRepository;
+  let automation: AutomationEngine;
   let useCase: MonitorTicketSlaUseCase;
 
   beforeEach(() => {
@@ -53,11 +55,16 @@ describe('MonitorTicketSlaUseCase', () => {
       create: vi.fn().mockResolvedValue({ id: 'history-1' }),
     } as unknown as TicketHistoryRepository;
 
+    automation = {
+      processEvent: vi.fn().mockResolvedValue(undefined),
+    } as unknown as AutomationEngine;
+
     useCase = new MonitorTicketSlaUseCase(
       ticketsRepo,
       notificationsRepo,
       notificationEvents,
       historyRepo,
+      automation,
     );
   });
 
@@ -78,6 +85,12 @@ describe('MonitorTicketSlaUseCase', () => {
     expect(notificationEvents.notifySlaWarning).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'ticket-1' }),
       expect.objectContaining({ hoursRemaining: expect.any(Number) }),
+    );
+    expect(automation.processEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trigger: 'SLA_WARNING',
+        ticketId: 'ticket-1',
+      }),
     );
   });
 
@@ -105,6 +118,12 @@ describe('MonitorTicketSlaUseCase', () => {
     expect(notificationEvents.notifySlaExpired).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'ticket-1' }),
       expect.objectContaining({ hoursOverdue: expect.any(Number) }),
+    );
+    expect(automation.processEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trigger: 'SLA_BREACHED',
+        ticketId: 'ticket-1',
+      }),
     );
   });
 
