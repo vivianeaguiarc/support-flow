@@ -21,6 +21,7 @@ import {
   resolveSeedConfig,
   type SeedConfig,
 } from './config.js';
+import { assignUserLegacyRole, seedRbacForTenant } from './rbac-seed.js';
 
 export type DemoCategorySeed = {
   id: string;
@@ -206,6 +207,8 @@ export async function seedDemoData(
     },
   });
 
+  const tenantARoles = await seedRbacForTenant(prisma, config.tenantId);
+
   await prisma.user.upsert({
     where: {
       tenantId_email: {
@@ -226,6 +229,13 @@ export async function seedDemoData(
       password: adminPasswordHash,
       role: UserRole.ADMIN,
     },
+  });
+
+  await assignUserLegacyRole(prisma, {
+    userId: DEMO_ADMIN_USER_ID,
+    tenantId: config.tenantId,
+    legacyRole: UserRole.ADMIN,
+    roleIdByLegacy: tenantARoles,
   });
 
   await prisma.user.upsert({
@@ -250,6 +260,13 @@ export async function seedDemoData(
     },
   });
 
+  await assignUserLegacyRole(prisma, {
+    userId: DEMO_AGENT_USER_ID,
+    tenantId: config.tenantId,
+    legacyRole: UserRole.AGENT,
+    roleIdByLegacy: tenantARoles,
+  });
+
   await prisma.user.upsert({
     where: {
       tenantId_email: {
@@ -270,6 +287,13 @@ export async function seedDemoData(
       password: customerUserPasswordHash,
       role: UserRole.CUSTOMER,
     },
+  });
+
+  await assignUserLegacyRole(prisma, {
+    userId: DEMO_CUSTOMER_USER_ID,
+    tenantId: config.tenantId,
+    legacyRole: UserRole.CUSTOMER,
+    roleIdByLegacy: tenantARoles,
   });
 
   await prisma.customer.upsert({
@@ -527,6 +551,8 @@ export async function seedDemoData(
     },
   });
 
+  const tenantBRoles = await seedRbacForTenant(prisma, secondaryTenant.id);
+
   const secondaryAdminPasswordHash = await hashPassword(config.adminPassword);
   await prisma.user.upsert({
     where: {
@@ -548,6 +574,13 @@ export async function seedDemoData(
       password: secondaryAdminPasswordHash,
       role: UserRole.ADMIN,
     },
+  });
+
+  await assignUserLegacyRole(prisma, {
+    userId: DEMO_TENANT_B_ADMIN_ID,
+    tenantId: secondaryTenant.id,
+    legacyRole: UserRole.ADMIN,
+    roleIdByLegacy: tenantBRoles,
   });
 
   return {

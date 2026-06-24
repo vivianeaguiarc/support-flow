@@ -2,9 +2,9 @@ import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
 import { optionalAuthenticateWithApiKey } from '../../../../shared/http/middlewares/authenticate-api-key.js';
-import { authorize } from '../../../../shared/http/middlewares/authorize.js';
+import { requirePermission } from '../../../../shared/http/middlewares/require-permission.js';
 import { validateRequest } from '../../../../shared/http/middlewares/validate-request.js';
-import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
+import { PermissionKey } from '../../../../shared/security/permissions.js';
 import { knowledgeArticlesController } from '../controllers/knowledge-articles.controller.js';
 import { createKnowledgeArticleSchema } from '../dtos/create-knowledge-article.dto.js';
 import { knowledgeArticleIdParamSchema } from '../dtos/knowledge-article-id-param.dto.js';
@@ -24,7 +24,7 @@ knowledgeArticlesRouter.get(
 knowledgeArticlesRouter.post(
   '/',
   authenticate,
-  authorize(...ROLE_GROUPS.KNOWLEDGE_MANAGE),
+  requirePermission(PermissionKey.KNOWLEDGE_CREATE),
   validateRequest({ body: createKnowledgeArticleSchema }),
   knowledgeArticlesController.create,
 );
@@ -32,7 +32,7 @@ knowledgeArticlesRouter.post(
 knowledgeArticlesRouter.patch(
   '/:id/publish',
   authenticate,
-  authorize(...ROLE_GROUPS.KNOWLEDGE_MANAGE),
+  requirePermission(PermissionKey.KNOWLEDGE_PUBLISH),
   validateRequest({ params: knowledgeArticleIdParamSchema }),
   knowledgeArticlesController.publish,
 );
@@ -40,7 +40,7 @@ knowledgeArticlesRouter.patch(
 knowledgeArticlesRouter.patch(
   '/:id/archive',
   authenticate,
-  authorize(...ROLE_GROUPS.KNOWLEDGE_MANAGE),
+  requirePermission(PermissionKey.KNOWLEDGE_CREATE),
   validateRequest({ params: knowledgeArticleIdParamSchema }),
   knowledgeArticlesController.archive,
 );
@@ -48,7 +48,7 @@ knowledgeArticlesRouter.patch(
 knowledgeArticlesRouter.patch(
   '/:id',
   authenticate,
-  authorize(...ROLE_GROUPS.KNOWLEDGE_MANAGE),
+  requirePermission(PermissionKey.KNOWLEDGE_CREATE),
   validateRequest({
     params: knowledgeArticleIdParamSchema,
     body: updateKnowledgeArticleSchema,
@@ -59,7 +59,7 @@ knowledgeArticlesRouter.patch(
 knowledgeArticlesRouter.delete(
   '/:id',
   authenticate,
-  authorize(...ROLE_GROUPS.KNOWLEDGE_MANAGE),
+  requirePermission(PermissionKey.KNOWLEDGE_CREATE),
   validateRequest({ params: knowledgeArticleIdParamSchema }),
   knowledgeArticlesController.remove,
 );

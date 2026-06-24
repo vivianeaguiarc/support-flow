@@ -5,13 +5,14 @@ import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
 import { getClientIp, getUserAgent } from '../../http/request-client.js';
 import {
   hasAnyPermission,
-  LEGACY_ROLE_PERMISSIONS,
+  type PermissionKeyValue,
 } from '../../security/permissions.js';
-import { hasAnyRole, isSuperAdmin } from '../../security/rbac.js';
+import { isSuperAdmin } from '../../security/rbac.js';
 import { securityAuditService } from '../../security/security-audit/security-audit.service.js';
-import { UserRole } from '../../types/user-role.js';
 
-export function authorize(...allowedRoles: UserRole[]) {
+export function requirePermission(
+  ...requiredPermissions: PermissionKeyValue[]
+) {
   return async (req: Request, _res: Response, next: NextFunction) => {
     if (!req.user) {
       next(new UnauthorizedError());
@@ -23,26 +24,9 @@ export function authorize(...allowedRoles: UserRole[]) {
       return;
     }
 
-    if (
-      req.user.role === UserRole.ADMIN &&
-      allowedRoles.includes(UserRole.ADMIN)
-    ) {
-      next();
-      return;
-    }
+    const userPermissions = await permissionResolverService.resolve(req.user);
 
-    if (hasAnyRole(req.user.role, allowedRoles)) {
-      next();
-      return;
-    }
-
-    const assignedPermissions =
-      await permissionResolverService.resolveAssignedOnly(req.user);
-    const allowedPermissions = allowedRoles.flatMap(
-      (role) => LEGACY_ROLE_PERMISSIONS[role],
-    );
-
-    if (hasAnyPermission(assignedPermissions, allowedPermissions)) {
+    if (hasAnyPermission(userPermissions, requiredPermissions)) {
       next();
       return;
     }
@@ -56,8 +40,7 @@ export function authorize(...allowedRoles: UserRole[]) {
       metadata: {
         path: req.path,
         method: req.method,
-        requiredRoles: allowedRoles,
-        role: req.user.role,
+        requiredPermissions,
       },
     });
 

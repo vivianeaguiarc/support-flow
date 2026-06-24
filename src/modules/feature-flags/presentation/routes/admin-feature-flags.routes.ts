@@ -1,9 +1,9 @@
 import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
-import { authorize } from '../../../../shared/http/middlewares/authorize.js';
+import { requirePermission } from '../../../../shared/http/middlewares/require-permission.js';
 import { validateRequest } from '../../../../shared/http/middlewares/validate-request.js';
-import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
+import { PermissionKey } from '../../../../shared/security/permissions.js';
 import { adminFeatureFlagsController } from '../controllers/admin-feature-flags.controller.js';
 import {
   createFeatureFlagSchema,
@@ -15,7 +15,7 @@ export const adminFeatureFlagsRouter = Router();
 
 const platformAdminOnly = [
   authenticate,
-  authorize(...ROLE_GROUPS.PLATFORM_ADMIN),
+  requirePermission(PermissionKey.FEATURE_FLAGS_MANAGE),
 ] as const;
 
 adminFeatureFlagsRouter.post(

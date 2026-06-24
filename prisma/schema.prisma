@@ -100,6 +100,10 @@ enum SecurityAuditEvent {
   API_KEY_CREATED
   API_KEY_REVOKED
   USER_PERMISSION_ASSIGNED
+  ROLE_CREATED
+  ROLE_UPDATED
+  ROLE_DELETED
+  ROLE_PERMISSIONS_UPDATED
 }
 
 model Tenant {
@@ -127,6 +131,7 @@ model Tenant {
   webhookEndpoints  WebhookEndpoint[]
   webhookDeliveries WebhookDelivery[]
   securityAuditLogs SecurityAuditLog[]
+  roles             Role[]
 
   @@map("tenants")
 }
@@ -154,6 +159,7 @@ model User {
   apiKeysCreated    ApiKey[]             @relation("ApiKeyCreator")
   webhookEndpoints  WebhookEndpoint[]    @relation("WebhookCreator")
   featureFlagAudits FeatureFlagAudit[]   @relation("FeatureFlagAuditActor")
+  roleAssignments   UserRoleAssignment[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -540,4 +546,60 @@ model SecurityAuditLog {
   @@index([tenantId, event, createdAt])
   @@index([email, createdAt])
   @@map("security_audit_logs")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  permissions RolePermission[]
+  users       UserRoleAssignment[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRoleAssignment {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  tenantId  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([tenantId])
+  @@map("user_roles")
 }

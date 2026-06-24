@@ -1,5 +1,9 @@
 import type { Customer, Tenant, TicketCategory, User } from '@prisma/client';
 
+import {
+  assignUserLegacyRole,
+  seedRbacForTenant,
+} from '../../../prisma/seed/rbac-seed.js';
 import { DEFAULT_TENANT_ID } from '../../shared/constants/tenant.js';
 import { hashPassword } from '../../shared/security/password-hash.js';
 import { UserRole } from '../../shared/types/user-role.js';
@@ -32,12 +36,16 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
     },
   });
 
+  const tenantARoles = await seedRbacForTenant(integrationPrisma, tenantA.id);
+
   const tenantB = await integrationPrisma.tenant.create({
     data: {
       name: 'Tenant Beta',
       slug: `tenant-beta-${Date.now()}`,
     },
   });
+
+  const tenantBRoles = await seedRbacForTenant(integrationPrisma, tenantB.id);
 
   const agentA = await integrationPrisma.user.create({
     data: {
@@ -47,6 +55,13 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
       password: hashedPassword,
       role: UserRole.AGENT,
     },
+  });
+
+  await assignUserLegacyRole(integrationPrisma, {
+    userId: agentA.id,
+    tenantId: tenantA.id,
+    legacyRole: UserRole.AGENT,
+    roleIdByLegacy: tenantARoles,
   });
 
   const agentB = await integrationPrisma.user.create({
@@ -59,6 +74,13 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
     },
   });
 
+  await assignUserLegacyRole(integrationPrisma, {
+    userId: agentB.id,
+    tenantId: tenantB.id,
+    legacyRole: UserRole.AGENT,
+    roleIdByLegacy: tenantBRoles,
+  });
+
   const adminA = await integrationPrisma.user.create({
     data: {
       tenantId: tenantA.id,
@@ -67,6 +89,13 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
       password: hashedPassword,
       role: UserRole.ADMIN,
     },
+  });
+
+  await assignUserLegacyRole(integrationPrisma, {
+    userId: adminA.id,
+    tenantId: tenantA.id,
+    legacyRole: UserRole.ADMIN,
+    roleIdByLegacy: tenantARoles,
   });
 
   const superAdmin = await integrationPrisma.user.create({

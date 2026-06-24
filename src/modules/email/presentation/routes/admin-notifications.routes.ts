@@ -1,10 +1,14 @@
 import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
-import { authorize } from '../../../../shared/http/middlewares/authorize.js';
-import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
+import { requirePermission } from '../../../../shared/http/middlewares/require-permission.js';
+import { PermissionKey } from '../../../../shared/security/permissions.js';
 import { adminFeatureFlagsRouter } from '../../../feature-flags/presentation/routes/admin-feature-flags.routes.js';
 import { adminJobsRouter } from '../../../jobs/presentation/routes/admin-jobs.routes.js';
+import {
+  adminPermissionsRouter,
+  adminRolesRouter,
+} from '../../../rbac/presentation/routes/admin-rbac.routes.js';
 import { adminNotificationsController } from '../controllers/admin-notifications.controller.js';
 
 export const adminNotificationsRouter = Router();
@@ -12,7 +16,7 @@ export const adminNotificationsRouter = Router();
 adminNotificationsRouter.get(
   '/health',
   authenticate,
-  authorize(...ROLE_GROUPS.USER_ADMIN),
+  requirePermission(PermissionKey.USERS_MANAGE),
   adminNotificationsController.health,
 );
 
@@ -20,3 +24,5 @@ export const adminRouter = Router();
 adminRouter.use('/notifications', adminNotificationsRouter);
 adminRouter.use('/jobs', adminJobsRouter);
 adminRouter.use('/feature-flags', adminFeatureFlagsRouter);
+adminRouter.use('/roles', adminRolesRouter);
+adminRouter.use('/permissions', adminPermissionsRouter);

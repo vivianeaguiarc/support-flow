@@ -2,10 +2,10 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { authenticate } from '../../../shared/http/middlewares/authenticate.js';
-import { authorize } from '../../../shared/http/middlewares/authorize.js';
 import { optionalAuthenticate } from '../../../shared/http/middlewares/optional-authenticate.js';
+import { requirePermission } from '../../../shared/http/middlewares/require-permission.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
-import { ROLE_GROUPS } from '../../../shared/security/rbac.js';
+import { PermissionKey } from '../../../shared/security/permissions.js';
 import { usersController } from '../controllers/users.controller.js';
 import { createUserSchema } from '../dtos/create-user.dto.js';
 import { listUsersQuerySchema } from '../dtos/list-users-query.dto.js';
@@ -28,7 +28,7 @@ usersRouter.post(
 usersRouter.get(
   '/',
   authenticate,
-  authorize(...ROLE_GROUPS.USER_ADMIN),
+  requirePermission(PermissionKey.USERS_MANAGE),
   validateRequest({ query: listUsersQuerySchema }),
   usersController.list,
 );
@@ -36,7 +36,7 @@ usersRouter.get(
 usersRouter.get(
   '/:id',
   authenticate,
-  authorize(...ROLE_GROUPS.USER_ADMIN),
+  requirePermission(PermissionKey.USERS_MANAGE),
   validateRequest({ params: idParamSchema }),
   usersController.findById,
 );

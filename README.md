@@ -412,6 +412,39 @@ O seed cria **duas organizações**:
 
 ---
 
+## RBAC enterprise (permissões)
+
+Além do enum legado `UserRole` (usado no JWT), o backend suporta **papéis configuráveis por tenant** com **permissões granulares**.
+
+### Modelo
+
+| Entidade                            | Escopo | Descrição                                              |
+| ----------------------------------- | ------ | ------------------------------------------------------ |
+| `Permission`                        | Global | Catálogo de chaves (`tickets.read`, `users.manage`, …) |
+| `Role`                              | Tenant | Papel nomeado da organização                           |
+| `RolePermission`                    | Tenant | Permissões atribuídas a um papel                       |
+| `UserRoleAssignment` (`user_roles`) | Tenant | Múltiplos papéis por usuário                           |
+
+### Middleware
+
+- `requirePermission('tickets.read', ...)` — exige ao menos uma permissão (OR)
+- `authorize(...roles)` — mantido para compatibilidade; também aceita permissões vindas de papéis atribuídos no banco
+
+O resolvedor combina **permissões do banco** + **mapeamento legado do `User.role`** para não quebrar tokens e testes existentes.
+
+### Endpoints admin
+
+| Método         | Rota                                  | Permissão      |
+| -------------- | ------------------------------------- | -------------- |
+| `GET/POST`     | `/api/v1/admin/roles`                 | `roles.manage` |
+| `PATCH/DELETE` | `/api/v1/admin/roles/:id`             | `roles.manage` |
+| `POST`         | `/api/v1/admin/roles/:id/permissions` | `roles.manage` |
+| `GET/POST`     | `/api/v1/admin/permissions`           | `roles.manage` |
+
+Alterações de papéis geram auditoria em `security_audit_logs` (`ROLE_CREATED`, `ROLE_UPDATED`, `ROLE_DELETED`, `ROLE_PERMISSIONS_UPDATED`).
+
+---
+
 ## Hardening de segurança da API
 
 Camadas adicionais além de JWT/RBAC/multi-tenant:

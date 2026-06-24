@@ -5,6 +5,16 @@ import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
 import { UserRole } from '../../types/user-role.js';
 import { authorize } from './authorize.js';
 
+vi.mock(
+  '../../../modules/rbac/application/services/permission-resolver.service.js',
+  () => ({
+    permissionResolverService: {
+      resolve: vi.fn(),
+      resolveAssignedOnly: vi.fn().mockResolvedValue(new Set()),
+    },
+  }),
+);
+
 vi.mock('../../security/security-audit/security-audit.service.js', () => ({
   securityAuditService: {
     record: vi.fn().mockResolvedValue(undefined),

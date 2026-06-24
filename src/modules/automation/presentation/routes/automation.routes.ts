@@ -1,9 +1,9 @@
 import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
-import { authorize } from '../../../../shared/http/middlewares/authorize.js';
+import { requirePermission } from '../../../../shared/http/middlewares/require-permission.js';
 import { validateRequest } from '../../../../shared/http/middlewares/validate-request.js';
-import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
+import { PermissionKey } from '../../../../shared/security/permissions.js';
 import { automationRulesController } from '../controllers/automation-rules.controller.js';
 import {
   automationRuleIdParamSchema,
@@ -13,7 +13,10 @@ import {
 
 export const automationRouter = Router();
 
-const adminOnly = [authenticate, authorize(...ROLE_GROUPS.USER_ADMIN)] as const;
+const adminOnly = [
+  authenticate,
+  requirePermission(PermissionKey.AUTOMATION_MANAGE),
+] as const;
 
 automationRouter.post(
   '/rules',
