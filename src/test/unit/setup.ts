@@ -9,6 +9,7 @@ process.env.JWT_EXPIRES_IN ??= '1d';
 process.env.JWT_REFRESH_EXPIRES_IN ??= '7d';
 process.env.CORS_ORIGIN ??= 'http://localhost:5173';
 process.env.EMAIL_ENABLED ??= 'false';
+process.env.QUEUE_ENABLED ??= 'false';
 
 const notificationEventServiceMock = {
   notifyTicketCreated: vi.fn().mockResolvedValue(undefined),

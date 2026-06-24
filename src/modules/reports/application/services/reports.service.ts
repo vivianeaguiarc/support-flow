@@ -5,26 +5,9 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
-import {
-  AnalyticsService,
-  analyticsService as defaultAnalyticsService,
-} from '../../../analytics/application/services/analytics.service.js';
 import type { AnalyticsQueryDto } from '../../../analytics/presentation/dtos/analytics-query.dto.js';
-import { formatCsvRow } from '../../infrastructure/csv/csv-formatter.js';
-import {
-  ReportsRepository,
-  reportsRepository as defaultReportsRepository,
-} from '../../infrastructure/repositories/reports.repository.js';
-
-const AGENTS_PERFORMANCE_CSV_HEADERS = [
-  'agentId',
-  'agentName',
-  'assignedTickets',
-  'resolvedTickets',
-  'openTickets',
-  'slaBreachedTickets',
-  'avgResolutionTimeHours',
-] as const;
+import { ReportJobType } from '../../../jobs/domain/job-types.js';
+import { queueProvider } from '../../../queues/queue-provider.js';
 
 function setCsvDownloadHeaders(res: Response, filename: string): void {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -32,11 +15,6 @@ function setCsvDownloadHeaders(res: Response, filename: string): void {
 }
 
 export class ReportsService {
-  constructor(
-    private readonly reportsRepo: ReportsRepository = defaultReportsRepository,
-    private readonly analyticsService: AnalyticsService = defaultAnalyticsService,
-  ) {}
-
   async exportTicketsCsv(
     authUser: AuthenticatedUser,
     query: AnalyticsQueryDto,
@@ -48,21 +26,16 @@ export class ReportsService {
       filters: query,
     });
 
-    setCsvDownloadHeaders(res, 'tickets.csv');
-    res.write(`${this.reportsRepo.getTicketCsvHeaders()}\n`);
-
-    for await (const row of this.reportsRepo.streamTicketRows({
+    const jobId = await queueProvider.addReportJob({
+      type: ReportJobType.TICKETS,
       tenantId: authUser.tenantId,
-      startDate: query.startDate,
-      endDate: query.endDate,
-      status: query.status,
-      priority: query.priority,
-      agentId: query.agentId,
-    })) {
-      res.write(`${this.reportsRepo.formatTicketCsvRow(row)}\n`);
-    }
+      userId: authUser.id,
+      filters: query,
+    });
 
-    res.end();
+    const result = await queueProvider.waitForReportJob(jobId);
+    setCsvDownloadHeaders(res, result.filename);
+    res.send(result.content);
   }
 
   async exportAgentsPerformanceCsv(
@@ -76,29 +49,16 @@ export class ReportsService {
       filters: query,
     });
 
-    const data = await this.analyticsService.getAgentsPerformance(
-      authUser,
-      query,
-    );
+    const jobId = await queueProvider.addReportJob({
+      type: ReportJobType.AGENTS_PERFORMANCE,
+      tenantId: authUser.tenantId,
+      userId: authUser.id,
+      filters: query,
+    });
 
-    setCsvDownloadHeaders(res, 'agents-performance.csv');
-    res.write(`${AGENTS_PERFORMANCE_CSV_HEADERS.join(',')}\n`);
-
-    for (const agent of data.agents) {
-      res.write(
-        `${formatCsvRow([
-          agent.agentId,
-          agent.agentName,
-          agent.assignedTickets,
-          agent.resolvedTickets,
-          agent.openTickets,
-          agent.slaBreachedTickets,
-          agent.avgResolutionTimeHours,
-        ])}\n`,
-      );
-    }
-
-    res.end();
+    const result = await queueProvider.waitForReportJob(jobId);
+    setCsvDownloadHeaders(res, result.filename);
+    res.send(result.content);
   }
 
   async exportSlaCsv(
@@ -112,21 +72,16 @@ export class ReportsService {
       filters: query,
     });
 
-    setCsvDownloadHeaders(res, 'sla.csv');
-    res.write(`${this.reportsRepo.getSlaCsvHeaders()}\n`);
-
-    for await (const row of this.reportsRepo.streamSlaRows({
+    const jobId = await queueProvider.addReportJob({
+      type: ReportJobType.SLA,
       tenantId: authUser.tenantId,
-      startDate: query.startDate,
-      endDate: query.endDate,
-      status: query.status,
-      priority: query.priority,
-      agentId: query.agentId,
-    })) {
-      res.write(`${this.reportsRepo.formatSlaCsvRow(row)}\n`);
-    }
+      userId: authUser.id,
+      filters: query,
+    });
 
-    res.end();
+    const result = await queueProvider.waitForReportJob(jobId);
+    setCsvDownloadHeaders(res, result.filename);
+    res.send(result.content);
   }
 }
 

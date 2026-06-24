@@ -1,3 +1,3 @@
 import { bootstrap } from './main.js';
 
-bootstrap();
+void bootstrap();

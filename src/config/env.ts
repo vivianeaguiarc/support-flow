@@ -78,6 +78,19 @@ const envSchema = z
     SMTP_USER: z.string().optional(),
     SMTP_PASSWORD: z.string().optional(),
     SMTP_FROM: z.string().email().optional(),
+    QUEUE_ENABLED: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => parseOptionalBoolean(value, false)),
+    QUEUE_WORKERS_ENABLED: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => parseOptionalBoolean(value, true)),
+    REDIS_URL: z.string().default('redis://localhost:6379'),
+    QUEUE_DEFAULT_ATTEMPTS: z.coerce.number().int().positive().default(5),
+    QUEUE_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(1000),
+    QUEUE_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
+    QUEUE_JOB_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
   })
   .superRefine((data, ctx) => {
     if (data.NODE_ENV !== 'production') {

@@ -41,6 +41,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/knowledge/articles/{id}/publish': ['patch'],
   '/knowledge/articles/{id}/archive': ['patch'],
   '/admin/notifications/health': ['get'],
+  '/admin/jobs': ['get'],
+  '/admin/jobs/metrics': ['get'],
   '/analytics/overview': ['get'],
   '/analytics/tickets-by-status': ['get'],
   '/analytics/tickets-by-priority': ['get'],

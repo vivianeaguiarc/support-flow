@@ -4,6 +4,7 @@ import {
   BusinessEvent,
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
+import { queueProvider } from '../../../queues/queue-provider.js';
 import type {
   WebhookDelivery,
   WebhookEndpointWithSecret,
@@ -19,7 +20,7 @@ import {
 } from '../../infrastructure/repositories/webhooks.repository.js';
 import { signWebhookPayload } from './webhook-signature.js';
 
-const MAX_ATTEMPTS = 3;
+const MAX_TEST_ATTEMPTS = 3;
 const RETRY_DELAY_MS = 200;
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -51,6 +52,18 @@ export class WebhookDispatcher {
     event: WebhookEvent,
     data: Record<string, unknown>,
   ): Promise<void> {
+    await queueProvider.addWebhookJob({
+      tenantId,
+      event,
+      data,
+    });
+  }
+
+  async dispatchDirect(
+    tenantId: string,
+    event: WebhookEvent,
+    data: Record<string, unknown>,
+  ): Promise<void> {
     const endpoints = await this.repository.findActiveByTenantAndEvent(
       tenantId,
       event,
@@ -67,9 +80,15 @@ export class WebhookDispatcher {
       data,
     };
 
-    await Promise.all(
-      endpoints.map((endpoint) => this.deliverToEndpoint(endpoint, payload)),
-    );
+    for (const endpoint of endpoints) {
+      const delivery = await this.deliverOnce(endpoint, payload);
+
+      if (delivery.status === WebhookDeliveryStatus.FAILED) {
+        throw new Error(
+          `Webhook delivery failed for endpoint ${endpoint.id}: ${delivery.responseBody ?? 'unknown error'}`,
+        );
+      }
+    }
   }
 
   async deliverTest(
@@ -85,10 +104,32 @@ export class WebhookDispatcher {
       },
     };
 
-    return this.deliverToEndpoint(endpoint, payload);
+    let attemptCount = 0;
+    let lastDelivery: WebhookDelivery | null = null;
+
+    while (attemptCount < MAX_TEST_ATTEMPTS) {
+      attemptCount += 1;
+      lastDelivery = await this.deliverOnce(endpoint, payload);
+
+      if (lastDelivery.status === WebhookDeliveryStatus.DELIVERED) {
+        return lastDelivery;
+      }
+
+      const retryable =
+        lastDelivery.responseStatus === null ||
+        isRetryableStatus(lastDelivery.responseStatus);
+
+      if (!retryable || attemptCount >= MAX_TEST_ATTEMPTS) {
+        return lastDelivery;
+      }
+
+      await sleep(RETRY_DELAY_MS);
+    }
+
+    return lastDelivery!;
   }
 
-  private async deliverToEndpoint(
+  private async deliverOnce(
     endpoint: WebhookEndpointWithSecret,
     payload: WebhookPayload,
   ): Promise<WebhookDelivery> {
@@ -99,93 +140,88 @@ export class WebhookDispatcher {
       payload,
     });
 
-    let attemptCount = 0;
-    let lastResponseStatus: number | null = null;
-    let lastResponseBody: string | null = null;
+    try {
+      const body = JSON.stringify(payload);
+      const signature = signWebhookPayload(endpoint.secret, body);
 
-    while (attemptCount < MAX_ATTEMPTS) {
-      attemptCount += 1;
+      const response = await fetch(endpoint.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-SupportFlow-Event': payload.event,
+          'X-SupportFlow-Signature': signature,
+          'X-SupportFlow-Delivery-Id': delivery.id,
+        },
+        body,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
 
-      try {
-        const body = JSON.stringify(payload);
-        const signature = signWebhookPayload(endpoint.secret, body);
+      const responseBody = truncateResponseBody(await response.text());
 
-        const response = await fetch(endpoint.url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-SupportFlow-Event': payload.event,
-            'X-SupportFlow-Signature': signature,
-            'X-SupportFlow-Delivery-Id': delivery.id,
-          },
-          body,
-          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      if (response.ok) {
+        const updated = await this.repository.updateDelivery(delivery.id, {
+          status: WebhookDeliveryStatus.DELIVERED,
+          responseStatus: response.status,
+          responseBody,
+          attemptCount: 1,
+          deliveredAt: new Date(),
+          failedAt: null,
         });
 
-        lastResponseStatus = response.status;
-        lastResponseBody = truncateResponseBody(await response.text());
+        logBusinessEvent(BusinessEvent.WEBHOOK_DELIVERED, {
+          tenantId: endpoint.tenantId,
+          webhookEndpointId: endpoint.id,
+          deliveryId: delivery.id,
+          event: payload.event,
+          attemptCount: 1,
+        });
 
-        if (response.ok) {
-          const updated = await this.repository.updateDelivery(delivery.id, {
-            status: WebhookDeliveryStatus.DELIVERED,
-            responseStatus: lastResponseStatus,
-            responseBody: lastResponseBody,
-            attemptCount,
-            deliveredAt: new Date(),
-            failedAt: null,
-          });
-
-          logBusinessEvent(BusinessEvent.WEBHOOK_DELIVERED, {
-            tenantId: endpoint.tenantId,
-            webhookEndpointId: endpoint.id,
-            deliveryId: delivery.id,
-            event: payload.event,
-            attemptCount,
-          });
-
-          return updated;
-        }
-
-        if (
-          !isRetryableStatus(response.status) ||
-          attemptCount >= MAX_ATTEMPTS
-        ) {
-          break;
-        }
-      } catch (error) {
-        lastResponseStatus = null;
-        lastResponseBody =
-          error instanceof Error ? error.message : 'Unknown delivery error';
-
-        if (attemptCount >= MAX_ATTEMPTS) {
-          break;
-        }
+        return updated;
       }
 
-      if (attemptCount < MAX_ATTEMPTS) {
-        await sleep(RETRY_DELAY_MS);
-      }
+      const failed = await this.repository.updateDelivery(delivery.id, {
+        status: WebhookDeliveryStatus.FAILED,
+        responseStatus: response.status,
+        responseBody,
+        attemptCount: 1,
+        deliveredAt: null,
+        failedAt: new Date(),
+      });
+
+      logBusinessEvent(BusinessEvent.WEBHOOK_DELIVERY_FAILED, {
+        tenantId: endpoint.tenantId,
+        webhookEndpointId: endpoint.id,
+        deliveryId: delivery.id,
+        event: payload.event,
+        attemptCount: 1,
+        responseStatus: response.status,
+      });
+
+      return failed;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unknown delivery error';
+
+      const failed = await this.repository.updateDelivery(delivery.id, {
+        status: WebhookDeliveryStatus.FAILED,
+        responseStatus: null,
+        responseBody: message,
+        attemptCount: 1,
+        deliveredAt: null,
+        failedAt: new Date(),
+      });
+
+      logBusinessEvent(BusinessEvent.WEBHOOK_DELIVERY_FAILED, {
+        tenantId: endpoint.tenantId,
+        webhookEndpointId: endpoint.id,
+        deliveryId: delivery.id,
+        event: payload.event,
+        attemptCount: 1,
+        responseStatus: null,
+      });
+
+      return failed;
     }
-
-    const failed = await this.repository.updateDelivery(delivery.id, {
-      status: WebhookDeliveryStatus.FAILED,
-      responseStatus: lastResponseStatus,
-      responseBody: lastResponseBody,
-      attemptCount,
-      deliveredAt: null,
-      failedAt: new Date(),
-    });
-
-    logBusinessEvent(BusinessEvent.WEBHOOK_DELIVERY_FAILED, {
-      tenantId: endpoint.tenantId,
-      webhookEndpointId: endpoint.id,
-      deliveryId: delivery.id,
-      event: payload.event,
-      attemptCount,
-      responseStatus: lastResponseStatus,
-    });
-
-    return failed;
   }
 }
 

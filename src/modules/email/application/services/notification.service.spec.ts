@@ -18,6 +18,16 @@ vi.mock('../../../../shared/logger/logger.js', () => ({
   },
 }));
 
+const { addEmailJobMock } = vi.hoisted(() => ({
+  addEmailJobMock: vi.fn().mockResolvedValue('job-1'),
+}));
+
+vi.mock('../../../queues/queue-provider.js', () => ({
+  queueProvider: {
+    addEmailJob: addEmailJobMock,
+  },
+}));
+
 import type { EmailProvider } from '../../../../shared/email/index.js';
 import type { Ticket } from '../../../tickets/domain/ticket.entity.js';
 import {
@@ -70,10 +80,28 @@ describe('NotificationService', () => {
     vi.clearAllMocks();
   });
 
-  it('should render template and send email to recipient', async () => {
+  it('should enqueue ticket notification job', async () => {
     const service = new NotificationService(provider, usersRepository as never);
 
     await service.sendTicketNotification({
+      event: EmailNotificationEvent.TICKET_ASSIGNED,
+      ticket,
+      recipientId: 'agent-1',
+    });
+
+    expect(addEmailJobMock).toHaveBeenCalledWith({
+      event: EmailNotificationEvent.TICKET_ASSIGNED,
+      ticketId: ticket.id,
+      tenantId: ticket.tenantId,
+      recipientId: 'agent-1',
+    });
+    expect(provider.send).not.toHaveBeenCalled();
+  });
+
+  it('should render template and send email via deliverTicketEmail', async () => {
+    const service = new NotificationService(provider, usersRepository as never);
+
+    await service.deliverTicketEmail({
       event: EmailNotificationEvent.TICKET_ASSIGNED,
       ticket,
       recipientId: 'agent-1',
@@ -92,7 +120,7 @@ describe('NotificationService', () => {
     usersRepository.findById.mockResolvedValueOnce(null);
     const service = new NotificationService(provider, usersRepository as never);
 
-    await service.sendTicketNotification({
+    await service.deliverTicketEmail({
       event: EmailNotificationEvent.TICKET_CREATED,
       ticket,
       recipientId: 'missing',
@@ -101,17 +129,17 @@ describe('NotificationService', () => {
     expect(provider.send).not.toHaveBeenCalled();
   });
 
-  it('should log provider failures without throwing', async () => {
+  it('should propagate provider failures from deliverTicketEmail', async () => {
     vi.mocked(provider.send).mockRejectedValueOnce(new Error('smtp down'));
     const service = new NotificationService(provider, usersRepository as never);
 
     await expect(
-      service.sendTicketNotification({
+      service.deliverTicketEmail({
         event: EmailNotificationEvent.SLA_BREACHED,
         ticket,
         recipientId: 'agent-1',
         context: { hoursOverdue: 2 },
       }),
-    ).resolves.toBeUndefined();
+    ).rejects.toThrow('smtp down');
   });
 });

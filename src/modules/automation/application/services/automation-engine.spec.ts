@@ -86,7 +86,7 @@ describe('AutomationEngine', () => {
       [],
     );
 
-    await engine.processEvent({
+    await engine.processEventDirect({
       tenantId: 'tenant-1',
       ticketId: 'ticket-1',
       trigger: AutomationTrigger.TICKET_CREATED,
@@ -109,7 +109,7 @@ describe('AutomationEngine', () => {
       }),
     ]);
 
-    await engine.processEvent({
+    await engine.processEventDirect({
       tenantId: 'tenant-1',
       ticketId: 'ticket-1',
       trigger: AutomationTrigger.TICKET_CREATED,
@@ -130,7 +130,7 @@ describe('AutomationEngine', () => {
       baseRule(),
     ]);
 
-    await engine.processEvent({
+    await engine.processEventDirect({
       tenantId: 'tenant-1',
       ticketId: 'ticket-1',
       trigger: AutomationTrigger.TICKET_CREATED,
@@ -165,7 +165,7 @@ describe('AutomationEngine', () => {
       },
     ]);
 
-    await engine.processEvent({
+    await engine.processEventDirect({
       tenantId: 'tenant-1',
       ticketId: 'ticket-1',
       trigger: AutomationTrigger.TICKET_CREATED,

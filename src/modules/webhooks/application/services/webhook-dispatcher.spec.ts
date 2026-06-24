@@ -4,6 +4,12 @@ import { WebhookDeliveryStatus } from '../../domain/webhook-endpoint.entity.js';
 import { WebhookEvent } from '../../domain/webhook-event.js';
 import { WebhookDispatcher } from './webhook-dispatcher.js';
 
+vi.mock('../../../queues/queue-provider.js', () => ({
+  queueProvider: {
+    addWebhookJob: vi.fn().mockResolvedValue('job-1'),
+  },
+}));
+
 describe('WebhookDispatcher', () => {
   afterEach(() => {
     vi.restoreAllMocks();
@@ -63,7 +69,7 @@ describe('WebhookDispatcher', () => {
     };
 
     const dispatcher = new WebhookDispatcher(repository as never);
-    await dispatcher.dispatch('tenant-1', WebhookEvent.TICKET_CREATED, {
+    await dispatcher.dispatchDirect('tenant-1', WebhookEvent.TICKET_CREATED, {
       ticketId: 'ticket-1',
     });
 
@@ -84,7 +90,7 @@ describe('WebhookDispatcher', () => {
     );
   });
 
-  it('should retry on 500 and mark failed after max attempts', async () => {
+  it('should fail delivery on non-retryable HTTP status', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
@@ -131,16 +137,19 @@ describe('WebhookDispatcher', () => {
     };
 
     const dispatcher = new WebhookDispatcher(repository as never);
-    await dispatcher.dispatch('tenant-1', WebhookEvent.TICKET_CREATED, {
-      ticketId: 'ticket-1',
-    });
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    await expect(
+      dispatcher.dispatchDirect('tenant-1', WebhookEvent.TICKET_CREATED, {
+        ticketId: 'ticket-1',
+      }),
+    ).rejects.toThrow('Webhook delivery failed');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(repository.updateDelivery).toHaveBeenCalledWith(
       'delivery-1',
       expect.objectContaining({
         status: WebhookDeliveryStatus.FAILED,
-        attemptCount: 3,
+        attemptCount: 1,
         responseStatus: 500,
       }),
     );
@@ -157,7 +166,11 @@ describe('WebhookDispatcher', () => {
     };
 
     const dispatcher = new WebhookDispatcher(repository as never);
-    await dispatcher.dispatch('tenant-1', WebhookEvent.TICKET_CREATED, {});
+    await dispatcher.dispatchDirect(
+      'tenant-1',
+      WebhookEvent.TICKET_CREATED,
+      {},
+    );
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(repository.createDelivery).not.toHaveBeenCalled();

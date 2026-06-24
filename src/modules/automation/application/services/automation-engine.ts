@@ -3,6 +3,7 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import { logger } from '../../../../shared/logger/logger.js';
+import { queueProvider } from '../../../queues/queue-provider.js';
 import type { AutomationEvent } from '../../domain/automation-event.js';
 import { AutomationExecutionStatus } from '../../domain/automation-rule.entity.js';
 import { evaluateAutomationConditions } from '../../domain/condition-evaluator.js';
@@ -22,6 +23,17 @@ export class AutomationEngine {
   ) {}
 
   async processEvent(event: AutomationEvent): Promise<void> {
+    await queueProvider.addAutomationJob({
+      tenantId: event.tenantId,
+      ticketId: event.ticketId,
+      trigger: event.trigger,
+      actorId: event.actorId,
+      metadata: event.metadata,
+      previousTicket: event.previousTicket,
+    });
+  }
+
+  async processEventDirect(event: AutomationEvent): Promise<void> {
     const rules = await this.rulesRepository.listActiveByTenantAndTrigger(
       event.tenantId,
       event.trigger,
@@ -115,6 +127,8 @@ export class AutomationEngine {
           },
           'automation.rule.failed',
         );
+
+        throw error;
       }
     }
   }

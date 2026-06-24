@@ -1399,6 +1399,61 @@ const options: Options = {
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
+        QueueJobCounts: {
+          type: 'object',
+          properties: {
+            waiting: { type: 'integer', example: 2 },
+            active: { type: 'integer', example: 1 },
+            completed: { type: 'integer', example: 120 },
+            failed: { type: 'integer', example: 0 },
+            delayed: { type: 'integer', example: 0 },
+          },
+        },
+        JobsOverview: {
+          type: 'object',
+          required: ['queues', 'totals'],
+          properties: {
+            queues: {
+              type: 'object',
+              additionalProperties: {
+                type: 'object',
+                properties: {
+                  waiting: { type: 'integer' },
+                  active: { type: 'integer' },
+                  completed: { type: 'integer' },
+                  failed: { type: 'integer' },
+                },
+              },
+            },
+            totals: {
+              type: 'object',
+              properties: {
+                waiting: { type: 'integer' },
+                active: { type: 'integer' },
+                completed: { type: 'integer' },
+                failed: { type: 'integer' },
+              },
+            },
+          },
+        },
+        JobsMetrics: {
+          type: 'object',
+          required: ['queues', 'generatedAt'],
+          properties: {
+            generatedAt: { type: 'string', format: 'date-time' },
+            queues: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string', example: 'email-queue' },
+                  counts: { $ref: '#/components/schemas/QueueJobCounts' },
+                  deadLetter: { $ref: '#/components/schemas/QueueJobCounts' },
+                },
+              },
+            },
+          },
+        },
         TicketStatusTransitions: {
           type: 'object',
           properties: {

@@ -5,6 +5,7 @@ import {
   type EmailProviderHealth,
 } from '../../../../shared/email/index.js';
 import { logger } from '../../../../shared/logger/logger.js';
+import { queueProvider } from '../../../queues/queue-provider.js';
 import type { Ticket } from '../../../tickets/domain/ticket.entity.js';
 import {
   UsersRepository,
@@ -31,6 +32,20 @@ export class NotificationService {
   ) {}
 
   async sendTicketNotification(input: SendTicketEmailInput): Promise<void> {
+    if (!env.EMAIL_ENABLED) {
+      return;
+    }
+
+    await queueProvider.addEmailJob({
+      event: input.event,
+      ticketId: input.ticket.id,
+      tenantId: input.ticket.tenantId,
+      recipientId: input.recipientId,
+      context: input.context,
+    });
+  }
+
+  async deliverTicketEmail(input: SendTicketEmailInput): Promise<void> {
     if (!env.EMAIL_ENABLED) {
       return;
     }
@@ -62,35 +77,22 @@ export class NotificationService {
 
     const template = renderEmailTemplate(input.event, templateContext);
 
-    try {
-      await this.provider.send({
-        to: recipient.email,
-        subject: template.subject,
-        html: template.html,
-        text: template.text,
-      });
+    await this.provider.send({
+      to: recipient.email,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
 
-      logger.info(
-        {
-          event: input.event,
-          ticketId: input.ticket.id,
-          recipientId: input.recipientId,
-          provider: this.provider.name,
-        },
-        'email.notification.sent',
-      );
-    } catch (error) {
-      logger.error(
-        {
-          err: error,
-          event: input.event,
-          ticketId: input.ticket.id,
-          recipientId: input.recipientId,
-          provider: this.provider.name,
-        },
-        'email.notification.failed',
-      );
-    }
+    logger.info(
+      {
+        event: input.event,
+        ticketId: input.ticket.id,
+        recipientId: input.recipientId,
+        provider: this.provider.name,
+      },
+      'email.notification.sent',
+    );
   }
 
   async checkHealth(): Promise<EmailProviderHealth> {
