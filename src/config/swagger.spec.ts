@@ -52,6 +52,9 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/reports/sla.csv': ['get'],
   '/automation/rules': ['post', 'get'],
   '/automation/rules/{id}': ['patch', 'delete'],
+  '/api-keys': ['post', 'get'],
+  '/api-keys/{id}/revoke': ['patch'],
+  '/api-keys/{id}': ['delete'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };
@@ -61,6 +64,11 @@ describe('swaggerSpec', () => {
     expect(swaggerSpec.components?.securitySchemes?.BearerAuth).toMatchObject({
       type: 'http',
       scheme: 'bearer',
+    });
+    expect(swaggerSpec.components?.securitySchemes?.ApiKeyAuth).toMatchObject({
+      type: 'apiKey',
+      in: 'header',
+      name: 'x-api-key',
     });
   });
 
@@ -102,6 +110,8 @@ describe('swaggerSpec', () => {
     expect(schemas.AnalyticsSla).toBeDefined();
     expect(schemas.AnalyticsCsat).toBeDefined();
     expect(schemas.TicketSatisfactionSurvey).toBeDefined();
+    expect(schemas.ApiKey).toBeDefined();
+    expect(schemas.CreateApiKeyInput).toBeDefined();
     expect(schemas.AutomationRule).toBeDefined();
     expect(schemas.CreateAutomationRuleInput).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();

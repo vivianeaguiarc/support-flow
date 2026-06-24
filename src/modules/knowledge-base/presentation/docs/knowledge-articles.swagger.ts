@@ -4,11 +4,15 @@
  *   get:
  *     summary: Listar artigos da base de conhecimento
  *     description: |
- *       Endpoint público com autenticação opcional.
+ *       Endpoint público com autenticação opcional (JWT Bearer ou `x-api-key`).
+ *       API Keys ativas autenticam integrações externas e limitam dados ao tenant da chave.
  *       Visitantes e clientes veem apenas artigos `PUBLISHED`.
  *       Admin e supervisor podem filtrar por `status`, `category` e `search`.
  *     tags: [Knowledge Base]
- *     security: []
+ *     security:
+ *       - {}
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page

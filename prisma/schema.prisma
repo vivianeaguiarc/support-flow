@@ -101,6 +101,7 @@ model Tenant {
   automationRules   AutomationRule[]
   automationExecutions AutomationRuleExecution[]
   satisfactionSurveys TicketSatisfactionSurvey[]
+  apiKeys           ApiKey[]
 
   @@map("tenants")
 }
@@ -123,6 +124,7 @@ model User {
   notifications     Notification[]     @relation("NotificationRecipient")
   refreshTokens       RefreshToken[]
   knowledgeArticles KnowledgeArticle[] @relation("KnowledgeArticleAuthor")
+  apiKeysCreated    ApiKey[]             @relation("ApiKeyCreator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -393,4 +395,26 @@ model TicketSatisfactionSurvey {
   @@index([customerId])
   @@index([submittedAt])
   @@map("ticket_satisfaction_surveys")
+}
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  tenantId    String
+  name        String
+  keyHash     String    @unique
+  prefix      String
+  active      Boolean   @default(true)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+  createdBy User   @relation("ApiKeyCreator", fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([prefix])
+  @@index([tenantId, active])
+  @@map("api_keys")
 }

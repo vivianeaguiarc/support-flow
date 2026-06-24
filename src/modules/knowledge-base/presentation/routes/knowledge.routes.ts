@@ -1,8 +1,8 @@
 import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
+import { optionalAuthenticateWithApiKey } from '../../../../shared/http/middlewares/authenticate-api-key.js';
 import { authorize } from '../../../../shared/http/middlewares/authorize.js';
-import { optionalAuthenticate } from '../../../../shared/http/middlewares/optional-authenticate.js';
 import { validateRequest } from '../../../../shared/http/middlewares/validate-request.js';
 import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
 import { knowledgeArticlesController } from '../controllers/knowledge-articles.controller.js';
@@ -16,7 +16,7 @@ export const knowledgeArticlesRouter = Router();
 
 knowledgeArticlesRouter.get(
   '/',
-  optionalAuthenticate,
+  optionalAuthenticateWithApiKey,
   validateRequest({ query: listKnowledgeArticlesQuerySchema }),
   knowledgeArticlesController.list,
 );
@@ -66,7 +66,7 @@ knowledgeArticlesRouter.delete(
 
 knowledgeArticlesRouter.get(
   '/:slug',
-  optionalAuthenticate,
+  optionalAuthenticateWithApiKey,
   validateRequest({ params: knowledgeArticleSlugParamSchema }),
   knowledgeArticlesController.getBySlug,
 );

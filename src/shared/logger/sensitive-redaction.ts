@@ -1,6 +1,7 @@
 export const SENSITIVE_REDACT_PATHS = [
   'req.headers.authorization',
   'req.headers.cookie',
+  'req.headers.x-api-key',
   'req.body.password',
   'req.body.refreshToken',
   'req.body.token',
@@ -21,6 +22,8 @@ const SENSITIVE_KEYS = new Set(
     'token',
     'authorization',
     'cookie',
+    'apikey',
+    'x-api-key',
   ].map((key) => key.toLowerCase()),
 );
 

@@ -22,6 +22,9 @@ export const BusinessEvent = {
   AUTOMATION_RULE_UPDATED: 'automation.rule.updated',
   AUTOMATION_RULE_DELETED: 'automation.rule.deleted',
   AUTOMATION_RULE_EXECUTED: 'automation.rule.executed',
+  API_KEY_CREATED: 'api_key.created',
+  API_KEY_REVOKED: 'api_key.revoked',
+  API_KEY_DELETED: 'api_key.deleted',
 } as const;
 
 export type BusinessEventName =

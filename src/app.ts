@@ -3,6 +3,7 @@ import express from 'express';
 import { env } from './config/env.js';
 import { setupSwagger } from './config/setup-swagger.js';
 import { analyticsRouter } from './modules/analytics/presentation/routes/analytics.routes.js';
+import { apiKeysRouter } from './modules/api-keys/presentation/routes/api-keys.routes.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { automationRouter } from './modules/automation/presentation/routes/automation.routes.js';
 import { customersRouter } from './modules/customers/routes/customers.routes.js';
@@ -53,6 +54,7 @@ export function createApp(options: CreateAppOptions = {}) {
   apiRouter.use('/metrics', metricsRouter);
   apiRouter.use('/analytics', analyticsRouter);
   apiRouter.use('/automation', automationRouter);
+  apiRouter.use('/api-keys', apiKeysRouter);
   apiRouter.use('/reports', reportsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   apiRouter.use('/knowledge', knowledgeRouter);

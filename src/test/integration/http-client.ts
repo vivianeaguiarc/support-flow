@@ -62,3 +62,10 @@ export function authRequest(app: Express, token: string) {
       request(app).delete(url).set('Authorization', `Bearer ${token}`),
   };
 }
+
+export function apiKeyRequest(app: Express, apiKey: string) {
+  return {
+    get: (url: string) => request(app).get(url).set('x-api-key', apiKey),
+    post: (url: string) => request(app).post(url).set('x-api-key', apiKey),
+  };
+}

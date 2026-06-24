@@ -58,6 +58,13 @@ const options: Options = {
           bearerFormat: 'JWT',
           description: 'Enter JWT token obtained from /auth/login endpoint',
         },
+        ApiKeyAuth: {
+          type: 'apiKey',
+          in: 'header',
+          name: 'x-api-key',
+          description:
+            'API Key no formato supportflow_sk_live_... para integrações externas',
+        },
       },
       schemas: {
         ApiSuccessResponse: {
@@ -1215,6 +1222,61 @@ const options: Options = {
             comment: { type: 'string', maxLength: 1000 },
           },
         },
+        ApiKey: {
+          type: 'object',
+          required: [
+            'id',
+            'tenantId',
+            'name',
+            'prefix',
+            'active',
+            'createdById',
+            'createdAt',
+            'updatedAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            name: { type: 'string', example: 'Integração ERP' },
+            prefix: {
+              type: 'string',
+              example: 'supportflow_sk_live_a1b2c3d4',
+              description:
+                'Prefixo identificador (segredo completo não é exposto)',
+            },
+            active: { type: 'boolean', example: true },
+            lastUsedAt: { type: 'string', format: 'date-time', nullable: true },
+            expiresAt: { type: 'string', format: 'date-time', nullable: true },
+            createdById: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        ApiKeyWithSecret: {
+          allOf: [
+            { $ref: '#/components/schemas/ApiKey' },
+            {
+              type: 'object',
+              required: ['key'],
+              properties: {
+                key: {
+                  type: 'string',
+                  example: 'supportflow_sk_live_xxxxxxxxxxxxxxxx',
+                  description:
+                    'Chave completa — exibida apenas no momento da criação',
+                },
+              },
+            },
+          ],
+        },
+        CreateApiKeyInput: {
+          type: 'object',
+          required: ['name'],
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            expiresAt: { type: 'string', format: 'date-time' },
+          },
+        },
         TicketStatusTransitions: {
           type: 'object',
           properties: {
@@ -1526,6 +1588,10 @@ const options: Options = {
         name: 'Automation',
         description:
           'Regras de automação de workflow — triggers, condições e ações',
+      },
+      {
+        name: 'API Keys',
+        description: 'Gerenciamento de API Keys para integrações externas',
       },
     ],
   },
