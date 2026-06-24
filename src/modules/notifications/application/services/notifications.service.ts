@@ -1,4 +1,4 @@
-import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
+import { resolveTenantId } from '../../../../shared/tenant/get-request-tenant-id.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import type { NotificationWithTicket } from '../../domain/notification.entity.js';
 import {
@@ -24,7 +24,7 @@ export class NotificationsService {
     limit?: number,
     offset?: number,
   ): Promise<NotificationWithTicket[]> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.listNotifications.execute({
       tenantId,
@@ -39,7 +39,7 @@ export class NotificationsService {
     notificationId: string,
     authUser: AuthenticatedUser,
   ): Promise<void> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.markNotificationAsRead.execute({
       notificationId,
@@ -51,7 +51,7 @@ export class NotificationsService {
   async markAllAsRead(
     authUser: AuthenticatedUser,
   ): Promise<MarkAllNotificationsAsReadOutput> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.markAllNotificationsAsRead.execute({
       recipientId: authUser.id,

@@ -19,8 +19,8 @@ describe('authorize', () => {
     expect(next).toHaveBeenCalledWith(new UnauthorizedError());
   });
 
-  it('should allow admin regardless of allowed roles', () => {
-    const middleware = authorize(UserRole.AGENT);
+  it('should allow admin when ADMIN is in allowed roles', () => {
+    const middleware = authorize(UserRole.ADMIN, UserRole.AGENT);
     const next = vi.fn();
 
     middleware(
@@ -35,6 +35,42 @@ describe('authorize', () => {
     );
 
     expect(next).toHaveBeenCalledWith();
+  });
+
+  it('should allow super admin regardless of allowed roles', () => {
+    const middleware = authorize(UserRole.AGENT);
+    const next = vi.fn();
+
+    middleware(
+      createMockRequest({
+        id: '1',
+        email: 'super@test.com',
+        role: UserRole.SUPER_ADMIN,
+        tenantId: 'tenant-1',
+      }),
+      {} as Response,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('should deny tenant admin when ADMIN is not in allowed roles', () => {
+    const middleware = authorize(UserRole.AGENT);
+    const next = vi.fn();
+
+    middleware(
+      createMockRequest({
+        id: '1',
+        email: 'admin@test.com',
+        role: UserRole.ADMIN,
+        tenantId: 'tenant-1',
+      }),
+      {} as Response,
+      next,
+    );
+
+    expect(next).toHaveBeenCalledWith(new ForbiddenError());
   });
 
   it('should allow users with permitted role', () => {

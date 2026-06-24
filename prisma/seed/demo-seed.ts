@@ -16,6 +16,8 @@ import {
   DEMO_CATEGORY_SAC_ID,
   DEMO_CATEGORY_SUPORTE_ID,
   DEMO_CUSTOMER_USER_ID,
+  DEMO_TENANT_B_ADMIN_ID,
+  DEMO_TENANT_B_ID,
   resolveSeedConfig,
   type SeedConfig,
 } from './config.js';
@@ -163,6 +165,8 @@ function buildDemoTickets(now = new Date()): DemoTicketSeed[] {
 export type DemoSeedResult = {
   tenantId: string;
   tenantSlug: string;
+  secondaryTenantId: string;
+  secondaryTenantSlug: string;
   adminEmail: string;
   agentEmail: string;
   customerUserEmail: string;
@@ -507,9 +511,50 @@ export async function seedDemoData(
     });
   }
 
+  const secondaryTenant = await prisma.tenant.upsert({
+    where: { id: DEMO_TENANT_B_ID },
+    create: {
+      id: DEMO_TENANT_B_ID,
+      name: 'SupportFlow Demo B',
+      slug: 'demo-b',
+      defaultSlaHours: 48,
+      isActive: true,
+    },
+    update: {
+      name: 'SupportFlow Demo B',
+      slug: 'demo-b',
+      isActive: true,
+    },
+  });
+
+  const secondaryAdminPasswordHash = await hashPassword(config.adminPassword);
+  await prisma.user.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: secondaryTenant.id,
+        email: 'admin.demo-b@supportflow.com',
+      },
+    },
+    create: {
+      id: DEMO_TENANT_B_ADMIN_ID,
+      tenantId: secondaryTenant.id,
+      name: 'Demo B Admin',
+      email: 'admin.demo-b@supportflow.com',
+      password: secondaryAdminPasswordHash,
+      role: UserRole.ADMIN,
+    },
+    update: {
+      name: 'Demo B Admin',
+      password: secondaryAdminPasswordHash,
+      role: UserRole.ADMIN,
+    },
+  });
+
   return {
     tenantId: config.tenantId,
     tenantSlug: config.tenantSlug,
+    secondaryTenantId: secondaryTenant.id,
+    secondaryTenantSlug: secondaryTenant.slug,
     adminEmail: config.adminEmail,
     agentEmail: config.agentEmail,
     customerUserEmail: config.customerUserEmail,

@@ -66,6 +66,24 @@ const options: Options = {
             'API Key no formato supportflow_sk_live_... para integrações externas',
         },
       },
+      parameters: {
+        TenantIdHeader: {
+          name: 'x-tenant-id',
+          in: 'header',
+          required: false,
+          description:
+            'UUID da organização (tenant). Obrigatório para SUPER_ADMIN acessar outra organização. Usuários comuns são sempre restritos ao tenant do JWT.',
+          schema: { type: 'string', format: 'uuid' },
+        },
+        TenantSlugHeader: {
+          name: 'x-tenant-slug',
+          in: 'header',
+          required: false,
+          description:
+            'Slug da organização. Alternativa ao x-tenant-id ou subdomínio.',
+          schema: { type: 'string' },
+        },
+      },
       schemas: {
         ApiSuccessResponse: {
           type: 'object',

@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
-import { hasAnyRole, isAdmin } from '../../security/rbac.js';
+import { hasAnyRole, isSuperAdmin } from '../../security/rbac.js';
 import { UserRole } from '../../types/user-role.js';
 
 export function authorize(...allowedRoles: UserRole[]) {
@@ -11,7 +11,15 @@ export function authorize(...allowedRoles: UserRole[]) {
       return;
     }
 
-    if (isAdmin(req.user.role)) {
+    if (isSuperAdmin(req.user.role)) {
+      next();
+      return;
+    }
+
+    if (
+      req.user.role === UserRole.ADMIN &&
+      allowedRoles.includes(UserRole.ADMIN)
+    ) {
       next();
       return;
     }

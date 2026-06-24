@@ -26,9 +26,14 @@ async function main(): Promise<void> {
 
     console.log('Demo seed completed successfully.');
     console.log('');
-    console.log('Tenant');
+    console.log('Tenant A');
     console.log(`  id:   ${result.tenantId}`);
     console.log(`  slug: ${result.tenantSlug}`);
+    console.log('');
+    console.log('Tenant B');
+    console.log(`  id:   ${result.secondaryTenantId}`);
+    console.log(`  slug: ${result.secondaryTenantSlug}`);
+    console.log(`  admin: admin.demo-b@supportflow.com`);
     console.log('');
     console.log('Users (login via POST /api/v1/auth/login)');
     console.log(`  admin:    ${result.adminEmail}`);

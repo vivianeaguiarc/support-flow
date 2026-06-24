@@ -1,4 +1,3 @@
-import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { AppError } from '../../../../shared/errors/app-error.js';
 import {
   assertCanAccessTicketQueues,
@@ -8,6 +7,7 @@ import {
   assertTicketAccess,
   canAccessInternalComments,
 } from '../../../../shared/security/rbac.js';
+import { resolveTenantId } from '../../../../shared/tenant/get-request-tenant-id.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import { UserRole } from '../../../../shared/types/user-role.js';
 import type { AgentMetricsResult } from '../../domain/agent-metrics.js';
@@ -105,7 +105,7 @@ export class TicketsService {
   ): Promise<Ticket> {
     assertCanCreateTicket(authUser, data);
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.openTicket.execute({
       tenantId,
@@ -120,7 +120,7 @@ export class TicketsService {
   }
 
   async findById(id: string, authUser: AuthenticatedUser): Promise<Ticket> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
     const ticket = await this.findTicket.execute({
       tenantId,
       ticketId: id,
@@ -160,7 +160,7 @@ export class TicketsService {
       sortOrder: 'desc',
     },
   ): Promise<PaginatedTicketList> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     if (
       authUser.role === UserRole.CUSTOMER &&
@@ -239,7 +239,7 @@ export class TicketsService {
   }
 
   async agentMetrics(authUser: AuthenticatedUser): Promise<AgentMetricsResult> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     if (
       authUser.role !== UserRole.ADMIN &&
@@ -255,7 +255,7 @@ export class TicketsService {
     authUser: AuthenticatedUser,
     query: TicketSummaryQueryInput = {},
   ): Promise<TicketSummary> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     if (
       authUser.role === UserRole.CUSTOMER &&
@@ -291,7 +291,7 @@ export class TicketsService {
     authUser: AuthenticatedUser,
     query: TicketMetricsQueryInput = {},
   ): Promise<TicketMetrics> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.getTicketMetrics.execute({
       tenantId,
@@ -325,7 +325,7 @@ export class TicketsService {
     const ticket = await this.findById(id, authUser);
     assertCanManageTicket(authUser, ticket);
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.updateTicketStatus.execute({
       tenantId,
@@ -343,7 +343,7 @@ export class TicketsService {
     assertCanAssignTicket(authUser);
     await this.findById(id, authUser);
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.assignTicket.execute({
       tenantId,
@@ -362,7 +362,7 @@ export class TicketsService {
       throw new AppError('Forbidden', 403);
     }
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.createComment.execute({
       ticketId,
@@ -380,7 +380,7 @@ export class TicketsService {
       throw new AppError('Forbidden', 403);
     }
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.listComments.execute({
       ticketId,
@@ -396,7 +396,7 @@ export class TicketsService {
     const ticket = await this.findById(ticketId, authUser);
     assertCanManageTicket(authUser, ticket);
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.uploadAttachmentUseCase.execute({
       ticketId,
@@ -410,7 +410,7 @@ export class TicketsService {
     ticketId: string,
     authUser: AuthenticatedUser,
   ): Promise<TicketAttachmentWithUploader[]> {
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     const ticket = await this.findById(ticketId, authUser);
 
@@ -428,7 +428,7 @@ export class TicketsService {
     const ticket = await this.findById(ticketId, authUser);
     assertCanManageTicket(authUser, ticket);
 
-    const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+    const tenantId = resolveTenantId(authUser);
 
     return this.deleteAttachmentUseCase.execute({
       attachmentId,

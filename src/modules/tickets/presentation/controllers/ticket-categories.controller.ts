@@ -1,9 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { buildPaginationMeta } from '../../../../shared/http/pagination/pagination.js';
 import { sendPaginatedSuccess } from '../../../../shared/http/response/api-response.js';
+import { resolveTenantId } from '../../../../shared/tenant/get-request-tenant-id.js';
 import type { TicketCategory } from '../../domain/ticket-category.entity.js';
 import {
   TicketCategoriesRepository,
@@ -24,7 +24,7 @@ export class TicketCategoriesController {
     try {
       const authUser = getAuthenticatedUser(req);
       const query = req.query as unknown as ListTicketCategoriesQueryDto;
-      const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+      const tenantId = resolveTenantId(authUser);
 
       const result = await this.repository.listWithFilters({
         tenantId,

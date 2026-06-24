@@ -1,12 +1,12 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { buildPaginationMeta } from '../../../../shared/http/pagination/pagination.js';
 import {
   sendPaginatedSuccess,
   sendSuccess,
 } from '../../../../shared/http/response/api-response.js';
+import { resolveTenantId } from '../../../../shared/tenant/get-request-tenant-id.js';
 import {
   TicketSlaService,
   ticketSlaService,
@@ -23,7 +23,7 @@ export class TicketSlaController {
   ): Promise<void> => {
     try {
       const authUser = getAuthenticatedUser(req);
-      const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+      const tenantId = resolveTenantId(authUser);
       const summary = await this.service.getSummaryForTenant(tenantId);
 
       sendSuccess(res, summary);
@@ -39,7 +39,7 @@ export class TicketSlaController {
   ): Promise<void> => {
     try {
       const authUser = getAuthenticatedUser(req);
-      const tenantId = authUser.tenantId ?? DEFAULT_TENANT_ID;
+      const tenantId = resolveTenantId(authUser);
       const query = req.query as unknown as ListBreachedSlaTicketsQueryDto;
       const result = await this.service.listBreachedForTenant({
         tenantId,

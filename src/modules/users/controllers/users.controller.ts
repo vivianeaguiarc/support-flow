@@ -1,19 +1,22 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { DEFAULT_TENANT_ID } from '../../../shared/constants/tenant.js';
-import { UnauthorizedError } from '../../../shared/errors/http-errors.js';
+import { getAuthenticatedUser } from '../../../shared/http/helpers/get-authenticated-user.js';
 import { buildPaginationMeta } from '../../../shared/http/pagination/pagination.js';
 import {
   sendPaginatedSuccess,
   sendSuccess,
 } from '../../../shared/http/response/api-response.js';
+import {
+  getRequestTenantId,
+  resolveTenantId,
+} from '../../../shared/tenant/get-request-tenant-id.js';
 import type { CreateUserDto } from '../dtos/create-user.dto.js';
 import type { ListUsersQueryDto } from '../dtos/list-users-query.dto.js';
 import { toPublicUser } from '../mappers/to-public-user.js';
 import { UsersService, usersService } from '../services/users.service.js';
 
 function getTenantId(req: Request): string {
-  return req.user?.tenantId ?? DEFAULT_TENANT_ID;
+  return getRequestTenantId(req, req.user);
 }
 
 export class UsersController {
@@ -45,13 +48,10 @@ export class UsersController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      if (!req.user) {
-        throw new UnauthorizedError();
-      }
-
+      const authUser = getAuthenticatedUser(req);
       const user = await this.service.findById(
         req.params.id as string,
-        req.user.tenantId,
+        resolveTenantId(authUser),
       );
       sendSuccess(res, toPublicUser(user));
     } catch (error) {
@@ -65,12 +65,9 @@ export class UsersController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      if (!req.user) {
-        throw new UnauthorizedError();
-      }
-
+      const authUser = getAuthenticatedUser(req);
       const query = req.query as unknown as ListUsersQueryDto;
-      const result = await this.service.list(req.user.tenantId, query);
+      const result = await this.service.list(resolveTenantId(authUser), query);
       sendPaginatedSuccess(
         res,
         result.data.map(toPublicUser),

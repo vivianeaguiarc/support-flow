@@ -101,6 +101,7 @@ const envSchema = z
       .enum(['true', 'false'])
       .optional()
       .transform((value) => parseOptionalBoolean(value, true)),
+    TENANT_BASE_DOMAIN: z.string().min(1).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.NODE_ENV !== 'production') {

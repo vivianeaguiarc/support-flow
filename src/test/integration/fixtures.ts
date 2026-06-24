@@ -13,6 +13,7 @@ export type IntegrationFixtures = {
   agentA: User;
   agentB: User;
   adminA: User;
+  superAdmin: User;
   customerA: Customer;
   customerB: Customer;
   categoryA: TicketCategory;
@@ -68,6 +69,16 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
     },
   });
 
+  const superAdmin = await integrationPrisma.user.create({
+    data: {
+      tenantId: tenantA.id,
+      name: 'Super Admin',
+      email: `super-admin-${Date.now()}@supportflow.test`,
+      password: hashedPassword,
+      role: UserRole.SUPER_ADMIN,
+    },
+  });
+
   const customerA = await integrationPrisma.customer.create({
     data: {
       tenantId: tenantA.id,
@@ -99,6 +110,7 @@ export async function seedIntegrationFixtures(): Promise<IntegrationFixtures> {
     agentA,
     agentB,
     adminA,
+    superAdmin,
     customerA,
     customerB,
     categoryA,

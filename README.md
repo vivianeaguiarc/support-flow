@@ -357,6 +357,51 @@ Health local: http://localhost:3000/health
 
 ---
 
+## Multi-tenant (isolamento por organização)
+
+O SupportFlow usa o modelo **Tenant** (organização) com `tenantId` em todas as entidades sensíveis. Cada requisição autenticada opera dentro de um **tenant scope** derivado do JWT e, opcionalmente, de hints externos.
+
+### Resolução do tenant por requisição
+
+Ordem de precedência dos hints (antes do JWT):
+
+1. **Subdomínio** — `{slug}.TENANT_BASE_DOMAIN` (ex.: `acme.supportflow.com` → slug `acme`)
+2. **Header `x-tenant-id`** — UUID da organização
+3. **Header `x-tenant-slug`** — slug da organização
+
+Após autenticação, o middleware aplica o escopo:
+
+| Papel                              | Comportamento                                                                                          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `AGENT`, `ADMIN`, `CUSTOMER`, etc. | Sempre restrito ao `tenantId` do JWT; header de outro tenant → `403 Cross-tenant access denied`        |
+| `SUPER_ADMIN`                      | Pode operar em qualquer tenant via header/subdomínio; feature flags globais são exclusivas deste papel |
+
+O tenant efetivo fica em `authUser.scopedTenantId` e é usado por `resolveTenantId()` nos serviços.
+
+### Entidades com `tenantId`
+
+Users, customers, tickets, comments, attachments, history, notifications, knowledge articles, automation rules/executions, API keys, webhooks/deliveries, satisfaction surveys, categories.
+
+**Feature flags** permanecem **globais da plataforma** (sem `tenantId`), gerenciadas apenas por `SUPER_ADMIN`.
+
+### Helpers
+
+| Arquivo                                                  | Função                                             |
+| -------------------------------------------------------- | -------------------------------------------------- |
+| `src/shared/http/middlewares/tenant-scope.middleware.ts` | Resolve contexto + aplica escopo                   |
+| `src/shared/tenant/resolve-tenant.ts`                    | Extrai hints de header/subdomínio                  |
+| `src/shared/tenant/tenant-scope.ts`                      | `withTenantScope()` para queries Prisma            |
+| `src/shared/security/tenant-access.ts`                   | `assertTicketForTenant`, `assertCrossTenantAccess` |
+
+### Demo seed
+
+O seed cria **duas organizações**:
+
+- **Tenant A** (`demo`) — dados completos de demonstração
+- **Tenant B** (`demo-b`) — organização secundária com admin `admin.demo-b@supportflow.com`
+
+---
+
 ## Event Bus interno (Domain Events)
 
 O backend usa um **Event Bus in-process** para desacoplar efeitos colaterais dos use cases de tickets. Após persistir o estado e o histórico, o use case publica um **domain event**; handlers registrados reagem de forma assíncrona (sem bloquear a transação principal).

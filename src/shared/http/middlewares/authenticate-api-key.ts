@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { apiKeysRepository } from '../../../modules/api-keys/infrastructure/repositories/api-keys.repository.js';
 import { UnauthorizedError } from '../../errors/http-errors.js';
+import { applyTenantScopeToRequest } from '../../http/middlewares/tenant-scope.middleware.js';
 import {
   BusinessEvent,
   logBusinessEvent,
@@ -69,6 +70,8 @@ export async function authenticateApiKey(
     };
     req.apiKeyId = apiKey.id;
     req.authMethod = 'api_key';
+
+    applyTenantScopeToRequest(req);
 
     void apiKeysRepository.touchLastUsedAt(apiKey.id).catch(() => undefined);
 

@@ -32,12 +32,12 @@ describe.sequential('Admin feature flags integration', () => {
     await disconnectTestDatabase();
   });
 
-  it('allows admin to create, list, update and delete feature flags', async () => {
+  it('allows super admin to create, list, update and delete feature flags', async () => {
     const fixtures = await seedIntegrationFixtures();
     const adminToken = createAuthToken({
-      id: fixtures.adminA.id,
-      email: fixtures.adminA.email,
-      role: UserRole.ADMIN,
+      id: fixtures.superAdmin.id,
+      email: fixtures.superAdmin.email,
+      role: UserRole.SUPER_ADMIN,
       tenantId: fixtures.tenantA.id,
     });
     const adminApi = authRequest(app, adminToken);
@@ -85,6 +85,20 @@ describe.sequential('Admin feature flags integration', () => {
     expect(afterDelete.body.data).toHaveLength(0);
   });
 
+  it('forbids tenant admin from managing platform feature flags', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const adminToken = createAuthToken({
+      id: fixtures.adminA.id,
+      email: fixtures.adminA.email,
+      role: UserRole.ADMIN,
+      tenantId: fixtures.tenantA.id,
+    });
+
+    await authRequest(app, adminToken)
+      .get('/api/v1/admin/feature-flags')
+      .expect(403);
+  });
+
   it('forbids non-admin users from managing feature flags', async () => {
     const fixtures = await seedIntegrationFixtures();
     const agentToken = createAuthToken({
@@ -101,15 +115,15 @@ describe.sequential('Admin feature flags integration', () => {
 
   it('blocks csv export when reports.csv flag is disabled', async () => {
     const fixtures = await seedIntegrationFixtures();
-    const adminToken = createAuthToken({
-      id: fixtures.adminA.id,
-      email: fixtures.adminA.email,
-      role: UserRole.ADMIN,
+    const superAdminToken = createAuthToken({
+      id: fixtures.superAdmin.id,
+      email: fixtures.superAdmin.email,
+      role: UserRole.SUPER_ADMIN,
       tenantId: fixtures.tenantA.id,
     });
-    const adminApi = authRequest(app, adminToken);
+    const superAdminApi = authRequest(app, superAdminToken);
 
-    await adminApi
+    await superAdminApi
       .post('/api/v1/admin/feature-flags')
       .send({
         key: FeatureFlagKey.REPORTS_CSV,
@@ -117,6 +131,15 @@ describe.sequential('Admin feature flags integration', () => {
       })
       .expect(201);
 
-    await adminApi.get('/api/v1/reports/tickets.csv').expect(403);
+    const adminToken = createAuthToken({
+      id: fixtures.adminA.id,
+      email: fixtures.adminA.email,
+      role: UserRole.ADMIN,
+      tenantId: fixtures.tenantA.id,
+    });
+
+    await authRequest(app, adminToken)
+      .get('/api/v1/reports/tickets.csv')
+      .expect(403);
   });
 });

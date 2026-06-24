@@ -1,6 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { DEFAULT_TENANT_ID } from '../../../../shared/constants/tenant.js';
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { buildPaginationMeta } from '../../../../shared/http/pagination/pagination.js';
 import { getRouteParam } from '../../../../shared/http/request-params.js';
@@ -8,6 +7,7 @@ import {
   sendPaginatedSuccess,
   sendSuccess,
 } from '../../../../shared/http/response/api-response.js';
+import { getRequestTenantId } from '../../../../shared/tenant/get-request-tenant-id.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import { knowledgeArticlesService } from '../../application/services/knowledge-articles.service.js';
 import type { CreateKnowledgeArticleDto } from '../dtos/create-knowledge-article.dto.js';
@@ -15,7 +15,7 @@ import type { ListKnowledgeArticlesQueryDto } from '../dtos/list-knowledge-artic
 import type { UpdateKnowledgeArticleDto } from '../dtos/update-knowledge-article.dto.js';
 
 function resolveTenantId(req: Request): string {
-  return req.user?.tenantId ?? DEFAULT_TENANT_ID;
+  return getRequestTenantId(req, req.user);
 }
 
 function resolveOptionalAuthUser(req: Request): AuthenticatedUser | undefined {

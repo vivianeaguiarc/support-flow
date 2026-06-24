@@ -5,4 +5,6 @@ export type AuthenticatedUser = {
   email: string;
   role: UserRole;
   tenantId: string;
+  /** Effective tenant for data access (super admin override via header/subdomain). */
+  scopedTenantId?: string;
 };

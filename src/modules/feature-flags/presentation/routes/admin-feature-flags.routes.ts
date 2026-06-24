@@ -13,24 +13,27 @@ import {
 
 export const adminFeatureFlagsRouter = Router();
 
-const adminOnly = [authenticate, authorize(...ROLE_GROUPS.USER_ADMIN)] as const;
+const platformAdminOnly = [
+  authenticate,
+  authorize(...ROLE_GROUPS.PLATFORM_ADMIN),
+] as const;
 
 adminFeatureFlagsRouter.post(
   '/',
-  ...adminOnly,
+  ...platformAdminOnly,
   validateRequest({ body: createFeatureFlagSchema }),
   adminFeatureFlagsController.create,
 );
 
 adminFeatureFlagsRouter.get(
   '/',
-  ...adminOnly,
+  ...platformAdminOnly,
   adminFeatureFlagsController.list,
 );
 
 adminFeatureFlagsRouter.patch(
   '/:key',
-  ...adminOnly,
+  ...platformAdminOnly,
   validateRequest({
     params: featureFlagKeyParamSchema,
     body: updateFeatureFlagSchema,
@@ -40,7 +43,7 @@ adminFeatureFlagsRouter.patch(
 
 adminFeatureFlagsRouter.delete(
   '/:key',
-  ...adminOnly,
+  ...platformAdminOnly,
   validateRequest({ params: featureFlagKeyParamSchema }),
   adminFeatureFlagsController.remove,
 );

@@ -1,3 +1,4 @@
+import type { Organization } from '../../shared/tenant/organization.entity.js';
 import type { AuthenticatedUser } from '../../types/authenticated-user.js';
 
 declare global {
@@ -7,6 +8,8 @@ declare global {
       id?: string | number;
       apiKeyId?: string;
       authMethod?: 'jwt' | 'api_key';
+      tenantId?: string;
+      organization?: Organization;
     }
   }
 }

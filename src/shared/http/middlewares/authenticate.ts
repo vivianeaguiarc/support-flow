@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { UnauthorizedError } from '../../errors/http-errors.js';
+import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
+import { applyTenantScopeToRequest } from '../../http/middlewares/tenant-scope.middleware.js';
 import {
   BusinessEvent,
   logBusinessEvent,
@@ -34,8 +35,13 @@ export function authenticate(
 
   try {
     req.user = verifyToken(token);
+    applyTenantScopeToRequest(req);
     next();
-  } catch {
+  } catch (error) {
+    if (error instanceof ForbiddenError) {
+      next(error);
+      return;
+    }
     logBusinessEvent(BusinessEvent.AUTH_UNAUTHORIZED, {
       reason: 'invalid_or_expired_token',
     });

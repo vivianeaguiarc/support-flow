@@ -24,6 +24,7 @@ import { notFoundHandler } from './shared/http/middlewares/not-found-handler.js'
 import { rateLimitMiddleware } from './shared/http/middlewares/rate-limit.js';
 import { requestTracing } from './shared/http/middlewares/request-tracing.js';
 import { securityMiddleware } from './shared/http/middlewares/security.js';
+import { resolveTenantContext } from './shared/http/middlewares/tenant-scope.middleware.js';
 import { healthRouter } from './shared/http/routes/health.routes.js';
 import { httpLogger } from './shared/logger/http-logger.js';
 
@@ -52,6 +53,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.use(express.json({ limit: '1mb' }));
 
   const apiRouter = express.Router();
+  apiRouter.use(resolveTenantContext);
   apiRouter.use('/health', healthRouter);
   apiRouter.get('/metrics', prometheusMetricsHandler);
   apiRouter.use('/auth', authRouter);

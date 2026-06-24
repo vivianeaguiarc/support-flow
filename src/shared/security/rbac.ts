@@ -4,7 +4,8 @@ import { TicketStatus } from '../types/ticket-status.js';
 import { UserRole } from '../types/user-role.js';
 
 export const ROLE_GROUPS = {
-  USER_ADMIN: [UserRole.ADMIN],
+  PLATFORM_ADMIN: [UserRole.SUPER_ADMIN],
+  USER_ADMIN: [UserRole.SUPER_ADMIN, UserRole.ADMIN],
   TICKET_CREATE: [
     UserRole.CUSTOMER,
     UserRole.AGENT,
@@ -60,7 +61,11 @@ export const ROLE_GROUPS = {
 } as const satisfies Record<string, UserRole[]>;
 
 export function isAdmin(role: UserRole): boolean {
-  return role === UserRole.ADMIN;
+  return role === UserRole.ADMIN || role === UserRole.SUPER_ADMIN;
+}
+
+export function isSuperAdmin(role: UserRole): boolean {
+  return role === UserRole.SUPER_ADMIN;
 }
 
 export function hasAnyRole(role: UserRole, allowedRoles: UserRole[]): boolean {
