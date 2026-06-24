@@ -40,6 +40,11 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/knowledge/articles/{id}/publish': ['patch'],
   '/knowledge/articles/{id}/archive': ['patch'],
   '/admin/notifications/health': ['get'],
+  '/analytics/overview': ['get'],
+  '/analytics/tickets-by-status': ['get'],
+  '/analytics/tickets-by-priority': ['get'],
+  '/analytics/sla': ['get'],
+  '/analytics/agents-performance': ['get'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };
@@ -86,6 +91,8 @@ describe('swaggerSpec', () => {
     expect(schemas.KnowledgeArticleStatus).toBeDefined();
     expect(schemas.KnowledgeArticle).toBeDefined();
     expect(schemas.EmailProviderHealth).toBeDefined();
+    expect(schemas.AnalyticsOverview).toBeDefined();
+    expect(schemas.AnalyticsSla).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();
     expect(schemas.ApiPaginatedSuccessResponse).toBeDefined();
     expect(schemas.PaginationMeta).toBeDefined();

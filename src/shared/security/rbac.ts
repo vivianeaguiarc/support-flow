@@ -45,6 +45,7 @@ export const ROLE_GROUPS = {
     UserRole.ADMIN,
   ],
   METRICS: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
+  ANALYTICS: [UserRole.ADMIN, UserRole.SUPERVISOR],
   ROUTING: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
   CUSTOMER_LIST: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
   CATEGORY_LIST: [

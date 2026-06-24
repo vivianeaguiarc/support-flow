@@ -1045,6 +1045,103 @@ const options: Options = {
             },
           },
         },
+        AnalyticsPeriodCount: {
+          type: 'object',
+          properties: {
+            period: {
+              type: 'string',
+              format: 'date',
+              example: '2026-06-01',
+            },
+            count: {
+              type: 'integer',
+              example: 12,
+            },
+          },
+        },
+        AnalyticsOverview: {
+          type: 'object',
+          properties: {
+            totalTickets: { type: 'integer', example: 150 },
+            openTickets: { type: 'integer', example: 45 },
+            inProgressTickets: { type: 'integer', example: 32 },
+            resolvedTickets: { type: 'integer', example: 42 },
+            closedTickets: { type: 'integer', example: 14 },
+            slaBreachedTickets: { type: 'integer', example: 8 },
+            slaComplianceRate: { type: 'number', example: 85.5 },
+            avgResolutionTimeHours: { type: 'number', example: 24.5 },
+            ticketsCreatedByPeriod: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AnalyticsPeriodCount' },
+            },
+          },
+        },
+        AnalyticsTicketsByStatus: {
+          type: 'object',
+          properties: {
+            total: { type: 'integer', example: 150 },
+            byStatus: {
+              type: 'object',
+              additionalProperties: { type: 'integer' },
+              example: {
+                OPEN: 45,
+                IN_PROGRESS: 32,
+                WAITING_CUSTOMER: 12,
+                ESCALATED: 5,
+                RESOLVED: 42,
+                CLOSED: 14,
+              },
+            },
+          },
+        },
+        AnalyticsTicketsByPriority: {
+          type: 'object',
+          properties: {
+            total: { type: 'integer', example: 150 },
+            byPriority: {
+              type: 'object',
+              additionalProperties: { type: 'integer' },
+              example: {
+                LOW: 60,
+                MEDIUM: 50,
+                HIGH: 30,
+                URGENT: 10,
+              },
+            },
+          },
+        },
+        AnalyticsSla: {
+          type: 'object',
+          properties: {
+            onTime: { type: 'integer', example: 20 },
+            warning: { type: 'integer', example: 5 },
+            breached: { type: 'integer', example: 3 },
+            total: { type: 'integer', example: 28 },
+            slaComplianceRate: { type: 'number', example: 85.5 },
+            slaBreachedTickets: { type: 'integer', example: 8 },
+          },
+        },
+        AnalyticsAgentPerformance: {
+          type: 'object',
+          properties: {
+            agentId: { type: 'string', format: 'uuid' },
+            agentName: { type: 'string', example: 'Maria Santos' },
+            assignedTickets: { type: 'integer', example: 25 },
+            resolvedTickets: { type: 'integer', example: 18 },
+            openTickets: { type: 'integer', example: 7 },
+            slaBreachedTickets: { type: 'integer', example: 2 },
+            avgResolutionTimeHours: { type: 'number', example: 22.3 },
+          },
+        },
+        AnalyticsAgentsPerformance: {
+          type: 'object',
+          properties: {
+            agents: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AnalyticsAgentPerformance' },
+            },
+          },
+        },
         TicketStatusTransitions: {
           type: 'object',
           properties: {

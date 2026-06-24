@@ -2,6 +2,7 @@ import express from 'express';
 
 import { env } from './config/env.js';
 import { setupSwagger } from './config/setup-swagger.js';
+import { analyticsRouter } from './modules/analytics/presentation/routes/analytics.routes.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
 import { customersRouter } from './modules/customers/routes/customers.routes.js';
 import { adminRouter } from './modules/email/presentation/routes/admin-notifications.routes.js';
@@ -48,6 +49,7 @@ export function createApp(options: CreateAppOptions = {}) {
   apiRouter.use('/ticket-categories', ticketCategoriesRouter);
   apiRouter.use('/tickets', ticketsRouter);
   apiRouter.use('/metrics', metricsRouter);
+  apiRouter.use('/analytics', analyticsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   apiRouter.use('/knowledge', knowledgeRouter);
   apiRouter.use('/admin', adminRouter);
