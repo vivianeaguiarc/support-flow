@@ -845,6 +845,42 @@ Toda criação, atualização ou remoção gera registro em `feature_flag_audits
 
 Em Docker/produção, as migrations rodam automaticamente via `scripts/docker-entrypoint.sh`. O **seed não roda automaticamente** — execute manualmente quando necessário.
 
+## Backup e Disaster Recovery
+
+Estratégia de backup lógico do PostgreSQL baseada em `pg_dump` (formato custom, comprimido) com verificação automática e retenção configurável. A estratégia completa (RPO, RTO, runbook, riscos e limitações) está em [`docs/disaster-recovery.md`](docs/disaster-recovery.md).
+
+| Comando                 | Uso                                                      |
+| ----------------------- | -------------------------------------------------------- |
+| `pnpm db:backup`        | Cria dump comprimido com timestamp e verifica o arquivo  |
+| `pnpm db:restore`       | Restaura um dump (destrutivo, exige confirmação)         |
+| `pnpm db:backup:verify` | Valida um arquivo de backup (existe, não vazio, legível) |
+
+```bash
+# Criar backup local (requer pg_dump instalado)
+BACKUP_ENABLED=true pnpm db:backup
+# -> backups/supportflow_<db>_<YYYYMMDD_HHMMSSZ>.dump
+
+# Verificar um backup
+pnpm db:backup:verify -- backups/supportflow_supportflow_20260624_180000Z.dump
+
+# Restaurar (digite o nome do banco para confirmar)
+pnpm db:restore -- backups/supportflow_supportflow_20260624_180000Z.dump
+```
+
+Variáveis (somente para os scripts em `scripts/backup/`, não fazem parte do runtime da aplicação):
+
+| Variável                | Padrão         | Descrição                                                             |
+| ----------------------- | -------------- | --------------------------------------------------------------------- |
+| `BACKUP_ENABLED`        | `false`        | Deve ser `true` para o backup executar (trava de segurança)           |
+| `BACKUP_DATABASE_URL`   | `DATABASE_URL` | String de conexão usada por `pg_dump`/`pg_restore`                    |
+| `BACKUP_OUTPUT_DIR`     | `backups`      | Pasta local onde os dumps são gravados e expurgados                   |
+| `BACKUP_RETENTION_DAYS` | `7`            | Dias de retenção; dumps mais antigos são removidos (`0` mantém todos) |
+
+- **RPO alvo:** ≤ 5 min (via PITR do provedor gerenciado); ≤ 24h pelos dumps lógicos.
+- **RTO alvo:** ≤ 1 hora.
+- O restore é **destrutivo** (`--clean --if-exists`) e **nunca roda em produção sem confirmação** (digite o nome do banco ou use `FORCE_RESTORE=true` apenas em automação).
+- Dumps **nunca são commitados** (ignorados no `.gitignore`).
+
 ## Dados Demo
 
 Base fictícia e idempotente para testes locais, validação em staging/produção e apresentação do portfólio. O seed **não roda automaticamente** no deploy — execute manualmente após as migrations.
@@ -1099,6 +1135,9 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 | `pnpm prisma:studio`                              | UI visual do banco                                      |
 | `pnpm prisma:seed` / `pnpm db:seed` / `pnpm seed` | Popula dados demo idempotentes                          |
 | `pnpm db:reset:demo`                              | Remove e recria apenas o tenant demo                    |
+| `pnpm db:backup`                                  | Backup PostgreSQL (`pg_dump` custom + verificação)      |
+| `pnpm db:restore`                                 | Restaura um backup (destrutivo, exige confirmação)      |
+| `pnpm db:backup:verify`                           | Verifica integridade de um arquivo de backup            |
 | `pnpm seed:staging`                               | Seed demo em staging (`SEED_DEMO_ENABLED=true`)         |
 | `pnpm test` / `pnpm test:integration`             | Testes unitários / E2E                                  |
 | `pnpm test:watch` / `pnpm test:coverage`          | Watch mode / cobertura                                  |

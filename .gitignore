@@ -10,3 +10,8 @@ coverage
 Thumbs.db
 
 /src/generated/prisma
+
+# Database backups (never commit dumps)
+/backups
+*.dump
+*.sql.gz
