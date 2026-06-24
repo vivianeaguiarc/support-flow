@@ -64,6 +64,7 @@ O SupportFlow Backend entrega essa base como **API modular**, pronta para integr
 ### Autenticação e usuários
 
 - Login com par **access + refresh token** (`POST /auth/login`, `/auth/refresh`, `/auth/logout`)
+- Usuário autenticado via `GET /auth/me` (Bearer) — retorna `id`, `name`, `email`, `role`, `tenantId`, `createdAt`, `updatedAt`, sem dados sensíveis
 - Rotação de refresh token a cada renovação de sessão
 - Perfis RBAC: `ADMIN`, `SUPERVISOR`, `AGENT`, `CUSTOMER`, `OMBUDSMAN`
 - Registro público restrito a `CUSTOMER`; criação de perfis staff exige administrador autenticado
@@ -1061,7 +1062,7 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
 | Tag                | Rotas                                                                                                  |
 | ------------------ | ------------------------------------------------------------------------------------------------------ |
-| Authentication     | `POST /auth/login`, `/auth/refresh`, `/auth/logout`                                                    |
+| Authentication     | `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me`                                    |
 | Users              | `POST/GET /users`, `GET /users/{id}`                                                                   |
 | Tickets            | CRUD, status, assign, transitions, history, summary, metrics, auto-assign, route, recalculate-priority |
 | Ticket Comments    | `POST/GET /tickets/{id}/comments`                                                                      |
