@@ -38,6 +38,7 @@ export async function resetTestDatabase(): Promise<void> {
       refresh_tokens,
       feature_flag_audits,
       feature_flags,
+      security_audit_logs,
       tickets,
       ticket_categories,
       customers,

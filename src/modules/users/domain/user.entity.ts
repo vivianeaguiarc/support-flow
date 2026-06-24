@@ -7,6 +7,8 @@ export type User = {
   email: string;
   password: string;
   role: UserRole;
+  failedLoginAttempts: number;
+  lockedUntil: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

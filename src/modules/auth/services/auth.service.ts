@@ -10,14 +10,24 @@ import {
   verifyRefreshToken,
 } from '../../../shared/security/jwt.js';
 import { comparePassword } from '../../../shared/security/password-hash.js';
+import { securityAuditService } from '../../../shared/security/security-audit/security-audit.service.js';
 import { hashRefreshToken } from '../../../shared/security/token-hash.js';
 import type { User } from '../../users/domain/user.entity.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
+import {
+  LoginSecurityRepository,
+  loginSecurityRepository as defaultLoginSecurityRepository,
+} from '../repositories/login-security.repository.js';
 import type { RefreshTokensRepository } from '../repositories/refresh-tokens.repository.js';
 
 export type LoginInput = {
   email: string;
   password: string;
+};
+
+export type LoginContext = {
+  ipAddress?: string;
+  userAgent?: string;
 };
 
 export type TokenPair = {
@@ -41,32 +51,78 @@ export class AuthService {
   constructor(
     private readonly usersRepository: UsersRepository,
     private readonly refreshTokensRepository: RefreshTokensRepository,
+    private readonly loginSecurityRepository: LoginSecurityRepository = defaultLoginSecurityRepository,
     private readonly verifyPassword: VerifyPasswordFn = comparePassword,
   ) {}
 
-  async login(data: LoginInput): Promise<LoginResult> {
+  async login(
+    data: LoginInput,
+    context: LoginContext = {},
+  ): Promise<LoginResult> {
     const user = await this.usersRepository.findByEmail(data.email);
 
     if (!user) {
-      logBusinessEvent(BusinessEvent.AUTH_LOGIN_FAILED, {
-        reason: 'invalid_credentials',
-      });
+      this.auditLoginFailed(data.email, context);
       throw new AppError('Invalid credentials', 401);
+    }
+
+    const unlockedUser =
+      await this.loginSecurityRepository.clearExpiredLock(user);
+
+    if (await this.loginSecurityRepository.isAccountLocked(unlockedUser)) {
+      await securityAuditService.record('LOGIN_LOCKED', {
+        tenantId: unlockedUser.tenantId,
+        userId: unlockedUser.id,
+        email: unlockedUser.email,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      });
+      throw new AppError(
+        'Account temporarily locked due to multiple failed login attempts',
+        423,
+      );
     }
 
     const isPasswordValid = await this.verifyPassword(
       data.password,
-      user.password,
+      unlockedUser.password,
     );
 
     if (!isPasswordValid) {
-      logBusinessEvent(BusinessEvent.AUTH_LOGIN_FAILED, {
-        reason: 'invalid_credentials',
+      const lockState =
+        await this.loginSecurityRepository.recordFailedLogin(unlockedUser);
+
+      this.auditLoginFailed(unlockedUser.email, context, {
+        tenantId: unlockedUser.tenantId,
+        userId: unlockedUser.id,
+        locked: lockState.locked,
       });
+
+      if (lockState.locked) {
+        await securityAuditService.record('LOGIN_LOCKED', {
+          tenantId: unlockedUser.tenantId,
+          userId: unlockedUser.id,
+          email: unlockedUser.email,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          metadata: {
+            lockedUntil: lockState.lockedUntil?.toISOString(),
+          },
+        });
+        throw new AppError(
+          'Account temporarily locked due to multiple failed login attempts',
+          423,
+        );
+      }
+
       throw new AppError('Invalid credentials', 401);
     }
 
-    return this.issueTokenPair(user);
+    await this.loginSecurityRepository.resetAfterSuccessfulLogin(
+      unlockedUser.id,
+    );
+
+    return this.issueTokenPair(unlockedUser);
   }
 
   async refresh(data: RefreshInput): Promise<TokenPair> {
@@ -105,6 +161,32 @@ export class AuthService {
     await this.refreshTokensRepository.revoke(storedToken!.id);
 
     return { message: 'Logged out successfully' };
+  }
+
+  private auditLoginFailed(
+    email: string,
+    context: LoginContext,
+    extra: {
+      tenantId?: string;
+      userId?: string;
+      locked?: boolean;
+    } = {},
+  ): void {
+    logBusinessEvent(BusinessEvent.AUTH_LOGIN_FAILED, {
+      reason: 'invalid_credentials',
+      locked: extra.locked ?? false,
+    });
+
+    void securityAuditService.record('LOGIN_FAILED', {
+      tenantId: extra.tenantId,
+      userId: extra.userId,
+      email,
+      ipAddress: context.ipAddress,
+      userAgent: context.userAgent,
+      metadata: {
+        locked: extra.locked ?? false,
+      },
+    });
   }
 
   private async issueTokenPair(user: User): Promise<TokenPair> {

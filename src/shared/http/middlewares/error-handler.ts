@@ -44,7 +44,7 @@ export function errorHandler(
   _next: NextFunction,
 ): void {
   const operationalError = resolveOperationalError(err);
-  const includeDetails = env.NODE_ENV !== 'production';
+  const includeDetails = env.NODE_ENV === 'development';
   const requestId = getRequestId(req);
 
   if (operationalError) {

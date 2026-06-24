@@ -1,5 +1,7 @@
 import { AppError } from '../../../shared/errors/app-error.js';
 import { hashPassword } from '../../../shared/security/password-hash.js';
+import { securityAuditService } from '../../../shared/security/security-audit/security-audit.service.js';
+import { UserRole } from '../../../shared/types/user-role.js';
 import type { User } from '../domain/user.entity.js';
 import type { ListUsersQueryDto } from '../dtos/list-users-query.dto.js';
 import {
@@ -22,10 +24,23 @@ export class UsersService {
 
     const hashedPassword = await hashPassword(data.password);
 
-    return this.repository.create({
+    const user = await this.repository.create({
       ...data,
       password: hashedPassword,
     });
+
+    if (user.role !== UserRole.CUSTOMER) {
+      void securityAuditService.record('USER_PERMISSION_ASSIGNED', {
+        tenantId: user.tenantId,
+        userId: user.id,
+        email: user.email,
+        metadata: {
+          role: user.role,
+        },
+      });
+    }
+
+    return user;
   }
 
   async findById(id: string, tenantId: string): Promise<User> {

@@ -125,7 +125,7 @@ describe('errorHandler', () => {
       error: {
         code: ErrorCode.INTERNAL_SERVER_ERROR,
         message: 'Internal server error',
-        details: ['database exploded'],
+        details: [],
       },
       requestId: 'req-3',
     });

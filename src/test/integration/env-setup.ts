@@ -17,4 +17,6 @@ process.env.CORS_ORIGIN = 'http://localhost:5173';
 process.env.RATE_LIMIT_ENABLED = 'false';
 process.env.RATE_LIMIT_WINDOW_MS = '900000';
 process.env.RATE_LIMIT_MAX_REQUESTS = '10000';
+process.env.LOGIN_MAX_FAILED_ATTEMPTS = '3';
+process.env.LOGIN_LOCK_DURATION_MS = '60000';
 process.env.LOG_LEVEL = 'warn';

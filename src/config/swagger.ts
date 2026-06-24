@@ -30,7 +30,8 @@ const options: Options = {
       version: '1.0',
       description:
         'API completa para gerenciamento de atendimento ao cliente, SAC e Ouvidoria. ' +
-        'Clientes (`Customer`) são entidades internas referenciadas por `customerId` na criação de chamados — não há endpoints REST públicos de CRUD de clientes.',
+        'Clientes (`Customer`) são entidades internas referenciadas por `customerId` na criação de chamados — não há endpoints REST públicos de CRUD de clientes. ' +
+        'Segurança: rate limits por endpoint sensível, lock de login após tentativas inválidas, payloads Zod strict, sanitização de texto e auditoria em `security_audit_logs`.',
       contact: {
         name: 'SupportFlow Team',
         email: 'support@supportflow.com',

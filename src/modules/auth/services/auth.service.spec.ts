@@ -5,8 +5,18 @@ import { AppError } from '../../../shared/errors/app-error.js';
 import { UserRole } from '../../../shared/types/user-role.js';
 import type { User } from '../../users/domain/user.entity.js';
 import type { UsersRepository } from '../../users/repositories/users.repository.js';
+import type { LoginSecurityRepository } from '../repositories/login-security.repository.js';
 import type { RefreshTokensRepository } from '../repositories/refresh-tokens.repository.js';
 import { AuthService } from './auth.service.js';
+
+vi.mock(
+  '../../../shared/security/security-audit/security-audit.service.js',
+  () => ({
+    securityAuditService: {
+      record: vi.fn(),
+    },
+  }),
+);
 
 const mockUser: User = {
   id: 'user-1',
@@ -15,6 +25,8 @@ const mockUser: User = {
   email: 'john@example.com',
   password: 'hashed-password',
   role: UserRole.CUSTOMER,
+  failedLoginAttempts: 0,
+  lockedUntil: null,
   createdAt: new Date('2026-01-01T00:00:00.000Z'),
   updatedAt: new Date('2026-01-01T00:00:00.000Z'),
 };
@@ -57,6 +69,18 @@ function createUsersRepositoryMock(): UsersRepository {
   };
 }
 
+function createLoginSecurityRepositoryMock(): LoginSecurityRepository {
+  return {
+    clearExpiredLock: vi.fn(async (user) => user),
+    isAccountLocked: vi.fn(async () => false),
+    recordFailedLogin: vi.fn(async () => ({
+      locked: false,
+      lockedUntil: null,
+    })),
+    resetAfterSuccessfulLogin: vi.fn(),
+  };
+}
+
 function createRefreshTokensRepositoryMock(): RefreshTokensRepository {
   return {
     create: vi.fn(),
@@ -68,16 +92,19 @@ function createRefreshTokensRepositoryMock(): RefreshTokensRepository {
 describe('AuthService', () => {
   let usersRepository: UsersRepository;
   let refreshTokensRepository: RefreshTokensRepository;
+  let loginSecurityRepository: LoginSecurityRepository;
   let verifyPassword: ReturnType<typeof vi.fn>;
   let service: AuthService;
 
   beforeEach(() => {
     usersRepository = createUsersRepositoryMock();
     refreshTokensRepository = createRefreshTokensRepositoryMock();
+    loginSecurityRepository = createLoginSecurityRepositoryMock();
     verifyPassword = vi.fn();
     service = new AuthService(
       usersRepository,
       refreshTokensRepository,
+      loginSecurityRepository,
       verifyPassword as never,
     );
   });
@@ -98,6 +125,9 @@ describe('AuthService', () => {
       'plain-password',
       'hashed-password',
     );
+    expect(
+      loginSecurityRepository.resetAfterSuccessfulLogin,
+    ).toHaveBeenCalledWith(mockUser.id);
     expect(refreshTokensRepository.create).toHaveBeenCalledWith({
       userId: mockUser.id,
       tenantId: mockUser.tenantId,
@@ -134,6 +164,44 @@ describe('AuthService', () => {
       }),
     ).rejects.toEqual(new AppError('Invalid credentials', 401));
     expect(refreshTokensRepository.create).not.toHaveBeenCalled();
+  });
+
+  it('should reject login when account is locked', async () => {
+    vi.mocked(usersRepository.findByEmail).mockResolvedValue(mockUser);
+    vi.mocked(loginSecurityRepository.isAccountLocked).mockResolvedValue(true);
+
+    await expect(
+      service.login({
+        email: 'john@example.com',
+        password: 'plain-password',
+      }),
+    ).rejects.toEqual(
+      new AppError(
+        'Account temporarily locked due to multiple failed login attempts',
+        423,
+      ),
+    );
+  });
+
+  it('should lock account after repeated invalid passwords', async () => {
+    vi.mocked(usersRepository.findByEmail).mockResolvedValue(mockUser);
+    verifyPassword.mockResolvedValue(false);
+    vi.mocked(loginSecurityRepository.recordFailedLogin).mockResolvedValue({
+      locked: true,
+      lockedUntil: new Date('2030-01-01T00:00:00.000Z'),
+    });
+
+    await expect(
+      service.login({
+        email: 'john@example.com',
+        password: 'wrong-password',
+      }),
+    ).rejects.toEqual(
+      new AppError(
+        'Account temporarily locked due to multiple failed login attempts',
+        423,
+      ),
+    );
   });
 
   it('should rotate refresh token and issue a new token pair', async () => {

@@ -1,11 +1,15 @@
 import { z } from 'zod';
 
-export const createTicketCommentSchema = z.object({
-  content: z
-    .string()
-    .trim()
-    .min(1, 'Comment content is required')
-    .max(5000, 'Comment content must be at most 5000 characters'),
-});
+import { sanitizedString } from '../../../../shared/validation/zod-helpers.js';
+
+export const createTicketCommentSchema = z
+  .object({
+    content: sanitizedString({
+      min: 1,
+      max: 5000,
+      message: 'Comment content is required',
+    }),
+  })
+  .strict();
 
 export type CreateTicketCommentDto = z.infer<typeof createTicketCommentSchema>;

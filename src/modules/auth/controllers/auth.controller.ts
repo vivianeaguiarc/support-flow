@@ -1,5 +1,9 @@
 import type { NextFunction, Request, Response } from 'express';
 
+import {
+  getClientIp,
+  getUserAgent,
+} from '../../../shared/http/request-client.js';
 import { sendSuccess } from '../../../shared/http/response/api-response.js';
 import type { LoginDto } from '../dtos/login.dto.js';
 import type { LogoutDto } from '../dtos/logout.dto.js';
@@ -15,7 +19,10 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const result = await this.service.login(req.body as LoginDto);
+      const result = await this.service.login(req.body as LoginDto, {
+        ipAddress: getClientIp(req),
+        userAgent: getUserAgent(req),
+      });
       sendSuccess(res, result);
     } catch (error) {
       next(error);

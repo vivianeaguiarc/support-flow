@@ -4,6 +4,7 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import { generateApiKey } from '../../../../shared/security/api-key.js';
+import { securityAuditService } from '../../../../shared/security/security-audit/security-audit.service.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import type { ApiKey, ApiKeyWithSecret } from '../../domain/api-key.entity.js';
 import {
@@ -39,6 +40,15 @@ export class ApiKeysService {
       prefix: apiKey.prefix,
     });
 
+    void securityAuditService.record('API_KEY_CREATED', {
+      tenantId: authUser.tenantId,
+      actorId: authUser.id,
+      metadata: {
+        apiKeyId: apiKey.id,
+        prefix: apiKey.prefix,
+      },
+    });
+
     return { ...apiKey, key };
   }
 
@@ -63,6 +73,15 @@ export class ApiKeysService {
       apiKeyId: apiKey.id,
       actorId: authUser.id,
       prefix: apiKey.prefix,
+    });
+
+    void securityAuditService.record('API_KEY_REVOKED', {
+      tenantId: authUser.tenantId,
+      actorId: authUser.id,
+      metadata: {
+        apiKeyId: apiKey.id,
+        prefix: apiKey.prefix,
+      },
     });
 
     return apiKey;

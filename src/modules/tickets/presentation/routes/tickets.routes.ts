@@ -2,6 +2,8 @@ import { Router } from 'express';
 
 import { authenticate } from '../../../../shared/http/middlewares/authenticate.js';
 import { authorize } from '../../../../shared/http/middlewares/authorize.js';
+import { attachmentUploadRateLimit } from '../../../../shared/http/middlewares/sensitive-rate-limits.js';
+import { ticketCreateRateLimit } from '../../../../shared/http/middlewares/sensitive-rate-limits.js';
 import { upload } from '../../../../shared/http/middlewares/upload.middleware.js';
 import { validateRequest } from '../../../../shared/http/middlewares/validate-request.js';
 import { ROLE_GROUPS } from '../../../../shared/security/rbac.js';
@@ -32,6 +34,7 @@ export const ticketsRouter = Router();
 
 ticketsRouter.post(
   '/',
+  ...ticketCreateRateLimit,
   authenticate,
   authorize(...ROLE_GROUPS.TICKET_CREATE),
   validateRequest({ body: createTicketSchema }),
@@ -210,6 +213,7 @@ ticketsRouter.get(
 
 ticketsRouter.post(
   '/:id/attachments',
+  ...attachmentUploadRateLimit,
   authenticate,
   authorize(...ROLE_GROUPS.ATTACHMENT_MANAGE, UserRole.OMBUDSMAN),
   validateRequest({ params: ticketIdParamSchema }),

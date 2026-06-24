@@ -52,6 +52,48 @@ const envSchema = z
       .int()
       .positive()
       .default(20),
+    TICKET_CREATE_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900_000),
+    TICKET_CREATE_RATE_LIMIT_MAX_REQUESTS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(30),
+    ATTACHMENT_UPLOAD_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900_000),
+    ATTACHMENT_UPLOAD_RATE_LIMIT_MAX_REQUESTS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(20),
+    API_KEY_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900_000),
+    API_KEY_RATE_LIMIT_MAX_REQUESTS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(10),
+    WEBHOOK_RATE_LIMIT_WINDOW_MS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(900_000),
+    WEBHOOK_RATE_LIMIT_MAX_REQUESTS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(15),
+    LOGIN_MAX_FAILED_ATTEMPTS: z.coerce.number().int().positive().default(5),
+    LOGIN_LOCK_DURATION_MS: z.coerce.number().int().positive().default(900_000),
     UPLOAD_MAX_SIZE_MB: z.coerce.number().int().positive().max(100).default(10),
     UPLOAD_DIR: z.string().min(1).default('storage/attachments'),
     LOG_LEVEL: logLevelSchema.optional(),

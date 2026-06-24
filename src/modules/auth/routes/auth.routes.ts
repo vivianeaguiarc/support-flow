@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { env } from '../../../config/env.js';
-import { authRateLimitMiddleware } from '../../../shared/http/middlewares/auth-rate-limit.js';
+import { authRateLimitMiddleware } from '../../../shared/http/middlewares/sensitive-rate-limits.js';
 import { validateRequest } from '../../../shared/http/middlewares/validate-request.js';
 import { authController } from '../controllers/auth.controller.js';
 import { loginSchema } from '../dtos/login.dto.js';

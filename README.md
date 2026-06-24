@@ -98,16 +98,16 @@ HTTP Request → Route → Middleware (auth, RBAC, validate) → Controller → 
 
 Conceitos transversais:
 
-| Conceito            | Implementação                                                                |
-| ------------------- | ---------------------------------------------------------------------------- |
-| **Multi-tenant**    | `tenantId` no JWT e em todas as queries de negócio                           |
-| **RBAC**            | `shared/security/rbac.ts` + middleware `authorize` + regras nos use cases    |
-| **SLA**             | Cálculo na abertura + monitoramento (warning/expired) + escalação automática |
-| **Auditoria**       | `TicketHistory` com eventos tipados                                          |
-| **Validação**       | Zod via `validateRequest` em body, params e query                            |
-| **Erros**           | Payload padronizado `{ statusCode, error, message, requestId? }`             |
-| **Observabilidade** | Pino estruturado, `requestId` por requisição, logs de negócio                |
-| **Segurança**       | Helmet, CORS, rate limit, JWT + refresh, redação de dados sensíveis nos logs |
+| Conceito            | Implementação                                                                                                             |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Multi-tenant**    | `tenantId` no JWT e em todas as queries de negócio                                                                        |
+| **RBAC**            | `shared/security/rbac.ts` + middleware `authorize` + regras nos use cases                                                 |
+| **SLA**             | Cálculo na abertura + monitoramento (warning/expired) + escalação automática                                              |
+| **Auditoria**       | `TicketHistory` com eventos tipados                                                                                       |
+| **Validação**       | Zod via `validateRequest` em body, params e query                                                                         |
+| **Erros**           | Payload padronizado `{ statusCode, error, message, requestId? }`                                                          |
+| **Observabilidade** | Pino estruturado, `requestId` por requisição, logs de negócio                                                             |
+| **Segurança**       | Helmet, CORS, rate limits por endpoint, lock de login, auditoria de segurança, validação Zod strict, sanitização de texto |
 
 ---
 
@@ -205,26 +205,36 @@ Para produção, use `.env.production.example` como referência ao configurar o 
 
 ### Variáveis
 
-| Variável                       | Obrigatória | Padrão (dev)                                | Descrição                                                              |
-| ------------------------------ | ----------- | ------------------------------------------- | ---------------------------------------------------------------------- |
-| `DATABASE_URL`                 | **Sim**     | —                                           | Connection string PostgreSQL (Prisma)                                  |
-| `JWT_SECRET`                   | **Sim**     | —                                           | Segredo do access token (mín. 32 caracteres em `production`)           |
-| `NODE_ENV`                     | Não         | `development`                               | `development`, `test` ou `production`                                  |
-| `PORT`                         | Não         | `3000`                                      | Porta HTTP da API                                                      |
-| `JWT_EXPIRES_IN`               | Não         | `1d`                                        | Expiração do access token                                              |
-| `JWT_REFRESH_SECRET`           | **Sim**     | —                                           | Segredo do refresh token (mín. 32 caracteres em `production`)          |
-| `JWT_REFRESH_EXPIRES_IN`       | Não         | `7d`                                        | Expiração do refresh token                                             |
-| `CORS_ORIGIN`                  | Não         | `http://localhost:5173`                     | Origem permitida pelo CORS                                             |
-| `RATE_LIMIT_ENABLED`           | Não         | `true`                                      | Habilita rate limit global e em `/auth/login`                          |
-| `RATE_LIMIT_WINDOW_MS`         | Não         | `900000`                                    | Janela do rate limit global (ms)                                       |
-| `RATE_LIMIT_MAX_REQUESTS`      | Não         | `100`                                       | Máximo de requisições por janela (global)                              |
-| `AUTH_RATE_LIMIT_WINDOW_MS`    | Não         | `900000`                                    | Janela do rate limit de login (ms)                                     |
-| `AUTH_RATE_LIMIT_MAX_REQUESTS` | Não         | `20`                                        | Máximo de tentativas de login por janela                               |
-| `UPLOAD_MAX_SIZE_MB`           | Não         | `10`                                        | Tamanho máximo de upload (MB)                                          |
-| `UPLOAD_DIR`                   | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)                      |
-| `LOG_LEVEL`                    | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino (`trace`, `debug`, `info`, `warn`, `error`, `fatal`) |
-| `SWAGGER_ENABLED`              | Não         | `true`                                      | Documentação OpenAPI em `/api/docs` (`false` para desligar)            |
-| `DATABASE_URL_TEST`            | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                                 |
+| Variável                                    | Obrigatória | Padrão (dev)                                | Descrição                                                              |
+| ------------------------------------------- | ----------- | ------------------------------------------- | ---------------------------------------------------------------------- |
+| `DATABASE_URL`                              | **Sim**     | —                                           | Connection string PostgreSQL (Prisma)                                  |
+| `JWT_SECRET`                                | **Sim**     | —                                           | Segredo do access token (mín. 32 caracteres em `production`)           |
+| `NODE_ENV`                                  | Não         | `development`                               | `development`, `test` ou `production`                                  |
+| `PORT`                                      | Não         | `3000`                                      | Porta HTTP da API                                                      |
+| `JWT_EXPIRES_IN`                            | Não         | `1d`                                        | Expiração do access token                                              |
+| `JWT_REFRESH_SECRET`                        | **Sim**     | —                                           | Segredo do refresh token (mín. 32 caracteres em `production`)          |
+| `JWT_REFRESH_EXPIRES_IN`                    | Não         | `7d`                                        | Expiração do refresh token                                             |
+| `CORS_ORIGIN`                               | Não         | `http://localhost:5173`                     | Origem permitida pelo CORS                                             |
+| `RATE_LIMIT_ENABLED`                        | Não         | `true`                                      | Habilita rate limit global e em `/auth/login`                          |
+| `RATE_LIMIT_WINDOW_MS`                      | Não         | `900000`                                    | Janela do rate limit global (ms)                                       |
+| `RATE_LIMIT_MAX_REQUESTS`                   | Não         | `100`                                       | Máximo de requisições por janela (global)                              |
+| `AUTH_RATE_LIMIT_WINDOW_MS`                 | Não         | `900000`                                    | Janela do rate limit de login (ms)                                     |
+| `AUTH_RATE_LIMIT_MAX_REQUESTS`              | Não         | `20`                                        | Máximo de tentativas de login por janela                               |
+| `TICKET_CREATE_RATE_LIMIT_WINDOW_MS`        | Não         | `900000`                                    | Janela do rate limit de criação de tickets (ms)                        |
+| `TICKET_CREATE_RATE_LIMIT_MAX_REQUESTS`     | Não         | `30`                                        | Máximo de criações de ticket por janela                                |
+| `ATTACHMENT_UPLOAD_RATE_LIMIT_WINDOW_MS`    | Não         | `900000`                                    | Janela do rate limit de upload de anexos (ms)                          |
+| `ATTACHMENT_UPLOAD_RATE_LIMIT_MAX_REQUESTS` | Não         | `20`                                        | Máximo de uploads por janela                                           |
+| `API_KEY_RATE_LIMIT_WINDOW_MS`              | Não         | `900000`                                    | Janela do rate limit de API Keys (ms)                                  |
+| `API_KEY_RATE_LIMIT_MAX_REQUESTS`           | Não         | `10`                                        | Máximo de operações de API Key por janela                              |
+| `WEBHOOK_RATE_LIMIT_WINDOW_MS`              | Não         | `900000`                                    | Janela do rate limit de webhooks (ms)                                  |
+| `WEBHOOK_RATE_LIMIT_MAX_REQUESTS`           | Não         | `15`                                        | Máximo de operações de webhook por janela                              |
+| `LOGIN_MAX_FAILED_ATTEMPTS`                 | Não         | `5`                                         | Tentativas inválidas antes do lock temporário de conta                 |
+| `LOGIN_LOCK_DURATION_MS`                    | Não         | `900000`                                    | Duração do lock de conta após brute force (ms)                         |
+| `UPLOAD_MAX_SIZE_MB`                        | Não         | `10`                                        | Tamanho máximo de upload (MB)                                          |
+| `UPLOAD_DIR`                                | Não         | `storage/attachments`                       | Diretório de anexos (relativo ao cwd ou absoluto)                      |
+| `LOG_LEVEL`                                 | Não         | `debug` (dev), `warn` (test), `info` (prod) | Nível de log Pino (`trace`, `debug`, `info`, `warn`, `error`, `fatal`) |
+| `SWAGGER_ENABLED`                           | Não         | `true`                                      | Documentação OpenAPI em `/api/docs` (`false` para desligar)            |
+| `DATABASE_URL_TEST`                         | Integração  | porta `5433`                                | Banco exclusivo para testes E2E locais                                 |
 
 ### Validar configuração
 
@@ -399,6 +409,43 @@ O seed cria **duas organizações**:
 
 - **Tenant A** (`demo`) — dados completos de demonstração
 - **Tenant B** (`demo-b`) — organização secundária com admin `admin.demo-b@supportflow.com`
+
+---
+
+## Hardening de segurança da API
+
+Camadas adicionais além de JWT/RBAC/multi-tenant:
+
+### Proteções HTTP
+
+- **Helmet** com HSTS (produção), `Referrer-Policy`, `Cross-Origin-Resource-Policy`
+- **CORS** restrito à origem configurada, métodos explícitos e headers permitidos (`Authorization`, `x-api-key`, `x-tenant-id`, etc.)
+- **Rate limit global** + limites específicos por operação sensível (ver tabela abaixo)
+- **Payload JSON** limitado a `1mb`
+
+### Brute force e lock de login
+
+Após `LOGIN_MAX_FAILED_ATTEMPTS` senhas inválidas consecutivas, a conta recebe lock temporário (`LOGIN_LOCK_DURATION_MS`, HTTP `423`). Tentativas bem-sucedidas resetam o contador. Rate limit por IP em `/auth/login` e `/auth/refresh` permanece ativo.
+
+### Validação e sanitização
+
+- Schemas Zod em modo **strict** (rejeitam campos desconhecidos)
+- Campos textuais sensíveis passam por `sanitizeText()` (remove tags HTML e padrões perigosos)
+- Erros inesperados retornam mensagem genérica em produção/teste (detalhes só em `development`)
+
+### Auditoria de segurança (`security_audit_logs`)
+
+Eventos persistidos: `LOGIN_FAILED`, `LOGIN_LOCKED`, `ACCESS_DENIED`, `API_KEY_CREATED`, `API_KEY_REVOKED`, `USER_PERMISSION_ASSIGNED`.
+
+### Rate limits por endpoint
+
+| Endpoint / grupo                         | Variáveis de ambiente            |
+| ---------------------------------------- | -------------------------------- |
+| `POST /auth/login`, `POST /auth/refresh` | `AUTH_RATE_LIMIT_*`              |
+| `POST /tickets`                          | `TICKET_CREATE_RATE_LIMIT_*`     |
+| `POST /tickets/:id/attachments`          | `ATTACHMENT_UPLOAD_RATE_LIMIT_*` |
+| `POST/PATCH /api-keys/*`                 | `API_KEY_RATE_LIMIT_*`           |
+| `POST/PATCH /webhooks/*`                 | `WEBHOOK_RATE_LIMIT_*`           |
 
 ---
 

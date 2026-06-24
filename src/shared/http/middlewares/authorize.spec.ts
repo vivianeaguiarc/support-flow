@@ -1,29 +1,44 @@
 import type { Request, Response } from 'express';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ForbiddenError, UnauthorizedError } from '../../errors/http-errors.js';
 import { UserRole } from '../../types/user-role.js';
 import { authorize } from './authorize.js';
 
+vi.mock('../../security/security-audit/security-audit.service.js', () => ({
+  securityAuditService: {
+    record: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
 function createMockRequest(user?: Request['user']): Request {
-  return { user } as Request;
+  return {
+    user,
+    path: '/test',
+    method: 'GET',
+    headers: {},
+  } as Request;
 }
 
 describe('authorize', () => {
-  it('should return 401 when user is not authenticated', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return 401 when user is not authenticated', async () => {
     const middleware = authorize(UserRole.AGENT);
     const next = vi.fn();
 
-    middleware(createMockRequest(), {} as Response, next);
+    await middleware(createMockRequest(), {} as Response, next);
 
     expect(next).toHaveBeenCalledWith(new UnauthorizedError());
   });
 
-  it('should allow admin when ADMIN is in allowed roles', () => {
+  it('should allow admin when ADMIN is in allowed roles', async () => {
     const middleware = authorize(UserRole.ADMIN, UserRole.AGENT);
     const next = vi.fn();
 
-    middleware(
+    await middleware(
       createMockRequest({
         id: '1',
         email: 'admin@test.com',
@@ -37,11 +52,11 @@ describe('authorize', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('should allow super admin regardless of allowed roles', () => {
+  it('should allow super admin regardless of allowed roles', async () => {
     const middleware = authorize(UserRole.AGENT);
     const next = vi.fn();
 
-    middleware(
+    await middleware(
       createMockRequest({
         id: '1',
         email: 'super@test.com',
@@ -55,11 +70,11 @@ describe('authorize', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('should deny tenant admin when ADMIN is not in allowed roles', () => {
+  it('should deny tenant admin when ADMIN is not in allowed roles', async () => {
     const middleware = authorize(UserRole.AGENT);
     const next = vi.fn();
 
-    middleware(
+    await middleware(
       createMockRequest({
         id: '1',
         email: 'admin@test.com',
@@ -73,11 +88,11 @@ describe('authorize', () => {
     expect(next).toHaveBeenCalledWith(new ForbiddenError());
   });
 
-  it('should allow users with permitted role', () => {
+  it('should allow users with permitted role', async () => {
     const middleware = authorize(UserRole.AGENT, UserRole.SUPERVISOR);
     const next = vi.fn();
 
-    middleware(
+    await middleware(
       createMockRequest({
         id: '1',
         email: 'supervisor@test.com',
@@ -91,11 +106,11 @@ describe('authorize', () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it('should return 403 for disallowed role', () => {
+  it('should return 403 for disallowed role', async () => {
     const middleware = authorize(UserRole.AGENT);
     const next = vi.fn();
 
-    middleware(
+    await middleware(
       createMockRequest({
         id: '1',
         email: 'customer@test.com',

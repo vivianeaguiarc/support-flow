@@ -5,11 +5,13 @@ import {
   ValidationError,
   type ValidationIssue,
 } from '../../errors/http-errors.js';
+import { applyStrictObjectSchema } from '../../validation/zod-helpers.js';
 
 type RequestValidationSchema = {
   body?: ZodType;
   params?: ZodType;
   query?: ZodType;
+  strictBody?: boolean;
 };
 
 function formatValidationMessage(error: ZodError): string {
@@ -32,7 +34,11 @@ export function validateRequest(schema: RequestValidationSchema) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
       if (schema.body) {
-        req.body = schema.body.parse(req.body);
+        const bodySchema =
+          schema.strictBody === false
+            ? schema.body
+            : applyStrictObjectSchema(schema.body);
+        req.body = bodySchema.parse(req.body);
       }
 
       if (schema.params) {

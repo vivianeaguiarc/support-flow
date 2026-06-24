@@ -93,6 +93,15 @@ enum FeatureFlagAuditAction {
   DELETED
 }
 
+enum SecurityAuditEvent {
+  LOGIN_FAILED
+  LOGIN_LOCKED
+  ACCESS_DENIED
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  USER_PERMISSION_ASSIGNED
+}
+
 model Tenant {
   id               String   @id @default(uuid())
   name             String
@@ -117,19 +126,22 @@ model Tenant {
   apiKeys           ApiKey[]
   webhookEndpoints  WebhookEndpoint[]
   webhookDeliveries WebhookDelivery[]
+  securityAuditLogs SecurityAuditLog[]
 
   @@map("tenants")
 }
 
 model User {
-  id        String   @id @default(uuid())
-  tenantId  String
-  name      String
-  email     String
-  password  String
-  role      UserRole @default(AGENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String    @id @default(uuid())
+  tenantId            String
+  name                String
+  email               String
+  password            String
+  role                UserRole  @default(AGENT)
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   tenant            Tenant             @relation(fields: [tenantId], references: [id])
   ticketsAssigned   Ticket[]           @relation("TicketAssignee")
@@ -509,4 +521,23 @@ model FeatureFlagAudit {
   @@index([key])
   @@index([createdAt])
   @@map("feature_flag_audits")
+}
+
+model SecurityAuditLog {
+  id        String             @id @default(uuid())
+  tenantId  String?
+  userId    String?
+  actorId   String?
+  event     SecurityAuditEvent
+  email     String?
+  ipAddress String?            @map("ip_address")
+  userAgent String?            @map("user_agent")
+  metadata  Json?
+  createdAt DateTime           @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, event, createdAt])
+  @@index([email, createdAt])
+  @@map("security_audit_logs")
 }
