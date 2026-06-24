@@ -15,6 +15,7 @@ import { metricsRouter } from './modules/tickets/presentation/routes/metrics.rou
 import { ticketCategoriesRouter } from './modules/tickets/presentation/routes/ticket-categories.routes.js';
 import { ticketsRouter } from './modules/tickets/presentation/routes/tickets.routes.js';
 import { usersRouter } from './modules/users/routes/users.routes.js';
+import { webhooksRouter } from './modules/webhooks/presentation/routes/webhooks.routes.js';
 import { errorHandler } from './shared/http/middlewares/error-handler.js';
 import { notFoundHandler } from './shared/http/middlewares/not-found-handler.js';
 import { rateLimitMiddleware } from './shared/http/middlewares/rate-limit.js';
@@ -55,6 +56,7 @@ export function createApp(options: CreateAppOptions = {}) {
   apiRouter.use('/analytics', analyticsRouter);
   apiRouter.use('/automation', automationRouter);
   apiRouter.use('/api-keys', apiKeysRouter);
+  apiRouter.use('/webhooks', webhooksRouter);
   apiRouter.use('/reports', reportsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   apiRouter.use('/knowledge', knowledgeRouter);

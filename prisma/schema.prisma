@@ -80,6 +80,12 @@ enum AutomationExecutionStatus {
   SKIPPED
 }
 
+enum WebhookDeliveryStatus {
+  PENDING
+  DELIVERED
+  FAILED
+}
+
 model Tenant {
   id               String   @id @default(uuid())
   name             String
@@ -102,6 +108,8 @@ model Tenant {
   automationExecutions AutomationRuleExecution[]
   satisfactionSurveys TicketSatisfactionSurvey[]
   apiKeys           ApiKey[]
+  webhookEndpoints  WebhookEndpoint[]
+  webhookDeliveries WebhookDelivery[]
 
   @@map("tenants")
 }
@@ -125,6 +133,7 @@ model User {
   refreshTokens       RefreshToken[]
   knowledgeArticles KnowledgeArticle[] @relation("KnowledgeArticleAuthor")
   apiKeysCreated    ApiKey[]             @relation("ApiKeyCreator")
+  webhookEndpoints  WebhookEndpoint[]    @relation("WebhookCreator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -417,4 +426,48 @@ model ApiKey {
   @@index([prefix])
   @@index([tenantId, active])
   @@map("api_keys")
+}
+
+model WebhookEndpoint {
+  id          String   @id @default(uuid())
+  tenantId    String
+  name        String
+  url         String
+  secret      String
+  active      Boolean  @default(true)
+  events      Json
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  createdBy  User              @relation("WebhookCreator", fields: [createdById], references: [id])
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId])
+  @@index([tenantId, active])
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id                String                @id @default(uuid())
+  tenantId          String
+  webhookEndpointId String
+  event             String
+  payload           Json
+  status            WebhookDeliveryStatus @default(PENDING)
+  responseStatus    Int?
+  responseBody      String?
+  attemptCount      Int                   @default(0)
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime              @default(now())
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id])
+  endpoint WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([webhookEndpointId])
+  @@index([createdAt])
+  @@map("webhook_deliveries")
 }

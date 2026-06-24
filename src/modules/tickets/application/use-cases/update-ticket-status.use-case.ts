@@ -11,7 +11,17 @@ import {
   type NotificationEventService,
   notificationEventService,
 } from '../../../notifications/application/services/notification-event.service.js';
-import { type Ticket, TicketHistoryEvent } from '../../domain/index.js';
+import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
+import {
+  type WebhookDispatcher,
+  webhookDispatcher,
+} from '../../../webhooks/application/services/webhook-dispatcher.js';
+import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
+import {
+  type Ticket,
+  TicketHistoryEvent,
+  TicketStatus,
+} from '../../domain/index.js';
 import { assertAssigneeRequiredForInProgress } from '../../domain/ticket-in-progress.rules.js';
 import { assertValidTicketStatusTransition } from '../../domain/ticket-status-transitions.js';
 import {
@@ -35,6 +45,7 @@ export class UpdateTicketStatusUseCase {
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
     private readonly notificationService: NotificationEventService = notificationEventService,
     private readonly automation: AutomationEngine = automationEngine,
+    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
   ) {}
 
   async execute(input: UpdateTicketStatusInput): Promise<Ticket> {
@@ -83,6 +94,34 @@ export class UpdateTicketStatusUseCase {
       previousTicket: { status: ticket.status },
       actorId: input.changedById,
     });
+
+    const ticketData = {
+      ...buildTicketWebhookData(updatedTicket),
+      fromStatus: ticket.status,
+      toStatus: input.status,
+    };
+
+    await this.webhooks.dispatch(
+      input.tenantId,
+      WebhookEvent.TICKET_UPDATED,
+      ticketData,
+    );
+
+    if (input.status === TicketStatus.RESOLVED) {
+      await this.webhooks.dispatch(
+        input.tenantId,
+        WebhookEvent.TICKET_RESOLVED,
+        ticketData,
+      );
+    }
+
+    if (input.status === TicketStatus.CLOSED) {
+      await this.webhooks.dispatch(
+        input.tenantId,
+        WebhookEvent.TICKET_CLOSED,
+        ticketData,
+      );
+    }
 
     return updatedTicket;
   }

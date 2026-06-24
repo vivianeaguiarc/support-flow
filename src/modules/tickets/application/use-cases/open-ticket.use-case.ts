@@ -21,6 +21,12 @@ import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
+import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
+import {
+  type WebhookDispatcher,
+  webhookDispatcher,
+} from '../../../webhooks/application/services/webhook-dispatcher.js';
+import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import {
   type Ticket,
   TicketHistoryEvent,
@@ -61,6 +67,7 @@ export class OpenTicketUseCase {
     private readonly calculateTicketPriority: CalculateTicketPriorityUseCase = calculateTicketPriorityUseCase,
     private readonly notificationService: NotificationEventService = notificationEventService,
     private readonly automation: AutomationEngine = automationEngine,
+    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
@@ -158,8 +165,15 @@ export class OpenTicketUseCase {
     });
 
     const refreshedTicket = await this.ticketsRepository.findById(ticket.id);
+    const finalTicket = refreshedTicket ?? ticket;
 
-    return refreshedTicket ?? ticket;
+    await this.webhooks.dispatch(
+      input.tenantId,
+      WebhookEvent.TICKET_CREATED,
+      buildTicketWebhookData(finalTicket),
+    );
+
+    return finalTicket;
   }
 
   private async ensureCustomer(

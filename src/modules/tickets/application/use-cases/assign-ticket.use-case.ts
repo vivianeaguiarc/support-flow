@@ -17,6 +17,12 @@ import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
+import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
+import {
+  type WebhookDispatcher,
+  webhookDispatcher,
+} from '../../../webhooks/application/services/webhook-dispatcher.js';
+import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import {
   assertTicketAssignable,
   resolveAssignmentHistoryEvent,
@@ -44,6 +50,7 @@ export class AssignTicketUseCase {
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
     private readonly notificationService: NotificationEventService = notificationEventService,
     private readonly automation: AutomationEngine = automationEngine,
+    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
   ) {}
 
   async execute(input: AssignTicketInput): Promise<Ticket> {
@@ -99,6 +106,20 @@ export class AssignTicketUseCase {
       previousTicket: { assignedToId: ticket.assignedToId },
       actorId: input.changedById,
     });
+
+    const ticketData = buildTicketWebhookData(updatedTicket);
+
+    await this.webhooks.dispatch(input.tenantId, WebhookEvent.TICKET_ASSIGNED, {
+      ...ticketData,
+      fromAssigneeId: ticket.assignedToId,
+      toAssigneeId: input.assignedToId,
+    });
+
+    await this.webhooks.dispatch(
+      input.tenantId,
+      WebhookEvent.TICKET_UPDATED,
+      ticketData,
+    );
 
     return updatedTicket;
   }

@@ -63,6 +63,11 @@ const automationEngineMock = {
   processEvent: vi.fn().mockResolvedValue(undefined),
 };
 
+const webhookDispatcherMock = {
+  dispatch: vi.fn().mockResolvedValue(undefined),
+  deliverTest: vi.fn().mockResolvedValue(undefined),
+};
+
 vi.mock(
   import('../../modules/automation/application/services/automation-engine.js'),
   async (importOriginal) => {
@@ -78,8 +83,24 @@ vi.mock(
   },
 );
 
+vi.mock(
+  import('../../modules/webhooks/application/services/webhook-dispatcher.js'),
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../../modules/webhooks/application/services/webhook-dispatcher.js')
+      >();
+
+    return {
+      ...actual,
+      webhookDispatcher: webhookDispatcherMock,
+    };
+  },
+);
+
 export {
   automationEngineMock,
   emailNotificationServiceMock,
   notificationEventServiceMock,
+  webhookDispatcherMock,
 };

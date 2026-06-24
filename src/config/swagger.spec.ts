@@ -55,6 +55,9 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/api-keys': ['post', 'get'],
   '/api-keys/{id}/revoke': ['patch'],
   '/api-keys/{id}': ['delete'],
+  '/webhooks': ['post', 'get'],
+  '/webhooks/{id}': ['get', 'patch', 'delete'],
+  '/webhooks/{id}/test': ['post'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };

@@ -1277,6 +1277,128 @@ const options: Options = {
             expiresAt: { type: 'string', format: 'date-time' },
           },
         },
+        WebhookEndpoint: {
+          type: 'object',
+          required: [
+            'id',
+            'tenantId',
+            'name',
+            'url',
+            'active',
+            'events',
+            'createdById',
+            'createdAt',
+            'updatedAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            name: { type: 'string', example: 'ERP Integration' },
+            url: {
+              type: 'string',
+              format: 'uri',
+              example: 'https://example.com/webhooks/supportflow',
+            },
+            active: { type: 'boolean', example: true },
+            events: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/WebhookEventType' },
+            },
+            createdById: { type: 'string', format: 'uuid' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        WebhookEndpointWithSecret: {
+          allOf: [
+            { $ref: '#/components/schemas/WebhookEndpoint' },
+            {
+              type: 'object',
+              required: ['secret'],
+              properties: {
+                secret: {
+                  type: 'string',
+                  example: 'whsec_xxxxxxxx',
+                  description:
+                    'Segredo HMAC — exibido apenas no momento da criação',
+                },
+              },
+            },
+          ],
+        },
+        WebhookEventType: {
+          type: 'string',
+          enum: [
+            'ticket.created',
+            'ticket.updated',
+            'ticket.assigned',
+            'ticket.resolved',
+            'ticket.closed',
+            'sla.warning',
+            'sla.breached',
+            'csat.submitted',
+          ],
+        },
+        CreateWebhookInput: {
+          type: 'object',
+          required: ['name', 'url', 'events'],
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            url: { type: 'string', format: 'uri' },
+            events: {
+              type: 'array',
+              minItems: 1,
+              items: { $ref: '#/components/schemas/WebhookEventType' },
+            },
+          },
+        },
+        UpdateWebhookInput: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            url: { type: 'string', format: 'uri' },
+            events: {
+              type: 'array',
+              minItems: 1,
+              items: { $ref: '#/components/schemas/WebhookEventType' },
+            },
+            active: { type: 'boolean' },
+          },
+        },
+        WebhookDelivery: {
+          type: 'object',
+          required: [
+            'id',
+            'tenantId',
+            'webhookEndpointId',
+            'event',
+            'payload',
+            'status',
+            'attemptCount',
+            'createdAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            webhookEndpointId: { type: 'string', format: 'uuid' },
+            event: { $ref: '#/components/schemas/WebhookEventType' },
+            payload: { type: 'object', additionalProperties: true },
+            status: {
+              type: 'string',
+              enum: ['PENDING', 'DELIVERED', 'FAILED'],
+            },
+            responseStatus: { type: 'integer', nullable: true },
+            responseBody: { type: 'string', nullable: true },
+            attemptCount: { type: 'integer', example: 1 },
+            deliveredAt: {
+              type: 'string',
+              format: 'date-time',
+              nullable: true,
+            },
+            failedAt: { type: 'string', format: 'date-time', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+          },
+        },
         TicketStatusTransitions: {
           type: 'object',
           properties: {

@@ -1,6 +1,12 @@
 import { NotFoundError } from '../../../../shared/errors/http-errors.js';
 import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
+import { buildCsatWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
+import {
+  type WebhookDispatcher,
+  webhookDispatcher,
+} from '../../../webhooks/application/services/webhook-dispatcher.js';
+import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
   assertCanSubmitTicketSatisfaction,
@@ -33,6 +39,7 @@ export class SubmitTicketSatisfactionUseCase {
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
     private readonly satisfactionRepo: TicketSatisfactionRepository = defaultTicketSatisfactionRepository,
     private readonly historyRepo: TicketHistoryRepository = defaultTicketHistoryRepository,
+    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
   ) {}
 
   async execute(
@@ -74,6 +81,12 @@ export class SubmitTicketSatisfactionUseCase {
         ...(input.comment ? { comment: input.comment } : {}),
       },
     });
+
+    await this.webhooks.dispatch(
+      input.tenantId,
+      WebhookEvent.CSAT_SUBMITTED,
+      buildCsatWebhookData(survey, ticket),
+    );
 
     return survey;
   }

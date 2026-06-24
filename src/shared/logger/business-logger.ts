@@ -25,6 +25,12 @@ export const BusinessEvent = {
   API_KEY_CREATED: 'api_key.created',
   API_KEY_REVOKED: 'api_key.revoked',
   API_KEY_DELETED: 'api_key.deleted',
+  WEBHOOK_CREATED: 'webhook.created',
+  WEBHOOK_UPDATED: 'webhook.updated',
+  WEBHOOK_DELETED: 'webhook.deleted',
+  WEBHOOK_TEST_SENT: 'webhook.test_sent',
+  WEBHOOK_DELIVERED: 'webhook.delivered',
+  WEBHOOK_DELIVERY_FAILED: 'webhook.delivery_failed',
 } as const;
 
 export type BusinessEventName =

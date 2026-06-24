@@ -12,6 +12,12 @@ import {
   type NotificationsRepository,
   notificationsRepository,
 } from '../../../notifications/infrastructure/repositories/notifications.repository.js';
+import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
+import {
+  type WebhookDispatcher,
+  webhookDispatcher,
+} from '../../../webhooks/application/services/webhook-dispatcher.js';
+import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketHistoryEvent, TicketStatus } from '../../domain/ticket-enums.js';
 import {
@@ -50,6 +56,7 @@ export class MonitorTicketSlaUseCase {
     private readonly notificationEvents: NotificationEventService = notificationEventService,
     private readonly historyRepo: TicketHistoryRepository = ticketHistoryRepository,
     private readonly automation: AutomationEngine = automationEngine,
+    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
   ) {}
 
   async execute(): Promise<MonitorTicketSlaResult> {
@@ -155,6 +162,11 @@ export class MonitorTicketSlaUseCase {
       metadata: { hoursRemaining },
     });
 
+    await this.webhooks.dispatch(ticket.tenantId, WebhookEvent.SLA_WARNING, {
+      ...buildTicketWebhookData(ticket),
+      hoursRemaining,
+    });
+
     return true;
   }
 
@@ -185,6 +197,11 @@ export class MonitorTicketSlaUseCase {
       trigger: AutomationTrigger.SLA_BREACHED,
       ticket,
       metadata: { hoursOverdue },
+    });
+
+    await this.webhooks.dispatch(ticket.tenantId, WebhookEvent.SLA_BREACHED, {
+      ...buildTicketWebhookData(ticket),
+      hoursOverdue,
     });
 
     return true;
