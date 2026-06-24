@@ -4,6 +4,11 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
+import { auditLogService } from '../../../audit/application/services/audit-log.service.js';
+import {
+  AuditAction,
+  AuditEntity,
+} from '../../../audit/domain/audit-actions.js';
 import type {
   WebhookDelivery,
   WebhookEndpoint,
@@ -51,6 +56,19 @@ export class WebhooksService {
       events: input.events,
     });
 
+    await auditLogService.record({
+      organizationId: authUser.tenantId,
+      userId: authUser.id,
+      action: AuditAction.WEBHOOK_CREATED,
+      entity: AuditEntity.WEBHOOK,
+      entityId: endpoint.id,
+      newValues: {
+        name: input.name,
+        url: input.url,
+        events: input.events,
+      },
+    });
+
     return endpoint;
   }
 
@@ -88,6 +106,15 @@ export class WebhooksService {
       actorId: authUser.id,
     });
 
+    await auditLogService.record({
+      organizationId: authUser.tenantId,
+      userId: authUser.id,
+      action: AuditAction.WEBHOOK_UPDATED,
+      entity: AuditEntity.WEBHOOK,
+      entityId: endpoint.id,
+      newValues: input as Record<string, unknown>,
+    });
+
     return endpoint;
   }
 
@@ -104,6 +131,15 @@ export class WebhooksService {
       tenantId: authUser.tenantId,
       webhookEndpointId: id,
       actorId: authUser.id,
+    });
+
+    await auditLogService.record({
+      organizationId: authUser.tenantId,
+      userId: authUser.id,
+      action: AuditAction.WEBHOOK_DELETED,
+      entity: AuditEntity.WEBHOOK,
+      entityId: id,
+      oldValues: { name: existing.name, url: existing.url },
     });
   }
 

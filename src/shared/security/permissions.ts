@@ -17,6 +17,7 @@ export const PermissionKey = {
   REPORTS_EXPORT: 'reports.export',
   API_KEYS_MANAGE: 'apiKeys.manage',
   FEATURE_FLAGS_MANAGE: 'featureFlags.manage',
+  AUDIT_READ: 'audit.read',
 } as const;
 
 export type PermissionKeyValue =
@@ -59,6 +60,10 @@ export const INITIAL_PERMISSIONS: Array<{
     key: PermissionKey.FEATURE_FLAGS_MANAGE,
     description: 'Manage platform feature flags',
   },
+  {
+    key: PermissionKey.AUDIT_READ,
+    description: 'Read immutable audit logs',
+  },
 ];
 
 const ADMIN_PERMISSIONS: PermissionKeyValue[] = [
@@ -77,6 +82,7 @@ const ADMIN_PERMISSIONS: PermissionKeyValue[] = [
   PermissionKey.ANALYTICS_READ,
   PermissionKey.REPORTS_EXPORT,
   PermissionKey.API_KEYS_MANAGE,
+  PermissionKey.AUDIT_READ,
 ];
 
 export const LEGACY_ROLE_PERMISSIONS: Record<UserRole, PermissionKeyValue[]> = {
@@ -92,6 +98,7 @@ export const LEGACY_ROLE_PERMISSIONS: Record<UserRole, PermissionKeyValue[]> = {
     PermissionKey.KNOWLEDGE_PUBLISH,
     PermissionKey.ANALYTICS_READ,
     PermissionKey.REPORTS_EXPORT,
+    PermissionKey.AUDIT_READ,
   ],
   [UserRole.AGENT]: [
     PermissionKey.TICKETS_CREATE,

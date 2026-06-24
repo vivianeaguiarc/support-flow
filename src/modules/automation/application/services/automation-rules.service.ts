@@ -4,6 +4,11 @@ import {
   logBusinessEvent,
 } from '../../../../shared/logger/business-logger.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
+import { auditLogService } from '../../../audit/application/services/audit-log.service.js';
+import {
+  AuditAction,
+  AuditEntity,
+} from '../../../audit/domain/audit-actions.js';
 import type { AutomationRule } from '../../domain/automation-rule.entity.js';
 import {
   AutomationRulesRepository,
@@ -40,6 +45,19 @@ export class AutomationRulesService {
       trigger: rule.trigger,
     });
 
+    await auditLogService.record({
+      organizationId: authUser.tenantId,
+      userId: authUser.id,
+      action: AuditAction.AUTOMATION_RULE_CREATED,
+      entity: AuditEntity.AUTOMATION_RULE,
+      entityId: rule.id,
+      newValues: {
+        name: rule.name,
+        trigger: rule.trigger,
+        active: rule.active,
+      },
+    });
+
     return rule;
   }
 
@@ -69,6 +87,15 @@ export class AutomationRulesService {
       actorId: authUser.id,
     });
 
+    await auditLogService.record({
+      organizationId: authUser.tenantId,
+      userId: authUser.id,
+      action: AuditAction.AUTOMATION_RULE_UPDATED,
+      entity: AuditEntity.AUTOMATION_RULE,
+      entityId: rule.id,
+      newValues: input as Record<string, unknown>,
+    });
+
     return rule;
   }
 
@@ -88,6 +115,15 @@ export class AutomationRulesService {
       tenantId: authUser.tenantId,
       ruleId: id,
       actorId: authUser.id,
+    });
+
+    await auditLogService.record({
+      organizationId: authUser.tenantId,
+      userId: authUser.id,
+      action: AuditAction.AUTOMATION_RULE_DELETED,
+      entity: AuditEntity.AUTOMATION_RULE,
+      entityId: id,
+      oldValues: { name: existing.name, trigger: existing.trigger },
     });
   }
 }

@@ -624,3 +624,27 @@ model UserRoleAssignment {
   @@index([tenantId])
   @@map("user_roles")
 }
+
+/// Immutable, append-only audit trail protected by a tamper-evident hash chain.
+/// UPDATE and DELETE are blocked both at the application layer (repository exposes
+/// only create + read) and at the database layer (trigger raising an exception).
+model AuditLog {
+  id             String   @id @default(uuid())
+  sequence       BigInt   @default(autoincrement())
+  organizationId String?
+  userId         String?
+  action         String
+  entity         String
+  entityId       String?
+  oldValues      Json?
+  newValues      Json?
+  metadata       Json?
+  previousHash   String?
+  hash           String
+  createdAt      DateTime @default(now())
+
+  @@index([sequence])
+  @@index([organizationId, createdAt])
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}

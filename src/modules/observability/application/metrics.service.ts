@@ -34,6 +34,8 @@ class MetricsService {
   private readonly outboxEventsProcessedTotal: Counter;
   private readonly outboxEventsFailedTotal: Counter;
   private readonly outboxEventsPending: Gauge;
+  private readonly auditEventsWrittenTotal: Counter;
+  private readonly auditChainBroken: Gauge;
   private readonly redisUp: Gauge;
   private readonly databaseUp: Gauge;
   private httpDurationSumMs = 0;
@@ -106,6 +108,18 @@ class MetricsService {
     this.outboxEventsPending = new Gauge({
       name: 'outbox_events_pending',
       help: 'Current number of pending outbox events',
+      registers: [this.registry],
+    });
+
+    this.auditEventsWrittenTotal = new Counter({
+      name: 'audit_events_written_total',
+      help: 'Total number of immutable audit log records appended',
+      registers: [this.registry],
+    });
+
+    this.auditChainBroken = new Gauge({
+      name: 'audit_chain_broken',
+      help: 'Audit hash chain integrity (1 = broken, 0 = valid)',
       registers: [this.registry],
     });
 
@@ -204,6 +218,22 @@ class MetricsService {
       await import('../../outbox/infrastructure/repositories/outbox.repository.js');
     const byStatus = await outboxRepository.countByStatus();
     this.setOutboxPending(byStatus.PENDING ?? 0);
+  }
+
+  recordAuditWritten(): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    this.auditEventsWrittenTotal.inc();
+  }
+
+  setAuditChainBroken(isBroken: boolean): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    this.auditChainBroken.set(isBroken ? 1 : 0);
   }
 
   setRedisUp(isUp: boolean | null): void {

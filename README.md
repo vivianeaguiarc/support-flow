@@ -542,6 +542,89 @@ sequenceDiagram
 
 ---
 
+## Auditoria imutável (hash chain)
+
+Trilha de auditoria **append-only** e **à prova de adulteração**. Cada registro é encadeado ao anterior por um hash SHA-256, de modo que qualquer alteração, remoção ou reordenação quebra a cadeia e é detectada.
+
+### Garantias de imutabilidade
+
+1. **Aplicação** — o repositório expõe **apenas criação e leitura**; não há métodos de update/delete.
+2. **Banco de dados** — um trigger (`prevent_audit_log_mutation`) lança exceção em qualquer `UPDATE`/`DELETE` na tabela `audit_logs`. `TRUNCATE` não dispara triggers de linha, então fixtures de teste continuam funcionando.
+3. **Hash encadeado** — `hash = sha256(canonical(dados do log + previousHash))`. O `previousHash` aponta para o `hash` do registro anterior (o primeiro usa o sentinela `GENESIS`).
+
+### Entidade `AuditLog`
+
+| Campo            | Descrição                                         |
+| ---------------- | ------------------------------------------------- |
+| `id`             | UUID                                              |
+| `sequence`       | Ordem monotônica da cadeia (BigSerial)            |
+| `organizationId` | Tenant/organização (quando aplicável)             |
+| `userId`         | Ator que originou a ação                          |
+| `action`         | Ex.: `ticket.created`, `role.permissions_updated` |
+| `entity`         | Ex.: `ticket`, `role`, `api_key`, `webhook`       |
+| `entityId`       | ID do recurso afetado                             |
+| `oldValues`      | Estado anterior (JSON)                            |
+| `newValues`      | Estado novo (JSON)                                |
+| `metadata`       | Contexto extra (IP, user-agent, correlationId, …) |
+| `previousHash`   | Hash do registro anterior (`null` no genesis)     |
+| `hash`           | SHA-256 deste registro encadeado ao anterior      |
+| `createdAt`      | Timestamp                                         |
+
+### Como o hash encadeado funciona
+
+```mermaid
+flowchart LR
+  G([GENESIS]) --> H1["log #1<br/>hash = sha256(dados₁ + GENESIS)"]
+  H1 -- previousHash --> H2["log #2<br/>hash = sha256(dados₂ + hash₁)"]
+  H2 -- previousHash --> H3["log #3<br/>hash = sha256(dados₃ + hash₂)"]
+```
+
+A serialização é **canônica** (chaves ordenadas recursivamente; `undefined` normalizado para `null`), garantindo que o hash recalculado na verificação seja idêntico ao gravado. Os appends são **serializados em processo** para manter a leitura do último hash + inserção atômicas, evitando bifurcações da cadeia.
+
+### Ações sensíveis registradas
+
+- Criação/revogação de **API Key**
+- Alterações de **roles/permissões**
+- **Login inválido** e contas bloqueadas
+- **Tentativas de acesso proibido** (403)
+- Mudanças de **tickets** (criação, atribuição, status, resolução, fechamento)
+- Mudanças em **webhooks** e **regras de automação**
+
+> As ações de segurança são espelhadas a partir do `securityAuditService` (sem alterar os call sites), e as de ticket via um handler do Event Bus.
+
+### Verificação de integridade
+
+`GET /api/v1/admin/audit-logs/verify` recalcula a cadeia inteira e retorna:
+
+```json
+{
+  "status": "VALID", // VALID | BROKEN | EMPTY
+  "valid": true,
+  "totalVerified": 128,
+  "firstInvalid": null // ou { id, sequence, action, reason, expectedHash, storedHash }
+}
+```
+
+Falhas de integridade geram log estruturado `audit.chain.integrity_violation` e atualizam a métrica `audit_chain_broken`.
+
+### Métricas Prometheus
+
+| Métrica                      | Tipo    |
+| ---------------------------- | ------- |
+| `audit_events_written_total` | Counter |
+| `audit_chain_broken`         | Gauge   |
+
+### Endpoints admin
+
+Acesso restrito a **admin/supervisor** (permissão `audit.read`; `SUPER_ADMIN` sempre permitido).
+
+| Método | Rota                              |
+| ------ | --------------------------------- |
+| `GET`  | `/api/v1/admin/audit-logs`        |
+| `GET`  | `/api/v1/admin/audit-logs/verify` |
+
+---
+
 O backend usa um **Event Bus in-process** para desacoplar efeitos colaterais dos use cases de tickets. Após persistir o estado e o histórico, o use case publica um **domain event**; handlers registrados reagem de forma assíncrona (sem bloquear a transação principal).
 
 ### Fluxo

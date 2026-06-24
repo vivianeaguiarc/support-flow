@@ -1898,6 +1898,11 @@ const options: Options = {
         name: 'API Keys',
         description: 'Gerenciamento de API Keys para integrações externas',
       },
+      {
+        name: 'Audit',
+        description:
+          'Auditoria imutável — trilha append-only com hash encadeado e verificação de integridade',
+      },
     ],
   },
   apis: swaggerApiGlobs,
