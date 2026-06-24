@@ -45,6 +45,9 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/analytics/tickets-by-priority': ['get'],
   '/analytics/sla': ['get'],
   '/analytics/agents-performance': ['get'],
+  '/reports/tickets.csv': ['get'],
+  '/reports/agents-performance.csv': ['get'],
+  '/reports/sla.csv': ['get'],
   '/health': ['get'],
   '/health/ready': ['get'],
 };

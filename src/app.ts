@@ -8,6 +8,7 @@ import { customersRouter } from './modules/customers/routes/customers.routes.js'
 import { adminRouter } from './modules/email/presentation/routes/admin-notifications.routes.js';
 import { knowledgeRouter } from './modules/knowledge-base/presentation/routes/knowledge.routes.js';
 import { notificationsRouter } from './modules/notifications/presentation/routes/notifications.routes.js';
+import { reportsRouter } from './modules/reports/presentation/routes/reports.routes.js';
 import { metricsRouter } from './modules/tickets/presentation/routes/metrics.routes.js';
 import { ticketCategoriesRouter } from './modules/tickets/presentation/routes/ticket-categories.routes.js';
 import { ticketsRouter } from './modules/tickets/presentation/routes/tickets.routes.js';
@@ -50,6 +51,7 @@ export function createApp(options: CreateAppOptions = {}) {
   apiRouter.use('/tickets', ticketsRouter);
   apiRouter.use('/metrics', metricsRouter);
   apiRouter.use('/analytics', analyticsRouter);
+  apiRouter.use('/reports', reportsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   apiRouter.use('/knowledge', knowledgeRouter);
   apiRouter.use('/admin', adminRouter);

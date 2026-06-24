@@ -15,6 +15,9 @@ export const BusinessEvent = {
   KNOWLEDGE_ARTICLE_PUBLISHED: 'knowledge.article.published',
   KNOWLEDGE_ARTICLE_ARCHIVED: 'knowledge.article.archived',
   KNOWLEDGE_ARTICLE_DELETED: 'knowledge.article.deleted',
+  REPORT_TICKETS_EXPORTED: 'report.tickets.exported',
+  REPORT_AGENTS_PERFORMANCE_EXPORTED: 'report.agents_performance.exported',
+  REPORT_SLA_EXPORTED: 'report.sla.exported',
 } as const;
 
 export type BusinessEventName =
