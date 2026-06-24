@@ -2,9 +2,25 @@
 
 API REST para gestão de **Atendimento ao Cliente, SAC e Ouvidoria** em modelo **SaaS multi-tenant**. O SupportFlow centraliza o ciclo de vida dos chamados — abertura, triagem, atribuição, SLA, escalação, comentários, anexos, notificações e métricas operacionais — com autenticação JWT, controle de acesso por perfil (RBAC) e auditoria completa de alterações.
 
+**Documentação interativa:** [support-flow-uath.onrender.com/api/docs/](https://support-flow-uath.onrender.com/api/docs/)
+
 > Projeto de portfólio focado em backend. Frontend não faz parte do escopo atual.
 
-**Autora:** [Viviane Aguiar](https://vivianeaguiardev.com.br) · [LinkedIn](https://linkedin.com/in/vivianeaguiarc) · [Portfolio](https://vivianeaguiardev.com.br)
+---
+
+## API em produção
+
+A API está publicada no **Render** e pode ser explorada pela documentação interativa **Swagger/OpenAPI**:
+
+| Recurso                    | URL                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Documentação (Swagger)** | **[support-flow-uath.onrender.com/api/docs/](https://support-flow-uath.onrender.com/api/docs/)** |
+| OpenAPI (JSON)             | https://support-flow-uath.onrender.com/api/docs.json                                             |
+| Base REST                  | https://support-flow-uath.onrender.com/api/v1                                                    |
+| Health (liveness)          | https://support-flow-uath.onrender.com/health                                                    |
+| Health (readiness)         | https://support-flow-uath.onrender.com/health/ready                                              |
+
+Para testar endpoints protegidos: faça login em `POST /auth/login`, copie o `accessToken` e use **Authorize** (Bearer) no Swagger.
 
 ---
 
@@ -59,7 +75,7 @@ O SupportFlow Backend entrega essa base como **API modular**, pronta para integr
 
 - Health check: `GET /health` (liveness) e `GET /health/ready` (readiness + banco)
 - Logs estruturados com Pino
-- Documentação **Swagger/OpenAPI** (`/api/docs`, habilitado por padrão)
+- Documentação **Swagger/OpenAPI** — [produção](https://support-flow-uath.onrender.com/api/docs/) · local: `/api/docs`
 
 ---
 
@@ -234,6 +250,8 @@ O mesmo erro aparece ao executar `pnpm dev`, `pnpm start` ou `pnpm build` (o mó
 
 Guia completo: **[docs/deploy.md](docs/deploy.md)** · Staging: **[docs/staging.md](docs/staging.md)**
 
+**API publicada:** [support-flow-uath.onrender.com](https://support-flow-uath.onrender.com) · [Swagger](https://support-flow-uath.onrender.com/api/docs/)
+
 Resumo:
 
 - Imagem Docker multi-stage (`Dockerfile`) com `NODE_ENV=production`
@@ -290,17 +308,17 @@ O Render injeta `PORT` automaticamente — a API escuta `process.env.PORT`.
 ### Validar após deploy
 
 ```bash
-BASE_URL=https://supportflow-api-staging.onrender.com pnpm validate:staging
+BASE_URL=https://support-flow-uath.onrender.com pnpm validate:staging
 ```
 
 Ou manualmente:
 
-| Check     | URL                       |
-| --------- | ------------------------- |
-| Liveness  | `GET /health`             |
-| Readiness | `GET /health/ready`       |
-| Swagger   | `GET /api/docs`           |
-| Login     | `POST /api/v1/auth/login` |
+| Check     | URL                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------------------- |
+| Liveness  | https://support-flow-uath.onrender.com/health                                                        |
+| Readiness | https://support-flow-uath.onrender.com/health/ready                                                  |
+| Swagger   | [https://support-flow-uath.onrender.com/api/docs/](https://support-flow-uath.onrender.com/api/docs/) |
+| Login     | `POST https://support-flow-uath.onrender.com/api/v1/auth/login`                                      |
 
 Credenciais demo (após seed): `admin@demo.supportflow.local` / `DemoSupport123!`
 
@@ -330,9 +348,12 @@ pnpm dev
 
 A API ficará disponível em http://localhost:3000.
 
-- Base REST: `http://localhost:3000/api/v1`
-- Swagger UI: http://localhost:3000/api/docs
-- Health: http://localhost:3000/health
+| Ambiente     | Swagger                                                      | Base REST                                     |
+| ------------ | ------------------------------------------------------------ | --------------------------------------------- |
+| **Produção** | [api/docs](https://support-flow-uath.onrender.com/api/docs/) | https://support-flow-uath.onrender.com/api/v1 |
+| Local        | http://localhost:3000/api/docs                               | http://localhost:3000/api/v1                  |
+
+Health local: http://localhost:3000/health
 
 ---
 
@@ -427,10 +448,11 @@ Credenciais customizáveis via `.env` — veja `SEED_DEMO_*` em [`.env.example`]
 
 #### Testar login no Swagger
 
-1. Suba a API (`pnpm dev` ou Docker) e abra http://localhost:3000/api/docs
-2. `POST /api/v1/auth/login` com `{ "email": "admin@demo.supportflow.local", "password": "DemoSupport123!" }`
-3. Copie o `accessToken` e clique em **Authorize** (Bearer)
-4. Exemplo: `POST /api/v1/tickets` com `customerId` exibido no output do seed
+Use a [documentação em produção](https://support-flow-uath.onrender.com/api/docs/) (após seed no ambiente) ou localmente em http://localhost:3000/api/docs:
+
+1. `POST /auth/login` com `{ "email": "admin@demo.supportflow.local", "password": "DemoSupport123!" }`
+2. Copie o `accessToken` e clique em **Authorize** (Bearer)
+3. Exemplo: `POST /tickets` com `customerId` exibido no output do seed
 
 ---
 
@@ -480,11 +502,21 @@ Documentação interativa gerada a partir de JSDoc em `*.swagger.ts` (validada p
 
 Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
-| Recurso       | URL                                         |
-| ------------- | ------------------------------------------- |
-| UI interativa | http://localhost:3000/api/docs              |
-| Spec JSON     | http://localhost:3000/api/docs.json         |
-| Redirects     | `/api-docs` → `/api/docs` (compatibilidade) |
+### Produção
+
+| Recurso       | URL                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------ |
+| UI interativa | **[support-flow-uath.onrender.com/api/docs/](https://support-flow-uath.onrender.com/api/docs/)** |
+| Spec JSON     | https://support-flow-uath.onrender.com/api/docs.json                                             |
+| Redirects     | `/api-docs` → `/api/docs`                                                                        |
+
+### Local
+
+| Recurso       | URL                                 |
+| ------------- | ----------------------------------- |
+| UI interativa | http://localhost:3000/api/docs      |
+| Spec JSON     | http://localhost:3000/api/docs.json |
+| Redirects     | `/api-docs` → `/api/docs`           |
 
 **Habilitado por padrão** (`SWAGGER_ENABLED=true`). Para desligar: `SWAGGER_ENABLED=false`.
 
