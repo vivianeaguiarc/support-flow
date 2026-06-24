@@ -91,6 +91,16 @@ const envSchema = z
     QUEUE_BACKOFF_DELAY_MS: z.coerce.number().int().positive().default(1000),
     QUEUE_WORKER_CONCURRENCY: z.coerce.number().int().positive().default(5),
     QUEUE_JOB_TIMEOUT_MS: z.coerce.number().int().positive().default(300_000),
+    OTEL_ENABLED: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => parseOptionalBoolean(value, false)),
+    OTEL_SERVICE_NAME: z.string().min(1).default('supportflow-backend'),
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().optional(),
+    METRICS_ENABLED: z
+      .enum(['true', 'false'])
+      .optional()
+      .transform((value) => parseOptionalBoolean(value, true)),
   })
   .superRefine((data, ctx) => {
     if (data.NODE_ENV !== 'production') {

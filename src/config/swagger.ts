@@ -1699,6 +1699,73 @@ const options: Options = {
             },
           },
         },
+        ObservabilityHealthResponse: {
+          type: 'object',
+          properties: {
+            status: { type: 'string', enum: ['ok', 'degraded'], example: 'ok' },
+            service: { type: 'string', example: 'supportflow-backend' },
+            environment: { type: 'string', example: 'development' },
+            timestamp: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-06-23T12:00:00.000Z',
+            },
+            openTelemetry: {
+              type: 'object',
+              properties: {
+                enabled: { type: 'boolean', example: false },
+                serviceName: { type: 'string', example: 'supportflow-backend' },
+                otlpEndpoint: {
+                  type: 'string',
+                  nullable: true,
+                  example: null,
+                },
+              },
+            },
+            metrics: {
+              type: 'object',
+              properties: {
+                enabled: { type: 'boolean', example: true },
+              },
+            },
+            checks: {
+              type: 'object',
+              properties: {
+                database: {
+                  type: 'string',
+                  enum: ['up', 'down'],
+                  example: 'up',
+                },
+                redis: {
+                  type: 'string',
+                  enum: ['up', 'down', 'skipped'],
+                  example: 'skipped',
+                },
+              },
+            },
+            http: {
+              type: 'object',
+              properties: {
+                totalRequests: { type: 'integer', example: 0 },
+                averageDurationMs: { type: 'number', example: 0 },
+                errorRate: { type: 'number', example: 0 },
+              },
+            },
+            jobs: {
+              type: 'object',
+              properties: {
+                overview: { type: 'object' },
+                processing: {
+                  type: 'object',
+                  properties: {
+                    processedTotal: { type: 'integer', example: 0 },
+                    averageProcessingMs: { type: 'number', example: 0 },
+                  },
+                },
+              },
+            },
+          },
+        },
         TokenPairResponse: {
           type: 'object',
           required: ['accessToken', 'refreshToken'],

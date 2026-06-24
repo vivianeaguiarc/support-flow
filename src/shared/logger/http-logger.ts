@@ -1,10 +1,29 @@
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+import { context, trace } from '@opentelemetry/api';
 import { pinoHttp } from 'pino-http';
 
 import { logger } from './logger.js';
+import { getCorrelationId, getRequestContext } from './request-context.js';
 import { SENSITIVE_REDACT_PATHS } from './sensitive-redaction.js';
+
+function getTraceLogFields(): Record<string, string> {
+  const span = trace.getSpan(context.active());
+  if (!span) {
+    return {};
+  }
+
+  const spanContext = span.spanContext();
+  if (!spanContext.traceId) {
+    return {};
+  }
+
+  return {
+    trace_id: spanContext.traceId,
+    span_id: spanContext.spanId,
+  };
+}
 
 function resolveRequestId(req: IncomingMessage): string {
   const existingId = (req as IncomingMessage & { id?: string | number }).id;
@@ -43,9 +62,12 @@ export const httpLogger = pinoHttp({
       id?: string;
       user?: { id?: string; tenantId?: string };
     };
+    const requestContext = getRequestContext();
 
     return {
       requestId: request.id,
+      correlationId: requestContext?.correlationId ?? getCorrelationId(request),
+      ...getTraceLogFields(),
       userId: request.user?.id,
       tenantId: request.user?.tenantId,
     };
@@ -54,7 +76,12 @@ export const httpLogger = pinoHttp({
     ignore: (req: IncomingMessage) => {
       const url = req.url?.split('?')[0];
       return (
-        url === '/health' || url === '/health/ready' || url === '/api/v1/health'
+        url === '/health' ||
+        url === '/health/ready' ||
+        url === '/health/observability' ||
+        url === '/api/v1/health' ||
+        url === '/api/v1/health/observability' ||
+        url === '/api/v1/metrics'
       );
     },
   },

@@ -45,6 +45,7 @@ export function logBusinessEvent(
     event,
     ...data,
     ...(context?.requestId ? { requestId: context.requestId } : {}),
+    ...(context?.correlationId ? { correlationId: context.correlationId } : {}),
     ...(context?.method ? { method: context.method } : {}),
     ...(context?.path ? { path: context.path } : {}),
   });

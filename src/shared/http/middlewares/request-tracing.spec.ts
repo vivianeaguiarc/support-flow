@@ -50,5 +50,31 @@ describe('requestTracing', () => {
 
     expect(req.id).toBe('client-req-42');
     expect(res.setHeader).toHaveBeenCalledWith('X-Request-Id', 'client-req-42');
+    expect(res.setHeader).toHaveBeenCalledWith(
+      'X-Correlation-Id',
+      'client-req-42',
+    );
+  });
+
+  it('uses x-correlation-id when provided separately from request id', () => {
+    const req = {
+      headers: {
+        'x-request-id': 'client-req-42',
+        'x-correlation-id': 'corr-99',
+      },
+      method: 'GET',
+      originalUrl: '/api/v1/tickets',
+    } as Request;
+    const res = createMockResponse();
+    const next = vi.fn((...args: unknown[]) => {
+      if (args.length === 0) {
+        expect(requestContext.getStore()?.correlationId).toBe('corr-99');
+        expect(requestContext.getStore()?.requestId).toBe('client-req-42');
+      }
+    }) as NextFunction;
+
+    requestTracing(req, res, next);
+
+    expect(res.setHeader).toHaveBeenCalledWith('X-Correlation-Id', 'corr-99');
   });
 });

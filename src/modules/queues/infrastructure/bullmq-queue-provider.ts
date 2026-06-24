@@ -10,6 +10,7 @@ import type {
   ReportJobResult,
   WebhookJobData,
 } from '../../jobs/domain/job-types.js';
+import { runJobWithTracing } from '../../observability/infrastructure/job-tracing.js';
 import { processAutomationJob } from '../../workers/processors/automation.processor.js';
 import { processEmailJob } from '../../workers/processors/email.processor.js';
 import { processReportJob } from '../../workers/processors/report.processor.js';
@@ -266,7 +267,8 @@ export class BullMQQueueProvider implements QueueProvider {
   ): Worker<T> {
     const worker = new Worker<T>(
       queueName,
-      async (job: Job<T>) => processor(job.data),
+      async (job: Job<T>) =>
+        runJobWithTracing(queueName, String(job.id), () => processor(job.data)),
       {
         connection,
         concurrency: env.QUEUE_WORKER_CONCURRENCY,

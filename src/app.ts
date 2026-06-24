@@ -10,6 +10,8 @@ import { customersRouter } from './modules/customers/routes/customers.routes.js'
 import { adminRouter } from './modules/email/presentation/routes/admin-notifications.routes.js';
 import { knowledgeRouter } from './modules/knowledge-base/presentation/routes/knowledge.routes.js';
 import { notificationsRouter } from './modules/notifications/presentation/routes/notifications.routes.js';
+import { httpMetricsMiddleware } from './modules/observability/presentation/middlewares/http-metrics.middleware.js';
+import { prometheusMetricsHandler } from './modules/observability/presentation/routes/observability.routes.js';
 import { reportsRouter } from './modules/reports/presentation/routes/reports.routes.js';
 import { metricsRouter } from './modules/tickets/presentation/routes/metrics.routes.js';
 import { ticketCategoriesRouter } from './modules/tickets/presentation/routes/ticket-categories.routes.js';
@@ -38,6 +40,7 @@ export function createApp(options: CreateAppOptions = {}) {
   app.use('/health', healthRouter);
 
   app.use(requestTracing);
+  app.use(httpMetricsMiddleware);
   app.use(httpLogger);
   app.use(...securityMiddleware);
   if (env.RATE_LIMIT_ENABLED) {
@@ -47,6 +50,7 @@ export function createApp(options: CreateAppOptions = {}) {
 
   const apiRouter = express.Router();
   apiRouter.use('/health', healthRouter);
+  apiRouter.get('/metrics', prometheusMetricsHandler);
   apiRouter.use('/auth', authRouter);
   apiRouter.use('/users', usersRouter);
   apiRouter.use('/customers', customersRouter);

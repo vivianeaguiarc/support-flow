@@ -54,6 +54,28 @@
  *               timestamp: '2026-06-23T12:00:00.000Z'
  *               checks:
  *                 database: down
+ *
+ * /health/observability:
+ *   get:
+ *     tags:
+ *       - Health
+ *     summary: Observability health check
+ *     description: |
+ *       Status de observabilidade, dependências, métricas HTTP e filas de jobs.
+ *       Disponível em `/health/observability` e `/api/v1/health/observability`.
+ *     responses:
+ *       200:
+ *         description: Observabilidade operacional
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ObservabilityHealthResponse'
+ *       503:
+ *         description: Dependência crítica indisponível
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ObservabilityHealthResponse'
  */
 
 export {};

@@ -1,5 +1,6 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { shutdownOpenTelemetry } from './modules/observability/infrastructure/opentelemetry.js';
 import { closeRedisConnection } from './modules/queues/infrastructure/redis-connection.js';
 import { queueProvider } from './modules/queues/queue-provider.js';
 import { logger } from './shared/logger/logger.js';
@@ -31,6 +32,7 @@ export async function bootstrap(): Promise<void> {
     server.close(async () => {
       await queueProvider.close();
       await closeRedisConnection();
+      await shutdownOpenTelemetry();
       process.exit(0);
     });
   };

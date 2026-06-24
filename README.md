@@ -357,15 +357,52 @@ Health local: http://localhost:3000/health
 
 ---
 
-## Observabilidade (logs e tracing)
+## Observabilidade (logs, tracing e métricas)
 
-A API usa **Pino** para logs estruturados em JSON (ou `pino-pretty` em desenvolvimento).
+A API usa **Pino** para logs estruturados em JSON (ou `pino-pretty` em desenvolvimento), **OpenTelemetry** para tracing distribuído e **Prometheus** (`prom-client`) para métricas operacionais.
 
-### Request tracing
+### Request tracing e correlation ID
 
 - Cada requisição recebe um `requestId` (UUID), gerado automaticamente ou reutilizado do header `X-Request-Id`.
-- O mesmo valor é retornado no header de resposta `X-Request-Id` e incluído em respostas de erro (`requestId` no JSON).
-- O contexto da requisição fica disponível via `AsyncLocalStorage` para logs de negócio e erros.
+- Um `correlationId` é propagado via header `X-Correlation-Id`; se ausente, reutiliza o `requestId`.
+- Ambos aparecem nos logs estruturados (`requestId`, `correlationId`) e nos headers de resposta.
+- Com OpenTelemetry ativo (`OTEL_ENABLED=true`), logs HTTP também incluem `trace_id` e `span_id` do span ativo.
+
+### OpenTelemetry
+
+Instrumentação automática de:
+
+| Componente        | Instrumentação                                    |
+| ----------------- | ------------------------------------------------- |
+| HTTP              | `@opentelemetry/instrumentation-http`             |
+| Express           | `@opentelemetry/instrumentation-express`          |
+| Prisma/PostgreSQL | `@prisma/instrumentation`                         |
+| Redis (ioredis)   | `@opentelemetry/instrumentation-ioredis`          |
+| BullMQ jobs       | spans manuais nos workers (`job.process <queue>`) |
+
+**Variáveis de ambiente:**
+
+| Variável                      | Padrão                | Descrição                                    |
+| ----------------------------- | --------------------- | -------------------------------------------- |
+| `OTEL_ENABLED`                | `false`               | Ativa o SDK OpenTelemetry                    |
+| `OTEL_SERVICE_NAME`           | `supportflow-backend` | Nome do serviço nos traces                   |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | —                     | URL base OTLP (ex.: `http://localhost:4318`) |
+| `METRICS_ENABLED`             | `true`                | Coleta métricas Prometheus e middleware HTTP |
+
+**Exportadores:**
+
+- **Desenvolvimento** (`OTEL_ENABLED=true`, sem OTLP): traces no console.
+- **Produção** (futuro): configure `OTEL_EXPORTER_OTLP_ENDPOINT` para enviar traces e métricas OTLP.
+- **Prometheus**: endpoint `GET /api/v1/metrics` (requer `METRICS_ENABLED=true`).
+
+### Endpoints de observabilidade
+
+| Método | Rota                           | Descrição                                     |
+| ------ | ------------------------------ | --------------------------------------------- |
+| `GET`  | `/api/v1/health/observability` | Health JSON com DB, Redis, resumo HTTP e jobs |
+| `GET`  | `/api/v1/metrics`              | Métricas Prometheus (text/plain)              |
+
+Métricas expostas incluem: total de requisições, duração média, taxa de erro, jobs processados/falhos, tempo médio de jobs, gauges `database_up` e `redis_up`.
 
 ### Níveis de log
 
@@ -393,16 +430,23 @@ Senhas, tokens JWT, refresh tokens, `Authorization` e cookies são **redigidos**
 # Logs detalhados
 LOG_LEVEL=debug pnpm dev
 
-# Simular tracing com header customizado
-curl -i -H "X-Request-Id: meu-id-debug" http://localhost:3000/api/v1/health
+# Simular tracing com headers customizados
+curl -i -H "X-Request-Id: meu-id-debug" -H "X-Correlation-Id: corr-abc" http://localhost:3000/api/v1/health
 
-# Forçar erro e ver requestId na resposta
+# Health de observabilidade
+curl -s http://localhost:3000/api/v1/health/observability | jq
+
+# Métricas Prometheus
+curl -s http://localhost:3000/api/v1/metrics | head
+
+# Ativar OpenTelemetry localmente (traces no console)
+OTEL_ENABLED=true pnpm dev
 curl -i -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"x@y.com","password":"wrong"}'
 ```
 
-Health checks (`/health`, `/health/ready`, `/api/v1/health`) não geram log HTTP automático para reduzir ruído.
+Health checks (`/health`, `/health/ready`, `/health/observability`, `/api/v1/health`, `/api/v1/metrics`) não geram log HTTP automático para reduzir ruído.
 
 ---
 

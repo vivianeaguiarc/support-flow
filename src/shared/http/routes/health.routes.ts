@@ -1,6 +1,7 @@
 import { Router } from 'express';
 
 import { env } from '../../../config/env.js';
+import { observabilityHealthHandler } from '../../../modules/observability/presentation/routes/observability.routes.js';
 import { prisma } from '../../database/prisma.js';
 
 export const healthRouter = Router();
@@ -13,6 +14,8 @@ healthRouter.get('/', (_req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+healthRouter.get('/observability', observabilityHealthHandler);
 
 healthRouter.get('/ready', async (_req, res) => {
   try {

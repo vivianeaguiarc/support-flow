@@ -62,6 +62,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/webhooks/{id}/test': ['post'],
   '/health': ['get'],
   '/health/ready': ['get'],
+  '/health/observability': ['get'],
+  '/metrics': ['get'],
 };
 
 describe('swaggerSpec', () => {
@@ -123,5 +125,6 @@ describe('swaggerSpec', () => {
     expect(schemas.ApiPaginatedSuccessResponse).toBeDefined();
     expect(schemas.PaginationMeta).toBeDefined();
     expect(schemas.ApiErrorResponse).toBeDefined();
+    expect(schemas.ObservabilityHealthResponse).toBeDefined();
   });
 });

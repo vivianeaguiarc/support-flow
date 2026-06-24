@@ -8,6 +8,7 @@ import type {
   ReportJobResult,
   WebhookJobData,
 } from '../../jobs/domain/job-types.js';
+import { runJobWithTracing } from '../../observability/infrastructure/job-tracing.js';
 import { processAutomationJob } from '../../workers/processors/automation.processor.js';
 import { processEmailJob } from '../../workers/processors/email.processor.js';
 import { processReportJob } from '../../workers/processors/report.processor.js';
@@ -146,7 +147,9 @@ export class SyncQueueProvider implements QueueProvider {
       this.counts[queue].waiting -= 1;
       this.counts[queue].active += 1;
 
-      const result = await processor(data);
+      const result = await runJobWithTracing(queue, jobId, () =>
+        processor(data),
+      );
 
       record.status = 'completed';
       this.counts[queue].active -= 1;
