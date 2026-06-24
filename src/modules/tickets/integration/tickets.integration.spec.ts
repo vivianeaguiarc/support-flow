@@ -85,14 +85,14 @@ describe.sequential('Ticket workflow integration', () => {
 
     const listResponse = await api.get('/api/v1/tickets').expect(200);
 
-    expect(listResponse.body.data).toMatchObject({
+    expect(listResponse.body.meta).toMatchObject({
       total: 1,
       page: 1,
       limit: 10,
     });
-    expect(listResponse.body.data.data).toHaveLength(1);
-    expect(listResponse.body.data.data[0].id).toBe(ticketId);
-    expect(listResponse.body.data.data[0].tenantId).toBe(fixtures.tenantA.id);
+    expect(listResponse.body.data).toHaveLength(1);
+    expect(listResponse.body.data[0].id).toBe(ticketId);
+    expect(listResponse.body.data[0].tenantId).toBe(fixtures.tenantA.id);
 
     const findResponse = await api
       .get(`/api/v1/tickets/${ticketId}`)

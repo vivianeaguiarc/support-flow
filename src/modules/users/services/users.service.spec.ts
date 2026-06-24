@@ -20,6 +20,7 @@ import { UsersService } from './users.service.js';
 
 const mockUser: User = {
   id: 'user-1',
+  tenantId: 'tenant-1',
   name: 'John Doe',
   email: 'john@example.com',
   password: 'hashed-password',
@@ -34,6 +35,7 @@ function createUsersRepositoryMock(): UsersRepository {
     findByEmail: vi.fn(),
     findById: vi.fn(),
     list: vi.fn(),
+    listWithFilters: vi.fn(),
   };
 }
 
@@ -96,5 +98,36 @@ describe('UsersService', () => {
     await expect(service.findById('missing-id', 'tenant-1')).rejects.toEqual(
       new AppError('User not found', 404),
     );
+  });
+
+  it('should list users with pagination filters', async () => {
+    vi.mocked(repository.listWithFilters).mockResolvedValue({
+      data: [mockUser],
+      total: 1,
+      page: 1,
+      limit: 10,
+    });
+
+    const result = await service.list('tenant-1', {
+      page: 1,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+      search: 'john',
+    });
+
+    expect(repository.listWithFilters).toHaveBeenCalledWith({
+      tenantId: 'tenant-1',
+      search: 'john',
+      role: undefined,
+      createdFrom: undefined,
+      createdTo: undefined,
+      page: 1,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+    expect(result.data).toEqual([mockUser]);
+    expect(result.total).toBe(1);
   });
 });

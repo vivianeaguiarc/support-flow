@@ -89,7 +89,7 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      ascResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+      ascResponse.body.data.map((ticket: { id: string }) => ticket.id),
     ).toEqual([oldest.body.data.id, middle.body.data.id, newest.body.data.id]);
 
     const descResponse = await api
@@ -98,7 +98,7 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      descResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+      descResponse.body.data.map((ticket: { id: string }) => ticket.id),
     ).toEqual([newest.body.data.id, middle.body.data.id, oldest.body.data.id]);
   });
 
@@ -146,7 +146,7 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      ascResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+      ascResponse.body.data.map((ticket: { id: string }) => ticket.id),
     ).toEqual([soon.body.data.id, later.body.data.id]);
 
     const descResponse = await api
@@ -155,7 +155,7 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      descResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+      descResponse.body.data.map((ticket: { id: string }) => ticket.id),
     ).toEqual([later.body.data.id, soon.body.data.id]);
   });
 
@@ -194,7 +194,7 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      ascResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+      ascResponse.body.data.map((ticket: { id: string }) => ticket.id),
     ).toEqual([low.body.data.id, urgent.body.data.id]);
 
     const descResponse = await api
@@ -203,7 +203,7 @@ describe.sequential('Ticket listing sorting integration', () => {
       .expect(200);
 
     expect(
-      descResponse.body.data.data.map((ticket: { id: string }) => ticket.id),
+      descResponse.body.data.map((ticket: { id: string }) => ticket.id),
     ).toEqual([urgent.body.data.id, low.body.data.id]);
   });
 

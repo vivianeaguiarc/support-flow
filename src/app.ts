@@ -3,7 +3,9 @@ import express from 'express';
 import { env } from './config/env.js';
 import { setupSwagger } from './config/setup-swagger.js';
 import { authRouter } from './modules/auth/routes/auth.routes.js';
+import { customersRouter } from './modules/customers/routes/customers.routes.js';
 import { notificationsRouter } from './modules/notifications/presentation/routes/notifications.routes.js';
+import { ticketCategoriesRouter } from './modules/tickets/presentation/routes/ticket-categories.routes.js';
 import { ticketsRouter } from './modules/tickets/presentation/routes/tickets.routes.js';
 import { usersRouter } from './modules/users/routes/users.routes.js';
 import { errorHandler } from './shared/http/middlewares/error-handler.js';
@@ -39,6 +41,8 @@ export function createApp(options: CreateAppOptions = {}) {
   apiRouter.use('/health', healthRouter);
   apiRouter.use('/auth', authRouter);
   apiRouter.use('/users', usersRouter);
+  apiRouter.use('/customers', customersRouter);
+  apiRouter.use('/ticket-categories', ticketCategoriesRouter);
   apiRouter.use('/tickets', ticketsRouter);
   apiRouter.use('/notifications', notificationsRouter);
   app.use('/api/v1', apiRouter);

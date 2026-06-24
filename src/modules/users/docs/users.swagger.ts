@@ -129,44 +129,83 @@
  *       - Users
  *     security:
  *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *           enum: [name, email, createdAt, role]
+ *           default: createdAt
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *           minLength: 1
+ *         description: Busca por nome ou e-mail
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           $ref: '#/components/schemas/UserRole'
+ *         description: Filtrar por role
+ *       - in: query
+ *         name: createdFrom
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: createdTo
+ *         schema:
+ *           type: string
+ *           format: date-time
  *     responses:
  *       200:
  *         description: Lista de usuários retornada com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: string
- *                     format: uuid
- *                   name:
- *                     type: string
- *                   email:
- *                     type: string
- *                   role:
- *                     $ref: '#/components/schemas/UserRole'
- *                   tenantId:
- *                     type: string
- *                     format: uuid
- *                   createdAt:
- *                     type: string
- *                     format: date-time
- *             example:
- *               - id: 550e8400-e29b-41d4-a716-446655440001
- *                 name: Maria Administradora
- *                 email: maria@supportflow.com
- *                 role: ADMIN
- *                 tenantId: 650e8400-e29b-41d4-a716-446655440010
- *                 createdAt: 2024-01-15T10:00:00.000Z
- *               - id: 550e8400-e29b-41d4-a716-446655440002
- *                 name: Carlos Agente
- *                 email: carlos@supportflow.com
- *                 role: AGENT
- *                 tenantId: 650e8400-e29b-41d4-a716-446655440010
- *                 createdAt: 2024-02-10T14:30:00.000Z
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiPaginatedSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             format: uuid
+ *                           name:
+ *                             type: string
+ *                           email:
+ *                             type: string
+ *                           role:
+ *                             $ref: '#/components/schemas/UserRole'
+ *                           tenantId:
+ *                             type: string
+ *                             format: uuid
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
  *       401:
  *         description: Não autenticado
  *         content:

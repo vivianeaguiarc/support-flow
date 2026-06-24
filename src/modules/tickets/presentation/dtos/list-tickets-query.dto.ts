@@ -1,9 +1,13 @@
 import { z } from 'zod';
 
 import {
+  createdAtRangeQueryFields,
+  paginationQueryFields,
+  withCreatedAtRangeRefine,
+} from '../../../../shared/http/dtos/pagination-query.dto.js';
+import {
   DEFAULT_TICKET_LIST_LIMIT,
   DEFAULT_TICKET_LIST_PAGE,
-  MAX_TICKET_LIST_LIMIT,
 } from '../../domain/ticket-list-pagination.js';
 import {
   DEFAULT_TICKET_LIST_SORT_BY,
@@ -17,7 +21,7 @@ const optionalBooleanQuery = z.preprocess(
   z.boolean().optional(),
 );
 
-export const listTicketsQuerySchema = z
+const listTicketsQueryBaseSchema = z
   .object({
     status: z
       .enum([
@@ -35,16 +39,11 @@ export const listTicketsQuerySchema = z
     assignedToId: z.uuid('Invalid agent ID').optional(),
     unassigned: optionalBooleanQuery,
     overdue: optionalBooleanQuery,
-    search: z.string().trim().min(1, 'Search term is required').optional(),
-    createdFrom: z.coerce.date().optional(),
-    createdTo: z.coerce.date().optional(),
-    page: z.coerce.number().int().min(1).default(DEFAULT_TICKET_LIST_PAGE),
-    limit: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(MAX_TICKET_LIST_LIMIT)
-      .default(DEFAULT_TICKET_LIST_LIMIT),
+    search: paginationQueryFields.search,
+    createdFrom: createdAtRangeQueryFields.createdFrom,
+    createdTo: createdAtRangeQueryFields.createdTo,
+    page: paginationQueryFields.page.default(DEFAULT_TICKET_LIST_PAGE),
+    limit: paginationQueryFields.limit.default(DEFAULT_TICKET_LIST_LIMIT),
     sortBy: z
       .enum(TICKET_LIST_SORT_FIELDS)
       .default(DEFAULT_TICKET_LIST_SORT_BY),
@@ -53,16 +52,26 @@ export const listTicketsQuerySchema = z
       .default(DEFAULT_TICKET_LIST_SORT_ORDER),
   })
   .refine((data) => !(data.unassigned && data.assignedToId), {
-    message: 'unassigned cannot be combined with assignedToId',
-  })
-  .refine(
-    (data) =>
-      !data.createdFrom ||
-      !data.createdTo ||
-      data.createdFrom.getTime() <= data.createdTo.getTime(),
-    {
-      message: 'createdFrom must be before or equal to createdTo',
-    },
-  );
+    message: 'unassigned cannot be combined with assignedTo or assignedToId',
+  });
+
+export const listTicketsQuerySchema = withCreatedAtRangeRefine(
+  z.preprocess((input) => {
+    if (typeof input !== 'object' || input === null) {
+      return input;
+    }
+
+    const query = input as Record<string, unknown>;
+
+    if (query.assignedTo && !query.assignedToId) {
+      return {
+        ...query,
+        assignedToId: query.assignedTo,
+      };
+    }
+
+    return query;
+  }, listTicketsQueryBaseSchema),
+);
 
 export type ListTicketsQueryDto = z.infer<typeof listTicketsQuerySchema>;

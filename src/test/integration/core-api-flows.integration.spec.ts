@@ -139,8 +139,8 @@ describe.sequential('Core API flows (E2E)', () => {
 
       const listResponse = await api.get('/api/v1/tickets').expect(200);
 
-      expect(listResponse.body.data.total).toBe(1);
-      expect(listResponse.body.data.data[0].id).toBe(ticketId);
+      expect(listResponse.body.meta.total).toBe(1);
+      expect(listResponse.body.data[0].id).toBe(ticketId);
 
       const findResponse = await api
         .get(`/api/v1/tickets/${ticketId}`)

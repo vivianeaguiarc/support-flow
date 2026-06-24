@@ -14,6 +14,7 @@ const swaggerExtension = isProductionBuild ? 'js' : 'ts';
 const swaggerApiGlobs = [
   path.join(docsRoot, `modules/auth/docs/*.swagger.${swaggerExtension}`),
   path.join(docsRoot, `modules/users/docs/*.swagger.${swaggerExtension}`),
+  path.join(docsRoot, `modules/customers/docs/*.swagger.${swaggerExtension}`),
   path.join(
     docsRoot,
     `modules/**/presentation/docs/*.swagger.${swaggerExtension}`,
@@ -66,6 +67,68 @@ const options: Options = {
             success: { type: 'boolean', example: true },
             data: {
               description: 'Payload da operação',
+            },
+            message: {
+              type: 'string',
+              example: 'Operation completed successfully',
+            },
+          },
+        },
+        PaginationMeta: {
+          type: 'object',
+          required: [
+            'page',
+            'limit',
+            'total',
+            'totalPages',
+            'hasNextPage',
+            'hasPreviousPage',
+          ],
+          properties: {
+            page: {
+              type: 'integer',
+              description: 'Página atual',
+              example: 1,
+            },
+            limit: {
+              type: 'integer',
+              description: 'Itens por página',
+              example: 10,
+            },
+            total: {
+              type: 'integer',
+              description: 'Total de registros',
+              example: 100,
+            },
+            totalPages: {
+              type: 'integer',
+              description: 'Total de páginas',
+              example: 10,
+            },
+            hasNextPage: {
+              type: 'boolean',
+              description: 'Indica se existe próxima página',
+              example: true,
+            },
+            hasPreviousPage: {
+              type: 'boolean',
+              description: 'Indica se existe página anterior',
+              example: false,
+            },
+          },
+        },
+        ApiPaginatedSuccessResponse: {
+          type: 'object',
+          required: ['success', 'data', 'meta', 'message'],
+          properties: {
+            success: { type: 'boolean', example: true },
+            data: {
+              type: 'array',
+              items: {},
+              description: 'Itens da página atual',
+            },
+            meta: {
+              $ref: '#/components/schemas/PaginationMeta',
             },
             message: {
               type: 'string',
@@ -291,6 +354,33 @@ const options: Options = {
               description: 'Data/hora da última atualização',
               example: '2024-06-23T12:30:00.000Z',
             },
+          },
+        },
+        Customer: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            email: { type: 'string', format: 'email' },
+            phone: { type: 'string', nullable: true },
+            document: { type: 'string', nullable: true },
+            isActive: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        TicketCategory: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            name: { type: 'string' },
+            description: { type: 'string', nullable: true },
+            slaHours: { type: 'integer', nullable: true },
+            isActive: { type: 'boolean' },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
           },
         },
         CreateTicketRequest: {
@@ -737,55 +827,20 @@ const options: Options = {
           },
         },
         PaginatedTickets: {
-          type: 'object',
-          required: ['data', 'total', 'page', 'limit'],
-          properties: {
-            data: {
-              type: 'array',
-              items: {
-                $ref: '#/components/schemas/Ticket',
+          allOf: [
+            { $ref: '#/components/schemas/ApiPaginatedSuccessResponse' },
+            {
+              type: 'object',
+              properties: {
+                data: {
+                  type: 'array',
+                  items: {
+                    $ref: '#/components/schemas/Ticket',
+                  },
+                },
               },
             },
-            total: {
-              type: 'integer',
-              description: 'Total de registros',
-              example: 150,
-            },
-            page: {
-              type: 'integer',
-              description: 'Página atual',
-              example: 1,
-            },
-            limit: {
-              type: 'integer',
-              description: 'Itens por página',
-              example: 10,
-            },
-          },
-          example: {
-            data: [
-              {
-                id: '550e8400-e29b-41d4-a716-446655440000',
-                tenantId: '660e8400-e29b-41d4-a716-446655440001',
-                protocol: 'TK-2026-004521',
-                title: 'Reclamação Ouvidoria — reembolso não creditado',
-                description:
-                  'Cliente formalizou reclamação na Ouvidoria após 15 dias úteis sem crédito do estorno solicitado no SAC.',
-                status: 'ESCALATED',
-                priority: 'URGENT',
-                customerId: '770e8400-e29b-41d4-a716-446655440002',
-                categoryId: '880e8400-e29b-41d4-a716-446655440003',
-                assignedToId: '990e8400-e29b-41d4-a716-446655440004',
-                slaDueAt: '2026-06-25T18:00:00.000Z',
-                closedAt: null,
-                createdAt: '2026-06-23T10:30:00.000Z',
-                updatedAt: '2026-06-23T14:15:00.000Z',
-              },
-            ],
-            total: 150,
-            page: 1,
-            limit: 10,
-          },
+          ],
         },
         RouteTicketResponse: {
           type: 'object',

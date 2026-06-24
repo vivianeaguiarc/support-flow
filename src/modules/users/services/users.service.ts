@@ -1,6 +1,7 @@
 import { AppError } from '../../../shared/errors/app-error.js';
 import { hashPassword } from '../../../shared/security/password-hash.js';
 import type { User } from '../domain/user.entity.js';
+import type { ListUsersQueryDto } from '../dtos/list-users-query.dto.js';
 import {
   type CreateUserInput,
   UsersRepository,
@@ -41,8 +42,26 @@ export class UsersService {
     return this.repository.findByEmail(email);
   }
 
-  async list(tenantId: string): Promise<User[]> {
-    return this.repository.list(tenantId);
+  async list(
+    tenantId: string,
+    query: ListUsersQueryDto = {
+      page: 1,
+      limit: 10,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    },
+  ): Promise<{ data: User[]; total: number; page: number; limit: number }> {
+    return this.repository.listWithFilters({
+      tenantId,
+      search: query.search,
+      role: query.role,
+      createdFrom: query.createdFrom,
+      createdTo: query.createdTo,
+      page: query.page,
+      limit: query.limit,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 }
 

@@ -50,6 +50,14 @@ export const ROLE_GROUPS = {
   ],
   METRICS: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
   ROUTING: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
+  CUSTOMER_LIST: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
+  CATEGORY_LIST: [
+    UserRole.AGENT,
+    UserRole.CUSTOMER,
+    UserRole.SUPERVISOR,
+    UserRole.OMBUDSMAN,
+    UserRole.ADMIN,
+  ],
 } as const satisfies Record<string, UserRole[]>;
 
 export function isAdmin(role: UserRole): boolean {

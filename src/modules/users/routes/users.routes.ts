@@ -8,6 +8,7 @@ import { validateRequest } from '../../../shared/http/middlewares/validate-reque
 import { ROLE_GROUPS } from '../../../shared/security/rbac.js';
 import { usersController } from '../controllers/users.controller.js';
 import { createUserSchema } from '../dtos/create-user.dto.js';
+import { listUsersQuerySchema } from '../dtos/list-users-query.dto.js';
 import { enforceUserCreationPolicy } from '../middlewares/enforce-user-creation-policy.js';
 
 const idParamSchema = z.object({
@@ -28,6 +29,7 @@ usersRouter.get(
   '/',
   authenticate,
   authorize(...ROLE_GROUPS.USER_ADMIN),
+  validateRequest({ query: listUsersQuerySchema }),
   usersController.list,
 );
 

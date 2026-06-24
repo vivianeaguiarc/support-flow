@@ -1,7 +1,11 @@
 import type { NextFunction, Request, Response } from 'express';
 
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
-import { sendSuccess } from '../../../../shared/http/response/api-response.js';
+import { buildPaginationMeta } from '../../../../shared/http/pagination/pagination.js';
+import {
+  sendPaginatedSuccess,
+  sendSuccess,
+} from '../../../../shared/http/response/api-response.js';
 import {
   TicketsService,
   ticketsService,
@@ -49,9 +53,19 @@ export class TicketsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const query = req.query as unknown as ListTicketsQueryDto;
-      const tickets = await this.service.list(getAuthenticatedUser(req), query);
-      sendSuccess(res, tickets);
+      const rawQuery = req.query as unknown as ListTicketsQueryDto & {
+        assignedTo?: string;
+      };
+      const query: ListTicketsQueryDto = {
+        ...rawQuery,
+        assignedToId: rawQuery.assignedToId ?? rawQuery.assignedTo,
+      };
+      const result = await this.service.list(getAuthenticatedUser(req), query);
+      sendPaginatedSuccess(
+        res,
+        result.data,
+        buildPaginationMeta(result.page, result.limit, result.total),
+      );
     } catch (error) {
       next(error);
     }

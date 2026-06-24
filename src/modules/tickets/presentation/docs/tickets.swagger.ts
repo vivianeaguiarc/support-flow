@@ -133,6 +133,12 @@
  *           format: uuid
  *         description: Filtrar por cliente
  *       - in: query
+ *         name: assignedTo
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Filtrar por agente responsável (alias de `assignedToId`)
+ *       - in: query
  *         name: assignedToId
  *         schema:
  *           type: string
@@ -142,7 +148,7 @@
  *         name: unassigned
  *         schema:
  *           type: boolean
- *         description: Quando `true`, retorna apenas chamados sem agente atribuído (não combinar com `assignedToId`)
+ *         description: Quando `true`, retorna apenas chamados sem agente atribuído (não combinar com `assignedTo` ou `assignedToId`)
  *         example: true
  *       - in: query
  *         name: overdue
@@ -155,7 +161,7 @@
  *         schema:
  *           type: string
  *           minLength: 1
- *         description: Busca em protocolo, título e descrição
+ *         description: Busca em protocolo, título, descrição, nome e e-mail do cliente
  *         example: "ouvidoria reembolso"
  *       - in: query
  *         name: createdFrom

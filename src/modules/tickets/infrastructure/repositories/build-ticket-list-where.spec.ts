@@ -55,7 +55,7 @@ describe('buildTicketListWhere', () => {
     expect(slaDueAt.getTime()).toBeLessThanOrEqual(after);
   });
 
-  it('should search protocol, title and description', () => {
+  it('should search protocol, title, description and customer fields', () => {
     const where = buildTicketListWhere({
       tenantId: 'tenant-1',
       search: 'protocol-123',
@@ -65,6 +65,10 @@ describe('buildTicketListWhere', () => {
       { protocol: { contains: 'protocol-123', mode: 'insensitive' } },
       { title: { contains: 'protocol-123', mode: 'insensitive' } },
       { description: { contains: 'protocol-123', mode: 'insensitive' } },
+      { customer: { name: { contains: 'protocol-123', mode: 'insensitive' } } },
+      {
+        customer: { email: { contains: 'protocol-123', mode: 'insensitive' } },
+      },
     ]);
   });
 

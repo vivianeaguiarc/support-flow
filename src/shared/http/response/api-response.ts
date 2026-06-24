@@ -3,12 +3,22 @@ import type { Response } from 'express';
 import type { AppError } from '../../errors/app-error.js';
 import { ErrorCode } from '../../errors/error-codes.js';
 import type { ValidationIssue } from '../../errors/http-errors.js';
+import type { PaginationMeta } from '../pagination/pagination.js';
+
+export { type PaginationMeta } from '../pagination/pagination.js';
 
 export const DEFAULT_SUCCESS_MESSAGE = 'Operation completed successfully';
 
 export type ApiSuccessResponse<T> = {
   success: true;
   data: T;
+  message: string;
+};
+
+export type ApiPaginatedSuccessResponse<T> = {
+  success: true;
+  data: T[];
+  meta: PaginationMeta;
   message: string;
 };
 
@@ -53,6 +63,30 @@ export function sendSuccess<T>(
   res
     .status(options.status ?? 200)
     .json(buildSuccessResponse(data, options.message));
+}
+
+export function buildPaginatedSuccessResponse<T>(
+  data: T[],
+  meta: PaginationMeta,
+  message = DEFAULT_SUCCESS_MESSAGE,
+): ApiPaginatedSuccessResponse<T> {
+  return {
+    success: true,
+    data,
+    meta,
+    message,
+  };
+}
+
+export function sendPaginatedSuccess<T>(
+  res: Response,
+  data: T[],
+  meta: PaginationMeta,
+  options: SendSuccessOptions = {},
+): void {
+  res
+    .status(options.status ?? 200)
+    .json(buildPaginatedSuccessResponse(data, meta, options.message));
 }
 
 export function normalizeErrorDetails(details: unknown): unknown[] {

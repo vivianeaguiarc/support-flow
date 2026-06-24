@@ -45,6 +45,8 @@ export function buildTicketListWhere(
         { protocol: { contains: term, mode: 'insensitive' } },
         { title: { contains: term, mode: 'insensitive' } },
         { description: { contains: term, mode: 'insensitive' } },
+        { customer: { name: { contains: term, mode: 'insensitive' } } },
+        { customer: { email: { contains: term, mode: 'insensitive' } } },
       ];
     }
   }

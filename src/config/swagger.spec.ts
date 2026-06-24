@@ -8,6 +8,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/auth/logout': ['post'],
   '/users': ['post', 'get'],
   '/users/{id}': ['get'],
+  '/customers': ['get'],
+  '/ticket-categories': ['get'],
   '/tickets': ['post', 'get'],
   '/tickets/summary': ['get'],
   '/tickets/metrics': ['get'],
@@ -67,6 +69,8 @@ describe('swaggerSpec', () => {
     expect(schemas.UserRole).toBeDefined();
     expect(schemas.NotificationType).toBeDefined();
     expect(schemas.ApiSuccessResponse).toBeDefined();
+    expect(schemas.ApiPaginatedSuccessResponse).toBeDefined();
+    expect(schemas.PaginationMeta).toBeDefined();
     expect(schemas.ApiErrorResponse).toBeDefined();
   });
 });
