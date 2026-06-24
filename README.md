@@ -357,6 +357,70 @@ Health local: http://localhost:3000/health
 
 ---
 
+## Event Bus interno (Domain Events)
+
+O backend usa um **Event Bus in-process** para desacoplar efeitos colaterais dos use cases de tickets. Após persistir o estado e o histórico, o use case publica um **domain event**; handlers registrados reagem de forma assíncrona (sem bloquear a transação principal).
+
+### Fluxo
+
+```mermaid
+sequenceDiagram
+  participant UC as Use Case
+  participant DB as PostgreSQL
+  participant EB as EventBus
+  participant H as Handlers
+
+  UC->>DB: Persiste ticket + histórico
+  UC->>EB: publish(DomainEvent)
+  EB->>H: audit / notification / automation / webhook
+  Note over H: Falha isolada por handler (Promise.allSettled)
+```
+
+1. **Use case** valida regras de domínio, persiste no banco e grava `TicketHistory` (auditoria persistida).
+2. **`eventBus.publish()`** emite o evento com `eventId`, `correlationId` (do ALS da requisição), `aggregateId` e `payload` tipado.
+3. **Handlers** inscritos executam em paralelo: auditoria de negócio (`logBusinessEvent`), notificações, automações (BullMQ) e webhooks (BullMQ).
+4. Falha em um handler **não interrompe** os demais; erros são logados como `domain_event.handler_failed`.
+
+### Eventos disponíveis
+
+| Evento                     | Nome (`eventName`)      | Quando é publicado         |
+| -------------------------- | ----------------------- | -------------------------- |
+| `TicketCreatedEvent`       | `ticket.created`        | Abertura de ticket         |
+| `TicketAssignedEvent`      | `ticket.assigned`       | Atribuição ou reatribuição |
+| `TicketStatusChangedEvent` | `ticket.status_changed` | Mudança de status          |
+| `TicketResolvedEvent`      | `ticket.resolved`       | Status → `RESOLVED`        |
+| `TicketClosedEvent`        | `ticket.closed`         | Status → `CLOSED`          |
+| `SlaWarningEvent`          | `sla.warning`           | SLA próximo do vencimento  |
+| `SlaBreachedEvent`         | `sla.breached`          | SLA estourado              |
+| `CsatSubmittedEvent`       | `csat.submitted`        | Pesquisa CSAT enviada      |
+
+### Handlers registrados
+
+Registro central em `src/shared/events/register-event-handlers.ts`, chamado em `createApp()`:
+
+| Handler                       | Responsabilidade                                                                            |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `ticket-audit.handler`        | Logs estruturados de negócio (`ticket.created`, `ticket.assigned`, `ticket.status_changed`) |
+| `ticket-notification.handler` | `NotificationEventService` (in-app/e-mail)                                                  |
+| `ticket-automation.handler`   | `AutomationEngine.processEvent` → fila BullMQ                                               |
+| `ticket-webhook.handler`      | `WebhookDispatcher.dispatch` → fila BullMQ                                                  |
+
+### Código principal
+
+| Arquivo                                        | Papel                           |
+| ---------------------------------------------- | ------------------------------- |
+| `src/shared/events/domain-event.ts`            | Contrato `DomainEvent`          |
+| `src/shared/events/event-bus.ts`               | `publish` / `subscribe` + logs  |
+| `src/shared/events/ticket/ticket-events.ts`    | Factories dos eventos de ticket |
+| `src/shared/events/register-event-handlers.ts` | Wiring dos handlers             |
+
+### Logs estruturados
+
+- `domain_event.published` — ao publicar (inclui `eventId`, `eventName`, `aggregateId`, `correlationId`).
+- `domain_event.handler_failed` — falha isolada de handler (inclui `handlerName` e `err`).
+
+---
+
 ## Observabilidade (logs, tracing e métricas)
 
 A API usa **Pino** para logs estruturados em JSON (ou `pino-pretty` em desenvolvimento), **OpenTelemetry** para tracing distribuído e **Prometheus** (`prom-client`) para métricas operacionais.

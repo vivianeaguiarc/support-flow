@@ -18,6 +18,7 @@ import { ticketCategoriesRouter } from './modules/tickets/presentation/routes/ti
 import { ticketsRouter } from './modules/tickets/presentation/routes/tickets.routes.js';
 import { usersRouter } from './modules/users/routes/users.routes.js';
 import { webhooksRouter } from './modules/webhooks/presentation/routes/webhooks.routes.js';
+import { registerEventHandlers } from './shared/events/register-event-handlers.js';
 import { errorHandler } from './shared/http/middlewares/error-handler.js';
 import { notFoundHandler } from './shared/http/middlewares/not-found-handler.js';
 import { rateLimitMiddleware } from './shared/http/middlewares/rate-limit.js';
@@ -31,6 +32,8 @@ type CreateAppOptions = {
 };
 
 export function createApp(options: CreateAppOptions = {}) {
+  registerEventHandlers();
+
   const app = express();
 
   if (env.NODE_ENV === 'production') {

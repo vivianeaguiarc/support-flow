@@ -1,14 +1,13 @@
 import { NotFoundError } from '../../../../shared/errors/http-errors.js';
+import {
+  type EventBus,
+  eventBus as defaultEventBus,
+} from '../../../../shared/events/event-bus.js';
+import { createCsatSubmittedEvent } from '../../../../shared/events/ticket/ticket-events.js';
 import { assertFeatureEnabled } from '../../../../shared/feature-flags/require-feature-flag.js';
 import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import { FeatureFlagKey } from '../../../feature-flags/domain/feature-flag-keys.js';
-import { buildCsatWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
-import {
-  type WebhookDispatcher,
-  webhookDispatcher,
-} from '../../../webhooks/application/services/webhook-dispatcher.js';
-import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
 import {
   assertCanSubmitTicketSatisfaction,
@@ -41,7 +40,7 @@ export class SubmitTicketSatisfactionUseCase {
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
     private readonly satisfactionRepo: TicketSatisfactionRepository = defaultTicketSatisfactionRepository,
     private readonly historyRepo: TicketHistoryRepository = defaultTicketHistoryRepository,
-    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
+    private readonly eventBus: EventBus = defaultEventBus,
   ) {}
 
   async execute(
@@ -86,10 +85,13 @@ export class SubmitTicketSatisfactionUseCase {
       },
     });
 
-    await this.webhooks.dispatch(
-      input.tenantId,
-      WebhookEvent.CSAT_SUBMITTED,
-      buildCsatWebhookData(survey, ticket),
+    await this.eventBus.publish(
+      createCsatSubmittedEvent({
+        tenantId: input.tenantId,
+        ticket,
+        survey,
+        customerId: input.authUser.id,
+      }),
     );
 
     return survey;

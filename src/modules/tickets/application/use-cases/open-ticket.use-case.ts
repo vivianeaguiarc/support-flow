@@ -1,32 +1,18 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
 import {
-  BusinessEvent,
-  logBusinessEvent,
-} from '../../../../shared/logger/business-logger.js';
+  type EventBus,
+  eventBus as defaultEventBus,
+} from '../../../../shared/events/event-bus.js';
+import { createTicketCreatedEvent } from '../../../../shared/events/ticket/ticket-events.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
-import {
-  type AutomationEngine,
-  automationEngine,
-} from '../../../automation/application/services/automation-engine.js';
-import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
 import {
   CustomersRepository,
   customersRepository as defaultCustomersRepository,
 } from '../../../customers/repositories/customers.repository.js';
 import {
-  type NotificationEventService,
-  notificationEventService,
-} from '../../../notifications/application/services/notification-event.service.js';
-import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
-import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
-import {
-  type WebhookDispatcher,
-  webhookDispatcher,
-} from '../../../webhooks/application/services/webhook-dispatcher.js';
-import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import {
   type Ticket,
   TicketHistoryEvent,
@@ -65,9 +51,7 @@ export class OpenTicketUseCase {
     private readonly ticketCategoriesRepository: TicketCategoriesRepository = defaultTicketCategoriesRepository,
     private readonly calculateTicketSla: CalculateTicketSlaUseCase = calculateTicketSlaUseCase,
     private readonly calculateTicketPriority: CalculateTicketPriorityUseCase = calculateTicketPriorityUseCase,
-    private readonly notificationService: NotificationEventService = notificationEventService,
-    private readonly automation: AutomationEngine = automationEngine,
-    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
+    private readonly eventBus: EventBus = defaultEventBus,
   ) {}
 
   async execute(input: OpenTicketInput): Promise<Ticket> {
@@ -141,39 +125,24 @@ export class OpenTicketUseCase {
       });
     }
 
-    await this.notificationService.notifyTicketCreated(
-      ticket,
-      input.customerId,
-    );
-
-    logBusinessEvent(BusinessEvent.TICKET_CREATED, {
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      protocol: ticket.protocol,
-      customerId: input.customerId,
-      priority: finalPriority,
-      actorId: input.changedById,
-      assignedToId: input.assignedToId,
-    });
-
-    await this.automation.processEvent({
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      trigger: AutomationTrigger.TICKET_CREATED,
-      ticket,
-      actorId: input.changedById,
-    });
-
     const refreshedTicket = await this.ticketsRepository.findById(ticket.id);
     const finalTicket = refreshedTicket ?? ticket;
 
-    await this.webhooks.dispatch(
-      input.tenantId,
-      WebhookEvent.TICKET_CREATED,
-      buildTicketWebhookData(finalTicket),
+    await this.eventBus.publish(
+      createTicketCreatedEvent({
+        tenantId: input.tenantId,
+        ticket: finalTicket,
+        customerId: input.customerId,
+        actorId: input.changedById,
+        priority: finalPriority,
+        assignedToId: input.assignedToId,
+      }),
     );
 
-    return finalTicket;
+    const ticketAfterEvents =
+      (await this.ticketsRepository.findById(ticket.id)) ?? finalTicket;
+
+    return ticketAfterEvents;
   }
 
   private async ensureCustomer(

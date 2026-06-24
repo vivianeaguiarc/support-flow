@@ -1,28 +1,14 @@
 import { AppError } from '../../../../shared/errors/app-error.js';
 import {
-  BusinessEvent,
-  logBusinessEvent,
-} from '../../../../shared/logger/business-logger.js';
+  type EventBus,
+  eventBus as defaultEventBus,
+} from '../../../../shared/events/event-bus.js';
+import { createTicketAssignedEvent } from '../../../../shared/events/ticket/ticket-events.js';
 import { canBeAssignedTickets } from '../../../../shared/security/rbac.js';
-import {
-  type AutomationEngine,
-  automationEngine,
-} from '../../../automation/application/services/automation-engine.js';
-import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
-import {
-  type NotificationEventService,
-  notificationEventService,
-} from '../../../notifications/application/services/notification-event.service.js';
 import {
   UsersRepository,
   usersRepository as defaultUsersRepository,
 } from '../../../users/repositories/users.repository.js';
-import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
-import {
-  type WebhookDispatcher,
-  webhookDispatcher,
-} from '../../../webhooks/application/services/webhook-dispatcher.js';
-import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import {
   assertTicketAssignable,
   resolveAssignmentHistoryEvent,
@@ -48,9 +34,7 @@ export class AssignTicketUseCase {
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly usersRepository: UsersRepository = defaultUsersRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
-    private readonly notificationService: NotificationEventService = notificationEventService,
-    private readonly automation: AutomationEngine = automationEngine,
-    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
+    private readonly eventBus: EventBus = defaultEventBus,
   ) {}
 
   async execute(input: AssignTicketInput): Promise<Ticket> {
@@ -78,47 +62,15 @@ export class AssignTicketUseCase {
       changedById: input.changedById,
     });
 
-    if (ticket.assignedToId) {
-      await this.notificationService.notifyTicketReassigned(
-        updatedTicket,
-        input.assignedToId,
-      );
-    } else {
-      await this.notificationService.notifyTicketAssigned(
-        updatedTicket,
-        input.assignedToId,
-      );
-    }
-
-    logBusinessEvent(BusinessEvent.TICKET_ASSIGNED, {
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      fromAssigneeId: ticket.assignedToId,
-      toAssigneeId: input.assignedToId,
-      actorId: input.changedById,
-    });
-
-    await this.automation.processEvent({
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      trigger: AutomationTrigger.TICKET_UPDATED,
-      ticket: updatedTicket,
-      previousTicket: { assignedToId: ticket.assignedToId },
-      actorId: input.changedById,
-    });
-
-    const ticketData = buildTicketWebhookData(updatedTicket);
-
-    await this.webhooks.dispatch(input.tenantId, WebhookEvent.TICKET_ASSIGNED, {
-      ...ticketData,
-      fromAssigneeId: ticket.assignedToId,
-      toAssigneeId: input.assignedToId,
-    });
-
-    await this.webhooks.dispatch(
-      input.tenantId,
-      WebhookEvent.TICKET_UPDATED,
-      ticketData,
+    await this.eventBus.publish(
+      createTicketAssignedEvent({
+        tenantId: input.tenantId,
+        ticket: updatedTicket,
+        assigneeId: input.assignedToId,
+        previousAssigneeId: ticket.assignedToId,
+        actorId: input.changedById,
+        isReassignment: Boolean(ticket.assignedToId),
+      }),
     );
 
     return updatedTicket;

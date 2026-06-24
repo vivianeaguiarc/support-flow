@@ -1,23 +1,16 @@
 import {
-  type AutomationEngine,
-  automationEngine,
-} from '../../../automation/application/services/automation-engine.js';
-import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
+  type EventBus,
+  eventBus as defaultEventBus,
+} from '../../../../shared/events/event-bus.js';
 import {
-  type NotificationEventService,
-  notificationEventService,
-} from '../../../notifications/application/services/notification-event.service.js';
+  createSlaBreachedEvent,
+  createSlaWarningEvent,
+} from '../../../../shared/events/ticket/ticket-events.js';
 import { NotificationType } from '../../../notifications/domain/notification-types.js';
 import {
   type NotificationsRepository,
   notificationsRepository,
 } from '../../../notifications/infrastructure/repositories/notifications.repository.js';
-import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
-import {
-  type WebhookDispatcher,
-  webhookDispatcher,
-} from '../../../webhooks/application/services/webhook-dispatcher.js';
-import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketHistoryEvent, TicketStatus } from '../../domain/ticket-enums.js';
 import {
@@ -53,10 +46,8 @@ export class MonitorTicketSlaUseCase {
   constructor(
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
     private readonly notificationsRepo: NotificationsRepository = notificationsRepository,
-    private readonly notificationEvents: NotificationEventService = notificationEventService,
     private readonly historyRepo: TicketHistoryRepository = ticketHistoryRepository,
-    private readonly automation: AutomationEngine = automationEngine,
-    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
+    private readonly eventBus: EventBus = defaultEventBus,
   ) {}
 
   async execute(): Promise<MonitorTicketSlaResult> {
@@ -152,20 +143,13 @@ export class MonitorTicketSlaUseCase {
 
     const hoursRemaining = calculateSlaHoursRemaining(ticket.slaDueAt!, now);
 
-    await this.notificationEvents.notifySlaWarning(ticket, { hoursRemaining });
-
-    await this.automation.processEvent({
-      tenantId: ticket.tenantId,
-      ticketId: ticket.id,
-      trigger: AutomationTrigger.SLA_WARNING,
-      ticket,
-      metadata: { hoursRemaining },
-    });
-
-    await this.webhooks.dispatch(ticket.tenantId, WebhookEvent.SLA_WARNING, {
-      ...buildTicketWebhookData(ticket),
-      hoursRemaining,
-    });
+    await this.eventBus.publish(
+      createSlaWarningEvent({
+        tenantId: ticket.tenantId,
+        ticket,
+        hoursRemaining,
+      }),
+    );
 
     return true;
   }
@@ -189,20 +173,13 @@ export class MonitorTicketSlaUseCase {
 
     const hoursOverdue = calculateSlaHoursOverdue(ticket.slaDueAt!, now);
 
-    await this.notificationEvents.notifySlaExpired(ticket, { hoursOverdue });
-
-    await this.automation.processEvent({
-      tenantId: ticket.tenantId,
-      ticketId: ticket.id,
-      trigger: AutomationTrigger.SLA_BREACHED,
-      ticket,
-      metadata: { hoursOverdue },
-    });
-
-    await this.webhooks.dispatch(ticket.tenantId, WebhookEvent.SLA_BREACHED, {
-      ...buildTicketWebhookData(ticket),
-      hoursOverdue,
-    });
+    await this.eventBus.publish(
+      createSlaBreachedEvent({
+        tenantId: ticket.tenantId,
+        ticket,
+        hoursOverdue,
+      }),
+    );
 
     return true;
   }

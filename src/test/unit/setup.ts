@@ -68,6 +68,7 @@ const automationEngineMock = {
 
 const webhookDispatcherMock = {
   dispatch: vi.fn().mockResolvedValue(undefined),
+  dispatchDirect: vi.fn().mockResolvedValue(undefined),
   deliverTest: vi.fn().mockResolvedValue(undefined),
 };
 

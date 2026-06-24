@@ -1,22 +1,12 @@
 import {
-  BusinessEvent,
-  logBusinessEvent,
-} from '../../../../shared/logger/business-logger.js';
+  type EventBus,
+  eventBus as defaultEventBus,
+} from '../../../../shared/events/event-bus.js';
 import {
-  type AutomationEngine,
-  automationEngine,
-} from '../../../automation/application/services/automation-engine.js';
-import { AutomationTrigger } from '../../../automation/domain/automation-trigger.js';
-import {
-  type NotificationEventService,
-  notificationEventService,
-} from '../../../notifications/application/services/notification-event.service.js';
-import { buildTicketWebhookData } from '../../../webhooks/application/helpers/webhook-payload.helper.js';
-import {
-  type WebhookDispatcher,
-  webhookDispatcher,
-} from '../../../webhooks/application/services/webhook-dispatcher.js';
-import { WebhookEvent } from '../../../webhooks/domain/webhook-event.js';
+  createTicketClosedEvent,
+  createTicketResolvedEvent,
+  createTicketStatusChangedEvent,
+} from '../../../../shared/events/ticket/ticket-events.js';
 import {
   type Ticket,
   TicketHistoryEvent,
@@ -43,9 +33,7 @@ export class UpdateTicketStatusUseCase {
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
     private readonly ticketHistoryRepository: TicketHistoryRepository = defaultTicketHistoryRepository,
     private readonly findTicket: FindTicketByIdUseCase = findTicketByIdUseCase,
-    private readonly notificationService: NotificationEventService = notificationEventService,
-    private readonly automation: AutomationEngine = automationEngine,
-    private readonly webhooks: WebhookDispatcher = webhookDispatcher,
+    private readonly eventBus: EventBus = defaultEventBus,
   ) {}
 
   async execute(input: UpdateTicketStatusInput): Promise<Ticket> {
@@ -72,54 +60,35 @@ export class UpdateTicketStatusUseCase {
       changedById: input.changedById,
     });
 
-    await this.notificationService.notifyTicketStatusChanged(
-      updatedTicket,
-      ticket.status,
-      input.status,
-    );
-
-    logBusinessEvent(BusinessEvent.TICKET_STATUS_CHANGED, {
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      fromStatus: ticket.status,
-      toStatus: input.status,
-      actorId: input.changedById,
-    });
-
-    await this.automation.processEvent({
-      tenantId: input.tenantId,
-      ticketId: ticket.id,
-      trigger: AutomationTrigger.STATUS_CHANGED,
-      ticket: updatedTicket,
-      previousTicket: { status: ticket.status },
-      actorId: input.changedById,
-    });
-
-    const ticketData = {
-      ...buildTicketWebhookData(updatedTicket),
-      fromStatus: ticket.status,
-      toStatus: input.status,
-    };
-
-    await this.webhooks.dispatch(
-      input.tenantId,
-      WebhookEvent.TICKET_UPDATED,
-      ticketData,
+    await this.eventBus.publish(
+      createTicketStatusChangedEvent({
+        tenantId: input.tenantId,
+        ticket: updatedTicket,
+        previousStatus: ticket.status,
+        newStatus: input.status,
+        actorId: input.changedById,
+      }),
     );
 
     if (input.status === TicketStatus.RESOLVED) {
-      await this.webhooks.dispatch(
-        input.tenantId,
-        WebhookEvent.TICKET_RESOLVED,
-        ticketData,
+      await this.eventBus.publish(
+        createTicketResolvedEvent({
+          tenantId: input.tenantId,
+          ticket: updatedTicket,
+          previousStatus: ticket.status,
+          actorId: input.changedById,
+        }),
       );
     }
 
     if (input.status === TicketStatus.CLOSED) {
-      await this.webhooks.dispatch(
-        input.tenantId,
-        WebhookEvent.TICKET_CLOSED,
-        ticketData,
+      await this.eventBus.publish(
+        createTicketClosedEvent({
+          tenantId: input.tenantId,
+          ticket: updatedTicket,
+          previousStatus: ticket.status,
+          actorId: input.changedById,
+        }),
       );
     }
 

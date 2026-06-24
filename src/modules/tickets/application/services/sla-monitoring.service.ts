@@ -1,8 +1,11 @@
+import { registerEventHandlers } from '../../../../shared/events/register-event-handlers.js';
 import {
   type MonitorTicketSlaResult,
   type MonitorTicketSlaUseCase,
   monitorTicketSlaUseCase,
 } from '../use-cases/monitor-ticket-sla.use-case.js';
+
+registerEventHandlers();
 
 export class SlaMonitoringService {
   constructor(

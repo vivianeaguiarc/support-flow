@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { AutomationEngine } from '../../../automation/application/services/automation-engine.js';
-import type { NotificationEventService } from '../../../notifications/application/services/notification-event.service.js';
+import { DomainEventName } from '../../../../shared/events/domain-event-names.js';
+import type { EventBus } from '../../../../shared/events/event-bus.js';
 import type { NotificationsRepository } from '../../../notifications/infrastructure/repositories/notifications.repository.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketPriority, TicketStatus } from '../../domain/ticket-enums.js';
@@ -31,9 +31,8 @@ const baseTicket = (overrides: Partial<Ticket> = {}): Ticket => ({
 describe('MonitorTicketSlaUseCase', () => {
   let ticketsRepo: TicketsRepository;
   let notificationsRepo: NotificationsRepository;
-  let notificationEvents: NotificationEventService;
   let historyRepo: TicketHistoryRepository;
-  let automation: AutomationEngine;
+  let eventBus: EventBus;
   let useCase: MonitorTicketSlaUseCase;
 
   beforeEach(() => {
@@ -45,26 +44,23 @@ describe('MonitorTicketSlaUseCase', () => {
       countByTicketAndType: vi.fn().mockResolvedValue(0),
     } as unknown as NotificationsRepository;
 
-    notificationEvents = {
-      notifySlaWarning: vi.fn().mockResolvedValue(undefined),
-      notifySlaExpired: vi.fn().mockResolvedValue(undefined),
-    } as unknown as NotificationEventService;
-
     historyRepo = {
       hasEventByTicketId: vi.fn().mockResolvedValue(false),
       create: vi.fn().mockResolvedValue({ id: 'history-1' }),
     } as unknown as TicketHistoryRepository;
 
-    automation = {
-      processEvent: vi.fn().mockResolvedValue(undefined),
-    } as unknown as AutomationEngine;
+    eventBus = {
+      publish: vi.fn().mockResolvedValue(undefined),
+      subscribe: vi.fn(),
+      clear: vi.fn(),
+      getHandlerCount: vi.fn(),
+    } as unknown as EventBus;
 
     useCase = new MonitorTicketSlaUseCase(
       ticketsRepo,
       notificationsRepo,
-      notificationEvents,
       historyRepo,
-      automation,
+      eventBus,
     );
   });
 
@@ -82,14 +78,13 @@ describe('MonitorTicketSlaUseCase', () => {
       warningsCreated: 1,
       expiredNotificationsCreated: 0,
     });
-    expect(notificationEvents.notifySlaWarning).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'ticket-1' }),
-      expect.objectContaining({ hoursRemaining: expect.any(Number) }),
-    );
-    expect(automation.processEvent).toHaveBeenCalledWith(
+    expect(eventBus.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        trigger: 'SLA_WARNING',
-        ticketId: 'ticket-1',
+        eventName: DomainEventName.SLA_WARNING,
+        aggregateId: 'ticket-1',
+        payload: expect.objectContaining({
+          hoursRemaining: expect.any(Number),
+        }),
       }),
     );
   });
@@ -115,14 +110,13 @@ describe('MonitorTicketSlaUseCase', () => {
         ticketId: 'ticket-1',
       }),
     );
-    expect(notificationEvents.notifySlaExpired).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'ticket-1' }),
-      expect.objectContaining({ hoursOverdue: expect.any(Number) }),
-    );
-    expect(automation.processEvent).toHaveBeenCalledWith(
+    expect(eventBus.publish).toHaveBeenCalledWith(
       expect.objectContaining({
-        trigger: 'SLA_BREACHED',
-        ticketId: 'ticket-1',
+        eventName: DomainEventName.SLA_BREACHED,
+        aggregateId: 'ticket-1',
+        payload: expect.objectContaining({
+          hoursOverdue: expect.any(Number),
+        }),
       }),
     );
   });
@@ -138,7 +132,7 @@ describe('MonitorTicketSlaUseCase', () => {
     const result = await useCase.execute();
 
     expect(result.warningsCreated).toBe(0);
-    expect(notificationEvents.notifySlaWarning).not.toHaveBeenCalled();
+    expect(eventBus.publish).not.toHaveBeenCalled();
   });
 
   it('should skip tickets without assignee', async () => {
@@ -153,7 +147,7 @@ describe('MonitorTicketSlaUseCase', () => {
 
     expect(result.expiredNotificationsCreated).toBe(0);
     expect(result.slaBreachedHistoryCreated).toBe(1);
-    expect(notificationEvents.notifySlaExpired).not.toHaveBeenCalled();
+    expect(eventBus.publish).not.toHaveBeenCalled();
     expect(historyRepo.create).toHaveBeenCalled();
   });
 });
