@@ -1,17 +1,13 @@
 import type { TicketHistoryWithActor } from '../../infrastructure/repositories/ticket-history.repository.js';
 
-export type TicketHistoryActor = {
-  name: string;
-  email: string;
-};
-
 export type TicketHistoryEntry = {
   id: string;
+  ticketId: string;
+  actorId: string | null;
   action: string;
-  previousValue: string | null;
+  oldValue: string | null;
   newValue: string | null;
-  performedById: string | null;
-  performedBy: TicketHistoryActor | null;
+  metadata: Record<string, unknown> | null;
   createdAt: Date;
 };
 
@@ -19,6 +15,20 @@ export type TicketHistoryResult = {
   ticketId: string;
   history: TicketHistoryEntry[];
 };
+
+function toMetadataRecord(
+  metadata: TicketHistoryWithActor['metadata'],
+): Record<string, unknown> | null {
+  if (metadata === null || metadata === undefined) {
+    return null;
+  }
+
+  if (typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+
+  return { value: metadata };
+}
 
 export function toTicketHistoryResult(
   ticketId: string,
@@ -28,16 +38,12 @@ export function toTicketHistoryResult(
     ticketId,
     history: records.map((record) => ({
       id: record.id,
+      ticketId: record.ticketId,
+      actorId: record.changedById,
       action: record.event,
-      previousValue: record.oldValue,
+      oldValue: record.oldValue,
       newValue: record.newValue,
-      performedById: record.changedById,
-      performedBy: record.changedBy
-        ? {
-            name: record.changedBy.name,
-            email: record.changedBy.email,
-          }
-        : null,
+      metadata: toMetadataRecord(record.metadata),
       createdAt: record.createdAt,
     })),
   };

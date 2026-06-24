@@ -1,4 +1,4 @@
-import type { TicketHistory, User } from '@prisma/client';
+import type { TicketHistory, TicketHistoryEvent, User } from '@prisma/client';
 
 import { prisma } from '../../../../shared/database/prisma.js';
 import type { RecordTicketHistoryInput } from '../../domain/ticket.types.js';
@@ -32,6 +32,17 @@ export class TicketHistoryRepository {
       },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  async hasEventByTicketId(
+    ticketId: string,
+    event: TicketHistoryEvent,
+  ): Promise<boolean> {
+    const count = await prisma.ticketHistory.count({
+      where: { ticketId, event },
+    });
+
+    return count > 0;
   }
 }
 

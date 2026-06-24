@@ -16,6 +16,7 @@ export class SlaMonitoringService {
       ticketsChecked: result.ticketsChecked,
       warningsCreated: result.warningsCreated,
       expiredNotificationsCreated: result.expiredNotificationsCreated,
+      slaBreachedHistoryCreated: result.slaBreachedHistoryCreated,
       timestamp: new Date().toISOString(),
     });
 

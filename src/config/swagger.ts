@@ -326,6 +326,7 @@ const options: Options = {
             'ATTACHMENT_ADDED',
             'ATTACHMENT_REMOVED',
             'TICKET_ESCALATED',
+            'SLA_BREACHED',
           ],
           description: 'Evento do histórico do chamado',
           example: 'STATUS_CHANGED',
@@ -662,9 +663,69 @@ const options: Options = {
               nullable: true,
               description: 'ID do usuário que fez a alteração',
             },
+            metadata: {
+              type: 'object',
+              nullable: true,
+              additionalProperties: true,
+              description: 'Metadados adicionais do evento',
+            },
             createdAt: {
               type: 'string',
               format: 'date-time',
+            },
+          },
+        },
+        TicketHistoryEntry: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+            },
+            ticketId: {
+              type: 'string',
+              format: 'uuid',
+            },
+            actorId: {
+              type: 'string',
+              format: 'uuid',
+              nullable: true,
+              description: 'ID do usuário que executou a ação',
+            },
+            action: {
+              $ref: '#/components/schemas/TicketHistoryEvent',
+            },
+            oldValue: {
+              type: 'string',
+              nullable: true,
+            },
+            newValue: {
+              type: 'string',
+              nullable: true,
+            },
+            metadata: {
+              type: 'object',
+              nullable: true,
+              additionalProperties: true,
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+            },
+          },
+        },
+        TicketHistoryListResponse: {
+          type: 'object',
+          properties: {
+            ticketId: {
+              type: 'string',
+              format: 'uuid',
+            },
+            history: {
+              type: 'array',
+              items: {
+                $ref: '#/components/schemas/TicketHistoryEntry',
+              },
             },
           },
         },

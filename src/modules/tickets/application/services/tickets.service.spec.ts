@@ -423,6 +423,7 @@ describe('TicketsService', () => {
         oldValue: TicketStatus.OPEN,
         newValue: TicketStatus.IN_PROGRESS,
         changedById: 'agent-1',
+        metadata: null,
         createdAt: new Date('2026-06-23T10:00:00.000Z'),
         changedBy: {
           id: 'agent-1',
@@ -442,14 +443,12 @@ describe('TicketsService', () => {
       history: [
         {
           id: 'history-1',
+          ticketId: 'ticket-1',
           action: TicketHistoryEvent.STATUS_CHANGED,
-          previousValue: TicketStatus.OPEN,
+          oldValue: TicketStatus.OPEN,
           newValue: TicketStatus.IN_PROGRESS,
-          performedById: 'agent-1',
-          performedBy: {
-            name: 'Atendente Demo',
-            email: 'atendente@supportflow.com',
-          },
+          actorId: 'agent-1',
+          metadata: null,
           createdAt: new Date('2026-06-23T10:00:00.000Z'),
         },
       ],

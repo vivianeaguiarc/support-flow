@@ -23,6 +23,7 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/tickets/{id}/route': ['post'],
   '/tickets/{id}/transitions': ['get'],
   '/tickets/{id}/history': ['get'],
+  '/tickets/{ticketId}/history': ['get'],
   '/tickets/{id}/comments': ['post', 'get'],
   '/tickets/{ticketId}/internal-comments': ['post', 'get'],
   '/tickets/{id}/attachments': ['post', 'get'],

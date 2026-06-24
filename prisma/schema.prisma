@@ -40,6 +40,7 @@ enum TicketHistoryEvent {
   ATTACHMENT_ADDED
   ATTACHMENT_REMOVED
   TICKET_ESCALATED
+  SLA_BREACHED
 }
 
 enum CommentVisibility {
@@ -184,6 +185,7 @@ model TicketHistory {
   oldValue    String?
   newValue    String?
   changedById String?
+  metadata    Json?
   createdAt   DateTime           @default(now())
 
   tenant    Tenant  @relation(fields: [tenantId], references: [id])

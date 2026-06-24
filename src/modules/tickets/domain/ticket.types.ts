@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client';
+
 import type { TicketHistoryEvent, TicketPriority } from './ticket-enums.js';
 
 export type CreateTicketDomainInput = {
@@ -20,4 +22,5 @@ export type RecordTicketHistoryInput = {
   oldValue?: string;
   newValue?: string;
   changedById?: string;
+  metadata?: Prisma.InputJsonValue;
 };

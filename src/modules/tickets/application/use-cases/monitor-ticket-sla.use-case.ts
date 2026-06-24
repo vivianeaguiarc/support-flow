@@ -8,13 +8,17 @@ import {
   notificationsRepository,
 } from '../../../notifications/infrastructure/repositories/notifications.repository.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
-import { TicketStatus } from '../../domain/ticket-enums.js';
+import { TicketHistoryEvent, TicketStatus } from '../../domain/ticket-enums.js';
 import {
   calculateSlaHoursOverdue,
   calculateSlaHoursRemaining,
   isSlaBreached,
   isSlaWarning,
 } from '../../domain/ticket-sla-status.js';
+import {
+  type TicketHistoryRepository,
+  ticketHistoryRepository,
+} from '../../infrastructure/repositories/ticket-history.repository.js';
 import {
   type TicketsRepository,
   ticketsRepository,
@@ -24,6 +28,7 @@ export type MonitorTicketSlaResult = {
   ticketsChecked: number;
   warningsCreated: number;
   expiredNotificationsCreated: number;
+  slaBreachedHistoryCreated: number;
 };
 
 const ELIGIBLE_STATUSES = [
@@ -38,6 +43,7 @@ export class MonitorTicketSlaUseCase {
     private readonly ticketsRepo: TicketsRepository = ticketsRepository,
     private readonly notificationsRepo: NotificationsRepository = notificationsRepository,
     private readonly createNotification: CreateNotificationUseCase = createNotificationUseCase,
+    private readonly historyRepo: TicketHistoryRepository = ticketHistoryRepository,
   ) {}
 
   async execute(): Promise<MonitorTicketSlaResult> {
@@ -50,6 +56,7 @@ export class MonitorTicketSlaUseCase {
 
     let warningsCreated = 0;
     let expiredNotificationsCreated = 0;
+    let slaBreachedHistoryCreated = 0;
 
     for (const ticket of tickets) {
       if (!ticket.slaDueAt) {
@@ -57,6 +64,11 @@ export class MonitorTicketSlaUseCase {
       }
 
       if (isSlaBreached(ticket.slaDueAt, now)) {
+        const historyCreated = await this.recordSlaBreachedHistory(ticket, now);
+        if (historyCreated) {
+          slaBreachedHistoryCreated++;
+        }
+
         const created = await this.createExpiredNotification(ticket, now);
         if (created) {
           expiredNotificationsCreated++;
@@ -73,7 +85,39 @@ export class MonitorTicketSlaUseCase {
       ticketsChecked: tickets.length,
       warningsCreated,
       expiredNotificationsCreated,
+      slaBreachedHistoryCreated,
     };
+  }
+
+  private async recordSlaBreachedHistory(
+    ticket: Ticket,
+    now: Date,
+  ): Promise<boolean> {
+    const alreadyRecorded = await this.historyRepo.hasEventByTicketId(
+      ticket.id,
+      TicketHistoryEvent.SLA_BREACHED,
+    );
+
+    if (alreadyRecorded) {
+      return false;
+    }
+
+    const hoursOverdue = calculateSlaHoursOverdue(ticket.slaDueAt!, now);
+
+    await this.historyRepo.create({
+      tenantId: ticket.tenantId,
+      ticketId: ticket.id,
+      event: TicketHistoryEvent.SLA_BREACHED,
+      field: 'slaDueAt',
+      oldValue: ticket.slaDueAt!.toISOString(),
+      newValue: now.toISOString(),
+      metadata: {
+        hoursOverdue,
+        protocol: ticket.protocol,
+      },
+    });
+
+    return true;
   }
 
   private async createWarningNotification(

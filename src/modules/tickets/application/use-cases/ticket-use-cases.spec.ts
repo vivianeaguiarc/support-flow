@@ -511,6 +511,7 @@ describe('Ticket use cases', () => {
           oldValue: null,
           newValue: null,
           changedById: 'agent-1',
+          metadata: null,
           createdAt: new Date('2026-06-23T09:00:00.000Z'),
           changedBy: {
             id: 'agent-1',
@@ -527,6 +528,7 @@ describe('Ticket use cases', () => {
           oldValue: TicketStatus.OPEN,
           newValue: TicketStatus.IN_PROGRESS,
           changedById: 'agent-1',
+          metadata: null,
           createdAt: new Date('2026-06-23T10:00:00.000Z'),
           changedBy: {
             id: 'agent-1',
@@ -542,10 +544,20 @@ describe('Ticket use cases', () => {
         findTicket,
       );
 
-      const result = await useCase.execute({
+      const agentAuth = {
+        id: 'agent-1',
+        email: 'agent@example.com',
+        role: UserRole.AGENT,
         tenantId: DEFAULT_TENANT_ID,
-        ticketId: 'ticket-1',
-      });
+      };
+
+      const result = await useCase.execute(
+        {
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+        },
+        agentAuth,
+      );
 
       expect(
         ticketHistoryRepository.listByTicketIdAndTenant,
@@ -554,16 +566,64 @@ describe('Ticket use cases', () => {
       expect(result.history).toHaveLength(2);
       expect(result.history[0]).toEqual({
         id: 'history-1',
+        ticketId: 'ticket-1',
         action: TicketHistoryEvent.CREATED,
-        previousValue: null,
+        oldValue: null,
         newValue: null,
-        performedById: 'agent-1',
-        performedBy: {
-          name: 'Atendente Demo',
-          email: 'atendente@supportflow.com',
-        },
+        actorId: 'agent-1',
+        metadata: null,
         createdAt: new Date('2026-06-23T09:00:00.000Z'),
       });
+    });
+
+    it('should hide internal events from customers', async () => {
+      vi.mocked(ticketsRepository.findById).mockResolvedValue(mockTicket);
+      vi.mocked(
+        ticketHistoryRepository.listByTicketIdAndTenant,
+      ).mockResolvedValue([
+        {
+          id: 'history-1',
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          event: TicketHistoryEvent.CREATED,
+          field: null,
+          oldValue: null,
+          newValue: null,
+          changedById: 'agent-1',
+          metadata: null,
+          createdAt: new Date('2026-06-23T09:00:00.000Z'),
+          changedBy: null,
+        },
+        {
+          id: 'history-2',
+          tenantId: DEFAULT_TENANT_ID,
+          ticketId: 'ticket-1',
+          event: TicketHistoryEvent.ASSIGNED,
+          field: 'assignedToId',
+          oldValue: null,
+          newValue: 'agent-1',
+          changedById: 'agent-1',
+          metadata: null,
+          createdAt: new Date('2026-06-23T10:00:00.000Z'),
+          changedBy: null,
+        },
+      ]);
+
+      const findTicket = new FindTicketByIdUseCase(ticketsRepository);
+      const useCase = new ListTicketHistoryUseCase(
+        ticketHistoryRepository,
+        findTicket,
+      );
+
+      const result = await useCase.forTicket('ticket-1', DEFAULT_TENANT_ID, {
+        id: 'customer-1',
+        email: 'customer@example.com',
+        role: UserRole.CUSTOMER,
+        tenantId: DEFAULT_TENANT_ID,
+      });
+
+      expect(result.history).toHaveLength(1);
+      expect(result.history[0].action).toBe(TicketHistoryEvent.CREATED);
     });
 
     it('should throw when ticket is not found in tenant', async () => {
@@ -576,10 +636,18 @@ describe('Ticket use cases', () => {
       );
 
       await expect(
-        useCase.execute({
-          tenantId: DEFAULT_TENANT_ID,
-          ticketId: 'missing',
-        }),
+        useCase.execute(
+          {
+            tenantId: DEFAULT_TENANT_ID,
+            ticketId: 'missing',
+          },
+          {
+            id: 'agent-1',
+            email: 'agent@example.com',
+            role: UserRole.AGENT,
+            tenantId: DEFAULT_TENANT_ID,
+          },
+        ),
       ).rejects.toEqual(new AppError('Ticket not found', 404));
 
       expect(

@@ -5,6 +5,8 @@ import { NotificationType } from '../../../notifications/domain/notification-typ
 import type { NotificationsRepository } from '../../../notifications/infrastructure/repositories/notifications.repository.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import { TicketPriority, TicketStatus } from '../../domain/ticket-enums.js';
+import { TicketHistoryEvent } from '../../domain/ticket-enums.js';
+import type { TicketHistoryRepository } from '../../infrastructure/repositories/ticket-history.repository.js';
 import type { TicketsRepository } from '../../infrastructure/repositories/tickets.repository.js';
 import { MonitorTicketSlaUseCase } from './monitor-ticket-sla.use-case.js';
 
@@ -30,6 +32,7 @@ describe('MonitorTicketSlaUseCase', () => {
   let ticketsRepo: TicketsRepository;
   let notificationsRepo: NotificationsRepository;
   let createNotification: CreateNotificationUseCase;
+  let historyRepo: TicketHistoryRepository;
   let useCase: MonitorTicketSlaUseCase;
 
   beforeEach(() => {
@@ -45,10 +48,16 @@ describe('MonitorTicketSlaUseCase', () => {
       execute: vi.fn().mockResolvedValue({ id: 'notification-1' }),
     };
 
+    historyRepo = {
+      hasEventByTicketId: vi.fn().mockResolvedValue(false),
+      create: vi.fn().mockResolvedValue({ id: 'history-1' }),
+    } as unknown as TicketHistoryRepository;
+
     useCase = new MonitorTicketSlaUseCase(
       ticketsRepo,
       notificationsRepo,
       createNotification,
+      historyRepo,
     );
   });
 
@@ -87,7 +96,14 @@ describe('MonitorTicketSlaUseCase', () => {
       ticketsChecked: 1,
       warningsCreated: 0,
       expiredNotificationsCreated: 1,
+      slaBreachedHistoryCreated: 1,
     });
+    expect(historyRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: TicketHistoryEvent.SLA_BREACHED,
+        ticketId: 'ticket-1',
+      }),
+    );
     expect(createNotification.execute).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotificationType.SLA_EXPIRED,
@@ -121,6 +137,8 @@ describe('MonitorTicketSlaUseCase', () => {
     const result = await useCase.execute();
 
     expect(result.expiredNotificationsCreated).toBe(0);
+    expect(result.slaBreachedHistoryCreated).toBe(1);
     expect(createNotification.execute).not.toHaveBeenCalled();
+    expect(historyRepo.create).toHaveBeenCalled();
   });
 });

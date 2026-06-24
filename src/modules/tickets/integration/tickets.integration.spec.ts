@@ -155,12 +155,8 @@ describe.sequential('Ticket workflow integration', () => {
     );
 
     expect(statusChange).toMatchObject({
-      previousValue: TicketStatus.OPEN,
-      performedById: fixtures.agentA.id,
-      performedBy: {
-        name: fixtures.agentA.name,
-        email: fixtures.agentA.email,
-      },
+      oldValue: TicketStatus.OPEN,
+      actorId: fixtures.agentA.id,
     });
 
     const assignHistory = historyResponse.body.data.history.find(
@@ -170,7 +166,7 @@ describe.sequential('Ticket workflow integration', () => {
 
     expect(assignHistory).toMatchObject({
       newValue: fixtures.agentA.id,
-      performedById: fixtures.agentA.id,
+      actorId: fixtures.agentA.id,
     });
   });
 

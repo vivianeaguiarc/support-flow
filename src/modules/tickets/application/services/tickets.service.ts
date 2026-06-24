@@ -137,7 +137,11 @@ export class TicketsService {
     authUser: AuthenticatedUser,
   ): Promise<TicketHistoryResult> {
     const ticket = await this.findById(id, authUser);
-    return this.listTicketHistory.forTicket(ticket.id, ticket.tenantId);
+    return this.listTicketHistory.forTicket(
+      ticket.id,
+      ticket.tenantId,
+      authUser,
+    );
   }
 
   async list(

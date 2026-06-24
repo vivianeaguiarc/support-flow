@@ -74,6 +74,14 @@ ticketsRouter.get(
   ticketSlaController.summary,
 );
 
+ticketsRouter.get(
+  '/:ticketId/history',
+  authenticate,
+  authorize(...ROLE_GROUPS.TICKET_READ),
+  validateRequest({ params: ticketInternalCommentsParamsSchema }),
+  ticketsController.getHistory,
+);
+
 ticketsRouter.post(
   '/:ticketId/internal-comments',
   authenticate,

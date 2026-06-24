@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from 'express';
 
 import { getAuthenticatedUser } from '../../../../shared/http/helpers/get-authenticated-user.js';
 import { buildPaginationMeta } from '../../../../shared/http/pagination/pagination.js';
+import { getRouteParam } from '../../../../shared/http/request-params.js';
 import {
   sendPaginatedSuccess,
   sendSuccess,
@@ -147,8 +148,13 @@ export class TicketsController {
     next: NextFunction,
   ): Promise<void> => {
     try {
+      const ticketId =
+        typeof req.params.ticketId === 'string'
+          ? getRouteParam(req.params, 'ticketId')
+          : getRouteParam(req.params, 'id');
+
       const history = await this.service.getHistory(
-        req.params.id as string,
+        ticketId,
         getAuthenticatedUser(req),
       );
       sendSuccess(res, history);

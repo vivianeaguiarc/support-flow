@@ -56,6 +56,10 @@ export class CreateTicketCommentUseCase {
       changedById: input.authorId,
       field: 'comment',
       newValue: `Comment added by user ${input.authorId}`,
+      metadata: {
+        commentId: comment.id,
+        visibility: comment.visibility,
+      },
     });
 
     await this.notificationService.notifyCommentAdded(
