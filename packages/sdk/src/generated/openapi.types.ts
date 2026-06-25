@@ -4777,18 +4777,30 @@ export interface paths {
         };
         /**
          * Listar registros de auditoria imutável
-         * @description Retorna a trilha de auditoria append-only com hash encadeado. Disponível apenas para administradores e supervisores (permissão `audit.read`).
+         * @description Retorna a trilha de auditoria append-only com hash encadeado, em formato paginado (`data` + `meta`). Suporta filtros por período, ordenação segura e busca textual case-insensitive em campos não sensíveis (`action`, `entity`, `entityId`, `userId`, além de `ip`/`requestId` quando presentes em metadata). Disponível apenas para administradores e supervisores (permissão `audit.read`).
          */
         get: {
             parameters: {
                 query?: {
+                    /** @description Página atual (1-indexed). */
+                    page?: number;
+                    /** @description Tamanho da página (máximo 100). */
+                    limit?: number;
+                    /** @description Início do período (ISO date string) aplicado em `createdAt`. Retorna 400 para datas inválidas. */
+                    createdFrom?: string;
+                    /** @description Fim do período (ISO date string) aplicado em `createdAt`. Retorna 400 para datas inválidas. */
+                    createdTo?: string;
+                    /** @description Campo de ordenação (apenas campos seguros e existentes). */
+                    sortBy?: "createdAt" | "action" | "entity" | "userId";
+                    /** @description Direção da ordenação. */
+                    sortOrder?: "asc" | "desc";
+                    /** @description Busca textual case-insensitive em `action`, `entity`, `entityId`, `userId` e em `ip`/`requestId` (quando presentes em metadata). */
+                    search?: string;
                     organizationId?: string;
                     userId?: string;
                     action?: string;
                     entity?: string;
                     entityId?: string;
-                    page?: number;
-                    limit?: number;
                 };
                 header?: never;
                 path?: never;
@@ -4798,6 +4810,15 @@ export interface paths {
             responses: {
                 /** @description Lista paginada de registros de auditoria */
                 200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PaginatedAuditLogResponse"];
+                    };
+                };
+                /** @description Parâmetros de consulta inválidos (ex.: data ISO inválida) */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4836,7 +4857,7 @@ export interface paths {
         };
         /**
          * Verificar integridade da cadeia de auditoria
-         * @description Recalcula o hash de cada registro e valida o encadeamento. Retorna o total verificado, o status da cadeia e o primeiro registro inválido, caso exista.
+         * @description Recalcula o hash de cada registro e valida o encadeamento, sem alterar nenhum log. Retorna um status claro (`INTACT`, `EMPTY`, `COMPROMISED`), o total verificado, o primeiro e último ids da cadeia e, se houver, o id do registro comprometido. Mantém campos legados para compatibilidade.
          */
         get: {
             parameters: {
@@ -4854,14 +4875,11 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            success?: boolean;
-                            data?: {
-                                /** @enum {string} */
-                                status?: "VALID" | "BROKEN" | "EMPTY";
-                                valid?: boolean;
-                                totalVerified?: number;
-                                firstInvalid?: Record<string, never> | null;
-                            };
+                            /** @example true */
+                            success: boolean;
+                            data: components["schemas"]["AuditIntegrityVerificationResponse"];
+                            /** @example Audit chain verification completed */
+                            message: string;
                         };
                     };
                 };
@@ -5629,6 +5647,111 @@ export interface components {
              * @example false
              */
             hasPreviousPage: boolean;
+        };
+        AuditLogResponse: {
+            /**
+             * Format: uuid
+             * @example 6b1f0e2a-9c2a-4f1e-9b3b-1d2e3f4a5b6c
+             */
+            id: string;
+            /**
+             * @description Posição na cadeia (BigInt serializado como string).
+             * @example 42
+             */
+            sequence: string;
+            /** @example b9c1d2e3-4f56-7890-abcd-ef0123456789 */
+            organizationId: string | null;
+            /**
+             * @description Autor da ação auditada, quando disponível.
+             * @example a1b2c3d4-e5f6-7890-abcd-ef0123456789
+             */
+            userId: string | null;
+            /** @example ROLE_UPDATED */
+            action: string;
+            /** @example Role */
+            entity: string;
+            /** @example c3d4e5f6-a1b2-7890-abcd-ef0123456789 */
+            entityId: string | null;
+            /**
+             * @description Endereço IP de origem, mapeado de metadata quando coletado.
+             * @example 203.0.113.10
+             */
+            ip: string | null;
+            /**
+             * @description Identificador da requisição, mapeado de metadata quando coletado.
+             * @example req_01HZX8Y2
+             */
+            requestId: string | null;
+            /** @description Snapshot anterior, quando aplicável. */
+            oldValues: unknown;
+            /** @description Snapshot posterior, quando aplicável. */
+            newValues: unknown;
+            /** @description Metadados não sensíveis adicionais. */
+            metadata: unknown;
+            /** @description Hash do registro anterior na cadeia. */
+            previousHash: string | null;
+            /** @description Hash encadeado deste registro. */
+            hash: string;
+            /**
+             * Format: date-time
+             * @example 2026-06-25T18:30:00.000Z
+             */
+            createdAt: string;
+        };
+        PaginatedAuditLogResponse: {
+            /** @example true */
+            success: boolean;
+            data: components["schemas"]["AuditLogResponse"][];
+            meta: components["schemas"]["PaginationMeta"];
+            /** @example Audit logs retrieved successfully */
+            message: string;
+        };
+        AuditIntegrityVerificationResponse: {
+            /**
+             * @description Resultado claro da verificação de integridade da cadeia.
+             * @example INTACT
+             * @enum {string}
+             */
+            status: "INTACT" | "EMPTY" | "COMPROMISED";
+            /** @example 128 */
+            totalLogs: number;
+            /**
+             * Format: date-time
+             * @example 2026-06-25T18:31:00.000Z
+             */
+            checkedAt: string;
+            /** @example 6b1f0e2a-9c2a-4f1e-9b3b-1d2e3f4a5b6c */
+            firstLogId: string | null;
+            /** @example f4a5b6c7-1d2e-3f40-9b3b-6b1f0e2a9c2a */
+            lastLogId: string | null;
+            /**
+             * @description Id do primeiro registro com integridade comprometida, se houver.
+             * @example null
+             */
+            compromisedLogId: string | null;
+            /** @example Audit chain is intact. 128 log(s) verified. */
+            message: string;
+            /**
+             * @description Status legado da cadeia (compatibilidade).
+             * @example VALID
+             * @enum {string}
+             */
+            chainStatus: "VALID" | "BROKEN" | "EMPTY";
+            /** @example true */
+            valid: boolean;
+            /** @example 128 */
+            totalVerified: number;
+            /** @description Primeiro registro inválido (formato legado). */
+            firstInvalid: {
+                id?: string;
+                sequence?: string;
+                action?: string;
+                entity?: string;
+                /** @enum {string} */
+                reason?: "PREVIOUS_HASH_MISMATCH" | "HASH_MISMATCH";
+                expectedHash?: string;
+                storedHash?: string;
+            } | null;
         };
         ApiPaginatedSuccessResponse: {
             /** @example true */

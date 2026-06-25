@@ -595,18 +595,41 @@ A serialização é **canônica** (chaves ordenadas recursivamente; `undefined` 
 
 ### Verificação de integridade
 
-`GET /api/v1/admin/audit-logs/verify` recalcula a cadeia inteira e retorna:
+`GET /api/v1/admin/audit-logs/verify` recalcula a cadeia inteira (somente leitura, **nunca altera logs**) e retorna um status claro:
 
 ```json
 {
-  "status": "VALID", // VALID | BROKEN | EMPTY
+  "status": "INTACT", // INTACT | EMPTY | COMPROMISED
+  "totalLogs": 128,
+  "checkedAt": "2026-06-25T18:31:00.000Z",
+  "firstLogId": "6b1f0e2a-...",
+  "lastLogId": "f4a5b6c7-...",
+  "compromisedLogId": null, // id do primeiro registro comprometido, se houver
+  "message": "Audit chain is intact. 128 log(s) verified.",
+  // Campos legados mantidos para compatibilidade:
+  "chainStatus": "VALID", // VALID | BROKEN | EMPTY
   "valid": true,
   "totalVerified": 128,
-  "firstInvalid": null // ou { id, sequence, action, reason, expectedHash, storedHash }
+  "firstInvalid": null
 }
 ```
 
 Falhas de integridade geram log estruturado `audit.chain.integrity_violation` e atualizam a métrica `audit_chain_broken`.
+
+### Filtros, ordenação e busca
+
+`GET /api/v1/admin/audit-logs` retorna resposta paginada padronizada (`data` + `meta`) e aceita:
+
+| Query                                                          | Descrição                                                                                    |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `page` / `limit`                                               | Paginação (limit máximo 100, padrão 20)                                                      |
+| `createdFrom` / `createdTo`                                    | Período em `createdAt` (ISO date string; data inválida → `400`)                              |
+| `sortBy`                                                       | Campo seguro de ordenação: `createdAt` (padrão), `action`, `entity`, `userId`                |
+| `sortOrder`                                                    | `asc` ou `desc` (padrão `desc`)                                                              |
+| `search`                                                       | Busca textual case-insensitive em `action`, `entity`, `entityId`, `userId`, `ip`/`requestId` |
+| `organizationId` / `userId` / `action` / `entity` / `entityId` | Filtros exatos                                                                               |
+
+`ip` e `requestId` são expostos como campos de topo no item de resposta quando coletados em `metadata` (caso contrário, `null` — nunca são inventados). Cada item retorna `{ id, sequence, organizationId, userId, action, entity, entityId, ip, requestId, oldValues, newValues, metadata, previousHash, hash, createdAt }`.
 
 ### Métricas Prometheus
 

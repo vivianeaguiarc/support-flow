@@ -166,6 +166,235 @@
           }
         }
       },
+      "AuditLogResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "sequence",
+          "organizationId",
+          "userId",
+          "action",
+          "entity",
+          "entityId",
+          "ip",
+          "requestId",
+          "oldValues",
+          "newValues",
+          "metadata",
+          "previousHash",
+          "hash",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "6b1f0e2a-9c2a-4f1e-9b3b-1d2e3f4a5b6c"
+          },
+          "sequence": {
+            "type": "string",
+            "description": "Posição na cadeia (BigInt serializado como string).",
+            "example": "42"
+          },
+          "organizationId": {
+            "type": "string",
+            "nullable": true,
+            "example": "b9c1d2e3-4f56-7890-abcd-ef0123456789"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Autor da ação auditada, quando disponível.",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef0123456789"
+          },
+          "action": {
+            "type": "string",
+            "example": "ROLE_UPDATED"
+          },
+          "entity": {
+            "type": "string",
+            "example": "Role"
+          },
+          "entityId": {
+            "type": "string",
+            "nullable": true,
+            "example": "c3d4e5f6-a1b2-7890-abcd-ef0123456789"
+          },
+          "ip": {
+            "type": "string",
+            "nullable": true,
+            "description": "Endereço IP de origem, mapeado de metadata quando coletado.",
+            "example": "203.0.113.10"
+          },
+          "requestId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Identificador da requisição, mapeado de metadata quando coletado.",
+            "example": "req_01HZX8Y2"
+          },
+          "oldValues": {
+            "nullable": true,
+            "description": "Snapshot anterior, quando aplicável."
+          },
+          "newValues": {
+            "nullable": true,
+            "description": "Snapshot posterior, quando aplicável."
+          },
+          "metadata": {
+            "nullable": true,
+            "description": "Metadados não sensíveis adicionais."
+          },
+          "previousHash": {
+            "type": "string",
+            "nullable": true,
+            "description": "Hash do registro anterior na cadeia."
+          },
+          "hash": {
+            "type": "string",
+            "description": "Hash encadeado deste registro."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-25T18:30:00.000Z"
+          }
+        }
+      },
+      "PaginatedAuditLogResponse": {
+        "type": "object",
+        "required": [
+          "success",
+          "data",
+          "meta",
+          "message"
+        ],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditLogResponse"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          },
+          "message": {
+            "type": "string",
+            "example": "Audit logs retrieved successfully"
+          }
+        }
+      },
+      "AuditIntegrityVerificationResponse": {
+        "type": "object",
+        "required": [
+          "status",
+          "totalLogs",
+          "checkedAt",
+          "firstLogId",
+          "lastLogId",
+          "compromisedLogId",
+          "message",
+          "chainStatus",
+          "valid",
+          "totalVerified",
+          "firstInvalid"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "INTACT",
+              "EMPTY",
+              "COMPROMISED"
+            ],
+            "description": "Resultado claro da verificação de integridade da cadeia.",
+            "example": "INTACT"
+          },
+          "totalLogs": {
+            "type": "integer",
+            "example": 128
+          },
+          "checkedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-25T18:31:00.000Z"
+          },
+          "firstLogId": {
+            "type": "string",
+            "nullable": true,
+            "example": "6b1f0e2a-9c2a-4f1e-9b3b-1d2e3f4a5b6c"
+          },
+          "lastLogId": {
+            "type": "string",
+            "nullable": true,
+            "example": "f4a5b6c7-1d2e-3f40-9b3b-6b1f0e2a9c2a"
+          },
+          "compromisedLogId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Id do primeiro registro com integridade comprometida, se houver.",
+            "example": null
+          },
+          "message": {
+            "type": "string",
+            "example": "Audit chain is intact. 128 log(s) verified."
+          },
+          "chainStatus": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "BROKEN",
+              "EMPTY"
+            ],
+            "description": "Status legado da cadeia (compatibilidade).",
+            "example": "VALID"
+          },
+          "valid": {
+            "type": "boolean",
+            "example": true
+          },
+          "totalVerified": {
+            "type": "integer",
+            "example": 128
+          },
+          "firstInvalid": {
+            "type": "object",
+            "nullable": true,
+            "description": "Primeiro registro inválido (formato legado).",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "sequence": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string"
+              },
+              "entity": {
+                "type": "string"
+              },
+              "reason": {
+                "type": "string",
+                "enum": [
+                  "PREVIOUS_HASH_MISMATCH",
+                  "HASH_MISMATCH"
+                ]
+              },
+              "expectedHash": {
+                "type": "string"
+              },
+              "storedHash": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
       "ApiPaginatedSuccessResponse": {
         "type": "object",
         "required": [
@@ -8388,13 +8617,89 @@
           "Administration"
         ],
         "summary": "Listar registros de auditoria imutável",
-        "description": "Retorna a trilha de auditoria append-only com hash encadeado. Disponível apenas para administradores e supervisores (permissão `audit.read`).\n",
+        "description": "Retorna a trilha de auditoria append-only com hash encadeado, em formato paginado (`data` + `meta`). Suporta filtros por período, ordenação segura e busca textual case-insensitive em campos não sensíveis (`action`, `entity`, `entityId`, `userId`, além de `ip`/`requestId` quando presentes em metadata). Disponível apenas para administradores e supervisores (permissão `audit.read`).\n",
         "security": [
           {
             "BearerAuth": []
           }
         ],
         "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Página atual (1-indexed)."
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "description": "Tamanho da página (máximo 100)."
+          },
+          {
+            "in": "query",
+            "name": "createdFrom",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Início do período (ISO date string) aplicado em `createdAt`. Retorna 400 para datas inválidas.\n"
+          },
+          {
+            "in": "query",
+            "name": "createdTo",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Fim do período (ISO date string) aplicado em `createdAt`. Retorna 400 para datas inválidas.\n"
+          },
+          {
+            "in": "query",
+            "name": "sortBy",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "action",
+                "entity",
+                "userId"
+              ],
+              "default": "createdAt"
+            },
+            "description": "Campo de ordenação (apenas campos seguros e existentes)."
+          },
+          {
+            "in": "query",
+            "name": "sortOrder",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "Direção da ordenação."
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Busca textual case-insensitive em `action`, `entity`, `entityId`, `userId` e em `ip`/`requestId` (quando presentes em metadata).\n"
+          },
           {
             "in": "query",
             "name": "organizationId",
@@ -8429,25 +8734,21 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "integer"
-            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Lista paginada de registros de auditoria"
+            "description": "Lista paginada de registros de auditoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedAuditLogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetros de consulta inválidos (ex.: data ISO inválida)"
           },
           "401": {
             "description": "Não autenticado"
@@ -8464,7 +8765,7 @@
           "Administration"
         ],
         "summary": "Verificar integridade da cadeia de auditoria",
-        "description": "Recalcula o hash de cada registro e valida o encadeamento. Retorna o total verificado, o status da cadeia e o primeiro registro inválido, caso exista.\n",
+        "description": "Recalcula o hash de cada registro e valida o encadeamento, sem alterar nenhum log. Retorna um status claro (`INTACT`, `EMPTY`, `COMPROMISED`), o total verificado, o primeiro e último ids da cadeia e, se houver, o id do registro comprometido. Mantém campos legados para compatibilidade.\n",
         "security": [
           {
             "BearerAuth": []
@@ -8477,32 +8778,22 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "required": [
+                    "success",
+                    "data",
+                    "message"
+                  ],
                   "properties": {
                     "success": {
-                      "type": "boolean"
+                      "type": "boolean",
+                      "example": true
                     },
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "status": {
-                          "type": "string",
-                          "enum": [
-                            "VALID",
-                            "BROKEN",
-                            "EMPTY"
-                          ]
-                        },
-                        "valid": {
-                          "type": "boolean"
-                        },
-                        "totalVerified": {
-                          "type": "integer"
-                        },
-                        "firstInvalid": {
-                          "type": "object",
-                          "nullable": true
-                        }
-                      }
+                      "$ref": "#/components/schemas/AuditIntegrityVerificationResponse"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Audit chain verification completed"
                     }
                   }
                 }

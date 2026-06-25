@@ -61,7 +61,35 @@ describe.sequential('Immutable audit logs integration', () => {
     expect(log?.organizationId).toBe(fixtures.tenantA.id);
   });
 
-  it('lists audit logs for an admin', async () => {
+  async function insertAuditLog(input: {
+    action: string;
+    entity: string;
+    entityId?: string | null;
+    userId?: string | null;
+    organizationId?: string | null;
+    metadata?: Record<string, unknown> | null;
+    createdAt?: Date;
+    hash?: string;
+    previousHash?: string | null;
+  }): Promise<string> {
+    const created = await prisma.auditLog.create({
+      data: {
+        action: input.action,
+        entity: input.entity,
+        entityId: input.entityId ?? null,
+        userId: input.userId ?? null,
+        organizationId: input.organizationId ?? null,
+        metadata: (input.metadata ?? undefined) as never,
+        previousHash: input.previousHash ?? null,
+        hash: input.hash ?? `hash-${Math.random().toString(16).slice(2)}`,
+        ...(input.createdAt ? { createdAt: input.createdAt } : {}),
+      },
+    });
+
+    return created.id;
+  }
+
+  it('lists audit logs for an admin in a paginated envelope', async () => {
     const fixtures = await seedIntegrationFixtures();
     const token = await login(app, fixtures.adminA.email, fixtures.password);
 
@@ -69,18 +97,133 @@ describe.sequential('Immutable audit logs integration', () => {
 
     const response = await authRequest(app, token)
       .get('/api/v1/admin/audit-logs')
+      .query({ page: 1, limit: 10 })
       .expect(200);
 
-    const data = unwrapApiData(response.body) as {
-      data: unknown[];
-      total: number;
-    };
-
-    expect(data.total).toBeGreaterThan(0);
-    expect(data.data.length).toBeGreaterThan(0);
+    expect(response.body.success).toBe(true);
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBeGreaterThan(0);
+    expect(response.body.meta).toMatchObject({
+      page: 1,
+      limit: 10,
+      hasPreviousPage: false,
+    });
+    expect(response.body.meta.total).toBeGreaterThan(0);
+    expect(typeof response.body.meta.totalPages).toBe('number');
+    expect(response.body.data[0]).toHaveProperty('ip');
+    expect(response.body.data[0]).toHaveProperty('requestId');
   });
 
-  it('verifies the integrity of a valid chain', async () => {
+  it('filters audit logs by created period', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const token = await login(app, fixtures.adminA.email, fixtures.password);
+
+    await insertAuditLog({
+      action: 'OLD_EVENT',
+      entity: 'Ticket',
+      createdAt: new Date('2020-01-01T00:00:00.000Z'),
+    });
+    await insertAuditLog({
+      action: 'RECENT_EVENT',
+      entity: 'Ticket',
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+    });
+
+    const response = await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs')
+      .query({
+        createdFrom: '2026-01-01T00:00:00.000Z',
+        createdTo: '2026-12-31T23:59:59.999Z',
+      })
+      .expect(200);
+
+    const actions = response.body.data.map(
+      (log: { action: string }) => log.action,
+    );
+    expect(actions).toContain('RECENT_EVENT');
+    expect(actions).not.toContain('OLD_EVENT');
+  });
+
+  it('returns 400 for an invalid ISO date', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const token = await login(app, fixtures.adminA.email, fixtures.password);
+
+    await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs')
+      .query({ createdFrom: 'not-a-date' })
+      .expect(400);
+  });
+
+  it('orders audit logs by createdAt asc and desc', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const token = await login(app, fixtures.adminA.email, fixtures.password);
+
+    await insertAuditLog({
+      action: 'FIRST',
+      entity: 'Ticket',
+      createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    });
+    await insertAuditLog({
+      action: 'SECOND',
+      entity: 'Ticket',
+      createdAt: new Date('2026-02-01T00:00:00.000Z'),
+    });
+
+    const asc = await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs')
+      .query({ sortBy: 'createdAt', sortOrder: 'asc' })
+      .expect(200);
+    expect(asc.body.data[0].action).toBe('FIRST');
+
+    const desc = await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs')
+      .query({ sortBy: 'createdAt', sortOrder: 'desc' })
+      .expect(200);
+    expect(desc.body.data[0].action).toBe('SECOND');
+  });
+
+  it('searches audit logs by text (case-insensitive)', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const token = await login(app, fixtures.adminA.email, fixtures.password);
+
+    await insertAuditLog({ action: 'ROLE_UPDATED', entity: 'Role' });
+    await insertAuditLog({ action: 'TICKET_CREATED', entity: 'Ticket' });
+
+    const response = await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs')
+      .query({ search: 'role' })
+      .expect(200);
+
+    const entities = response.body.data.map(
+      (log: { entity: string }) => log.entity,
+    );
+    expect(entities).toContain('Role');
+    expect(entities).not.toContain('Ticket');
+  });
+
+  it('exposes ip and requestId from metadata at the top level', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const token = await login(app, fixtures.adminA.email, fixtures.password);
+
+    await insertAuditLog({
+      action: 'API_KEY_CREATED',
+      entity: 'ApiKey',
+      metadata: { ip: '203.0.113.10', requestId: 'req_abc123' },
+    });
+
+    const response = await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs')
+      .query({ search: 'API_KEY_CREATED' })
+      .expect(200);
+
+    const log = response.body.data.find(
+      (item: { action: string }) => item.action === 'API_KEY_CREATED',
+    );
+    expect(log.ip).toBe('203.0.113.10');
+    expect(log.requestId).toBe('req_abc123');
+  });
+
+  it('verifies the integrity of a valid chain (INTACT)', async () => {
     const fixtures = await seedIntegrationFixtures();
     const token = await login(app, fixtures.adminA.email, fixtures.password);
 
@@ -92,15 +235,48 @@ describe.sequential('Immutable audit logs integration', () => {
 
     const data = unwrapApiData(response.body) as {
       status: string;
+      totalLogs: number;
+      checkedAt: string;
+      firstLogId: string | null;
+      lastLogId: string | null;
+      compromisedLogId: string | null;
+      message: string;
       valid: boolean;
       totalVerified: number;
       firstInvalid: unknown;
     };
 
+    expect(data.status).toBe('INTACT');
+    expect(data.totalLogs).toBeGreaterThan(0);
+    expect(data.firstLogId).toBeTruthy();
+    expect(data.lastLogId).toBeTruthy();
+    expect(data.compromisedLogId).toBeNull();
+    expect(typeof data.checkedAt).toBe('string');
+    // Backward-compatible legacy fields are preserved.
     expect(data.valid).toBe(true);
-    expect(data.status).toBe('VALID');
     expect(data.totalVerified).toBeGreaterThan(0);
     expect(data.firstInvalid).toBeNull();
+  });
+
+  it('returns EMPTY when there are no audit logs', async () => {
+    const fixtures = await seedIntegrationFixtures();
+    const token = await login(app, fixtures.adminA.email, fixtures.password);
+
+    const response = await authRequest(app, token)
+      .get('/api/v1/admin/audit-logs/verify')
+      .expect(200);
+
+    const data = unwrapApiData(response.body) as {
+      status: string;
+      totalLogs: number;
+      firstLogId: string | null;
+      lastLogId: string | null;
+    };
+
+    expect(data.status).toBe('EMPTY');
+    expect(data.totalLogs).toBe(0);
+    expect(data.firstLogId).toBeNull();
+    expect(data.lastLogId).toBeNull();
   });
 
   it('detects a tampered record during verification', async () => {
@@ -135,12 +311,15 @@ describe.sequential('Immutable audit logs integration', () => {
 
     const data = unwrapApiData(response.body) as {
       status: string;
+      compromisedLogId: string | null;
       valid: boolean;
       firstInvalid: { id: string } | null;
     };
 
+    expect(data.status).toBe('COMPROMISED');
+    expect(data.compromisedLogId).toBe(first!.id);
+    // Backward-compatible legacy fields are preserved.
     expect(data.valid).toBe(false);
-    expect(data.status).toBe('BROKEN');
     expect(data.firstInvalid?.id).toBe(first!.id);
   });
 

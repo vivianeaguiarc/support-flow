@@ -200,6 +200,190 @@ const options: Options = {
             },
           },
         },
+        AuditLogResponse: {
+          type: 'object',
+          required: [
+            'id',
+            'sequence',
+            'organizationId',
+            'userId',
+            'action',
+            'entity',
+            'entityId',
+            'ip',
+            'requestId',
+            'oldValues',
+            'newValues',
+            'metadata',
+            'previousHash',
+            'hash',
+            'createdAt',
+          ],
+          properties: {
+            id: {
+              type: 'string',
+              format: 'uuid',
+              example: '6b1f0e2a-9c2a-4f1e-9b3b-1d2e3f4a5b6c',
+            },
+            sequence: {
+              type: 'string',
+              description:
+                'Posição na cadeia (BigInt serializado como string).',
+              example: '42',
+            },
+            organizationId: {
+              type: 'string',
+              nullable: true,
+              example: 'b9c1d2e3-4f56-7890-abcd-ef0123456789',
+            },
+            userId: {
+              type: 'string',
+              nullable: true,
+              description: 'Autor da ação auditada, quando disponível.',
+              example: 'a1b2c3d4-e5f6-7890-abcd-ef0123456789',
+            },
+            action: { type: 'string', example: 'ROLE_UPDATED' },
+            entity: { type: 'string', example: 'Role' },
+            entityId: {
+              type: 'string',
+              nullable: true,
+              example: 'c3d4e5f6-a1b2-7890-abcd-ef0123456789',
+            },
+            ip: {
+              type: 'string',
+              nullable: true,
+              description:
+                'Endereço IP de origem, mapeado de metadata quando coletado.',
+              example: '203.0.113.10',
+            },
+            requestId: {
+              type: 'string',
+              nullable: true,
+              description:
+                'Identificador da requisição, mapeado de metadata quando coletado.',
+              example: 'req_01HZX8Y2',
+            },
+            oldValues: {
+              nullable: true,
+              description: 'Snapshot anterior, quando aplicável.',
+            },
+            newValues: {
+              nullable: true,
+              description: 'Snapshot posterior, quando aplicável.',
+            },
+            metadata: {
+              nullable: true,
+              description: 'Metadados não sensíveis adicionais.',
+            },
+            previousHash: {
+              type: 'string',
+              nullable: true,
+              description: 'Hash do registro anterior na cadeia.',
+            },
+            hash: {
+              type: 'string',
+              description: 'Hash encadeado deste registro.',
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-06-25T18:30:00.000Z',
+            },
+          },
+        },
+        PaginatedAuditLogResponse: {
+          type: 'object',
+          required: ['success', 'data', 'meta', 'message'],
+          properties: {
+            success: { type: 'boolean', example: true },
+            data: {
+              type: 'array',
+              items: { $ref: '#/components/schemas/AuditLogResponse' },
+            },
+            meta: { $ref: '#/components/schemas/PaginationMeta' },
+            message: {
+              type: 'string',
+              example: 'Audit logs retrieved successfully',
+            },
+          },
+        },
+        AuditIntegrityVerificationResponse: {
+          type: 'object',
+          required: [
+            'status',
+            'totalLogs',
+            'checkedAt',
+            'firstLogId',
+            'lastLogId',
+            'compromisedLogId',
+            'message',
+            'chainStatus',
+            'valid',
+            'totalVerified',
+            'firstInvalid',
+          ],
+          properties: {
+            status: {
+              type: 'string',
+              enum: ['INTACT', 'EMPTY', 'COMPROMISED'],
+              description:
+                'Resultado claro da verificação de integridade da cadeia.',
+              example: 'INTACT',
+            },
+            totalLogs: { type: 'integer', example: 128 },
+            checkedAt: {
+              type: 'string',
+              format: 'date-time',
+              example: '2026-06-25T18:31:00.000Z',
+            },
+            firstLogId: {
+              type: 'string',
+              nullable: true,
+              example: '6b1f0e2a-9c2a-4f1e-9b3b-1d2e3f4a5b6c',
+            },
+            lastLogId: {
+              type: 'string',
+              nullable: true,
+              example: 'f4a5b6c7-1d2e-3f40-9b3b-6b1f0e2a9c2a',
+            },
+            compromisedLogId: {
+              type: 'string',
+              nullable: true,
+              description:
+                'Id do primeiro registro com integridade comprometida, se houver.',
+              example: null,
+            },
+            message: {
+              type: 'string',
+              example: 'Audit chain is intact. 128 log(s) verified.',
+            },
+            chainStatus: {
+              type: 'string',
+              enum: ['VALID', 'BROKEN', 'EMPTY'],
+              description: 'Status legado da cadeia (compatibilidade).',
+              example: 'VALID',
+            },
+            valid: { type: 'boolean', example: true },
+            totalVerified: { type: 'integer', example: 128 },
+            firstInvalid: {
+              type: 'object',
+              nullable: true,
+              description: 'Primeiro registro inválido (formato legado).',
+              properties: {
+                id: { type: 'string' },
+                sequence: { type: 'string' },
+                action: { type: 'string' },
+                entity: { type: 'string' },
+                reason: {
+                  type: 'string',
+                  enum: ['PREVIOUS_HASH_MISMATCH', 'HASH_MISMATCH'],
+                },
+                expectedHash: { type: 'string' },
+                storedHash: { type: 'string' },
+              },
+            },
+          },
+        },
         ApiPaginatedSuccessResponse: {
           type: 'object',
           required: ['success', 'data', 'meta', 'message'],

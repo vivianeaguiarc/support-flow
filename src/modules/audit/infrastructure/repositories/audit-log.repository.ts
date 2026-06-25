@@ -14,12 +14,19 @@ export type AppendAuditLogInput = {
   metadata?: unknown;
 };
 
+export type AuditLogSortBy = 'createdAt' | 'action' | 'entity' | 'userId';
+
 export type ListAuditLogsFilters = {
   organizationId?: string;
   userId?: string;
   action?: string;
   entity?: string;
   entityId?: string;
+  search?: string;
+  createdFrom?: Date;
+  createdTo?: Date;
+  sortBy?: AuditLogSortBy;
+  sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
 };
@@ -116,9 +123,44 @@ export class AuditLogRepository {
   async list(
     filters: ListAuditLogsFilters,
   ): Promise<{ data: AuditLog[]; total: number; page: number; limit: number }> {
-    const page = filters.page ?? 1;
-    const limit = filters.limit ?? 20;
+    // Coerce defensively: Express 5 exposes req.query as a getter, so the
+    // numeric coercion applied during request validation does not always
+    // persist by the time it reaches this layer.
+    const page = this.toPositiveInt(filters.page, 1);
+    const limit = Math.min(this.toPositiveInt(filters.limit, 20), 100);
+    const sortBy = filters.sortBy ?? 'createdAt';
+    const sortOrder = filters.sortOrder ?? 'desc';
 
+    const where = this.buildWhere(filters);
+
+    // Only safe, whitelisted columns reach `sortBy`; an explicit sequence
+    // tiebreaker keeps pagination deterministic when the primary key collides.
+    const orderBy: Prisma.AuditLogOrderByWithRelationInput[] = [
+      { [sortBy]: sortOrder } as Prisma.AuditLogOrderByWithRelationInput,
+      { sequence: 'desc' },
+    ];
+
+    const [data, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    return { data, total, page, limit };
+  }
+
+  private toPositiveInt(value: unknown, fallback: number): number {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 1
+      ? Math.floor(parsed)
+      : fallback;
+  }
+
+  private buildWhere(filters: ListAuditLogsFilters): Prisma.AuditLogWhereInput {
     const where: Prisma.AuditLogWhereInput = {
       ...(filters.organizationId
         ? { organizationId: filters.organizationId }
@@ -129,17 +171,53 @@ export class AuditLogRepository {
       ...(filters.entityId ? { entityId: filters.entityId } : {}),
     };
 
-    const [data, total] = await Promise.all([
-      prisma.auditLog.findMany({
-        where,
-        orderBy: { sequence: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
+    if (filters.createdFrom || filters.createdTo) {
+      where.createdAt = {
+        ...(filters.createdFrom ? { gte: filters.createdFrom } : {}),
+        ...(filters.createdTo ? { lte: filters.createdTo } : {}),
+      };
+    }
+
+    const search = filters.search?.trim();
+    if (search) {
+      where.OR = [
+        { action: { contains: search, mode: 'insensitive' } },
+        { entity: { contains: search, mode: 'insensitive' } },
+        { entityId: { contains: search, mode: 'insensitive' } },
+        { userId: { contains: search, mode: 'insensitive' } },
+        // ip / requestId are stored inside the metadata JSON (when collected).
+        { metadata: { path: ['requestId'], string_contains: search } },
+        { metadata: { path: ['ip'], string_contains: search } },
+        { metadata: { path: ['ipAddress'], string_contains: search } },
+      ];
+    }
+
+    return where;
+  }
+
+  /**
+   * Returns the ids of the first and last records in chain order. Used by the
+   * integrity verification response. Read-only.
+   */
+  async getBoundaryLogIds(): Promise<{
+    firstLogId: string | null;
+    lastLogId: string | null;
+  }> {
+    const [first, last] = await Promise.all([
+      prisma.auditLog.findFirst({
+        orderBy: { sequence: 'asc' },
+        select: { id: true },
       }),
-      prisma.auditLog.count({ where }),
+      prisma.auditLog.findFirst({
+        orderBy: { sequence: 'desc' },
+        select: { id: true },
+      }),
     ]);
 
-    return { data, total, page, limit };
+    return {
+      firstLogId: first?.id ?? null,
+      lastLogId: last?.id ?? null,
+    };
   }
 
   /**
