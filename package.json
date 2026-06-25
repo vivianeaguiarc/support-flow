@@ -21,9 +21,13 @@
     "prisma:validate": "prisma validate",
     "env:check": "node --import tsx -e \"import './src/config/env.ts'; console.log('Environment configuration is valid')\"",
     "openapi:export": "tsx scripts/openapi/export-openapi.ts",
+    "openapi:validate": "tsx scripts/openapi/validate-openapi.ts",
+    "openapi:diff": "tsx scripts/openapi/diff-openapi.ts",
+    "contract:check": "pnpm openapi:export && pnpm openapi:validate && pnpm openapi:diff",
+    "contract:baseline": "pnpm openapi:export && cp docs/openapi.json docs/openapi.baseline.json",
     "sdk:generate": "pnpm openapi:export && openapi-typescript docs/openapi.json -o src/generated/sdk/openapi.types.ts",
     "sdk:check": "pnpm sdk:generate && tsc -p src/generated/sdk/tsconfig.json && git diff --exit-code -- docs/openapi.json src/generated/sdk/openapi.types.ts",
-    "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm prisma:validate && pnpm prisma:generate && pnpm sdk:check && pnpm test && pnpm build",
+    "ci:check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm prisma:validate && pnpm prisma:generate && pnpm contract:check && pnpm sdk:check && pnpm test && pnpm build",
     "ci:integration": "pnpm prisma:generate && pnpm prisma:deploy && pnpm test:integration",
     "ci:full": "pnpm ci:check && pnpm test:db:prepare && pnpm ci:integration",
     "prepare": "husky",
@@ -70,6 +74,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@apidevtools/swagger-parser": "^12.1.0",
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^10.0.1",

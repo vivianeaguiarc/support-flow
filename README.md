@@ -1183,6 +1183,46 @@ Sempre que o backend mudar contratos, rode `pnpm sdk:generate` e versione os arq
 
 ---
 
+## Validação de contrato (breaking changes)
+
+Para evitar **breaking changes** acidentais na API, o contrato OpenAPI atual é comparado contra um **baseline versionado** (`docs/openapi.baseline.json`). A checagem roda no `pnpm ci:check` e **falha o CI** se detectar uma mudança incompatível não intencional.
+
+Ferramenta: validação estrutural com [`@apidevtools/swagger-parser`](https://apitools.dev/swagger-parser/) + um diff próprio, direcionado por contexto (request vs response).
+
+### Comandos
+
+| Comando                  | O que faz                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------- |
+| `pnpm openapi:validate`  | Valida se `docs/openapi.json` é um OpenAPI 3.0 válido (inclui `$ref` quebrados) |
+| `pnpm openapi:diff`      | Compara `docs/openapi.json` com o baseline e reporta breaking/compatível        |
+| `pnpm contract:check`    | Exporta + valida + diff (usado no `ci:check`)                                   |
+| `pnpm contract:baseline` | **Atualiza** o baseline a partir do contrato atual (mudança intencional)        |
+
+### O que é considerado breaking change
+
+- remoção de endpoint ou operação (método);
+- remoção de campo obrigatório de uma **resposta**;
+- novo campo/parâmetro obrigatório em uma **requisição** (ou opcional → obrigatório);
+- mudança de tipo em schema de request/response;
+- remoção de status code documentado;
+- alteração incompatível de parâmetros.
+
+Mudanças **compatíveis** (novos endpoints, novos campos opcionais, novos status codes, parâmetros opcionais novos) são apenas informadas e **não** quebram o CI.
+
+### Como atualizar o baseline com segurança
+
+Quando a mudança de contrato for **intencional** (ex.: nova versão de um recurso), atualize o baseline e versione junto com a alteração:
+
+```bash
+pnpm contract:baseline          # regenera docs/openapi.baseline.json a partir do contrato atual
+git add docs/openapi.baseline.json
+git commit -m "chore: update openapi contract baseline"
+```
+
+Assim o time revisa o diff do baseline no PR — tornando qualquer breaking change uma **decisão explícita e auditável**, não um acidente.
+
+---
+
 ## Scripts disponíveis
 
 | Script                                            | Descrição                                               |
@@ -1196,6 +1236,10 @@ Sempre que o backend mudar contratos, rode `pnpm sdk:generate` e versione os arq
 | `pnpm docker:run`                                 | Executa container local (requer env vars)               |
 | `pnpm env:check`                                  | Valida variáveis de ambiente                            |
 | `pnpm openapi:export`                             | Exporta o spec OpenAPI para `docs/openapi.json`         |
+| `pnpm openapi:validate`                           | Valida o OpenAPI (estrutura + `$ref`)                   |
+| `pnpm openapi:diff`                               | Diff de contrato contra o baseline (breaking changes)   |
+| `pnpm contract:check`                             | Export + validate + diff (no `ci:check`)                |
+| `pnpm contract:baseline`                          | Atualiza o baseline do contrato (mudança intencional)   |
 | `pnpm sdk:generate`                               | Gera o SDK TypeScript a partir do OpenAPI               |
 | `pnpm sdk:check`                                  | Regenera SDK + typecheck + detecção de drift (CI)       |
 | `pnpm lint` / `pnpm lint:fix`                     | ESLint                                                  |

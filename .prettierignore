@@ -3,4 +3,5 @@ dist
 coverage
 .husky
 docs/openapi.json
+docs/openapi.baseline.json
 src/generated/sdk/openapi.types.ts
