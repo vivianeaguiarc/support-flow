@@ -12,6 +12,10 @@ import {
   ticketsService,
 } from '../../application/services/tickets.service.js';
 import type { AssignTicketDto } from '../dtos/assign-ticket.dto.js';
+import type {
+  BulkAssignTicketsDto,
+  BulkUpdateTicketStatusDto,
+} from '../dtos/bulk-update-tickets.dto.js';
 import type { CreateTicketDto } from '../dtos/create-ticket.dto.js';
 import type { ListTicketsQueryDto } from '../dtos/list-tickets-query.dto.js';
 import type { QueueTicketsQueryDto } from '../dtos/queue-tickets-query.dto.js';
@@ -122,6 +126,46 @@ export class TicketsController {
         getAuthenticatedUser(req),
       );
       sendSuccess(res, ticket, { message: 'Ticket assigned successfully' });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  bulkUpdateStatus = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { ticketIds, status, reason } =
+        req.body as BulkUpdateTicketStatusDto;
+      const result = await this.service.bulkUpdateStatus(
+        ticketIds,
+        status,
+        getAuthenticatedUser(req),
+        reason,
+      );
+      sendSuccess(res, result, { message: result.message });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  bulkAssign = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      const { ticketIds, assignedToId, reason } =
+        req.body as BulkAssignTicketsDto;
+      const result = await this.service.bulkAssign(
+        ticketIds,
+        assignedToId,
+        getAuthenticatedUser(req),
+        reason,
+      );
+      sendSuccess(res, result, { message: result.message });
     } catch (error) {
       next(error);
     }

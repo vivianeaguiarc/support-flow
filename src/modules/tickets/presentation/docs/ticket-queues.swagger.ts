@@ -3,7 +3,7 @@
  * /tickets/my-queue:
  *   get:
  *     tags:
- *       - Ticket Queues
+ *       - Tickets
  *     summary: Fila pessoal do atendente
  *     description: |
  *       Retorna tickets atribuídos ao usuário autenticado.
@@ -57,7 +57,7 @@
  * /tickets/unassigned:
  *   get:
  *     tags:
- *       - Ticket Queues
+ *       - Tickets
  *     summary: Fila de tickets sem responsável
  *     description: |
  *       Retorna tickets sem atendente atribuído.

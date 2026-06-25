@@ -1,5 +1,6 @@
 import { assertTicketForTenant } from '../../../../shared/security/tenant-access.js';
 import type { TicketCommentWithAuthor } from '../../domain/ticket-comment.js';
+import type { CommentVisibility } from '../../domain/ticket-enums.js';
 import {
   type TicketCommentsRepository,
   ticketCommentsRepository,
@@ -12,6 +13,7 @@ import {
 export type ListTicketCommentsInput = {
   ticketId: string;
   tenantId: string;
+  visibility?: CommentVisibility;
 };
 
 export class ListTicketCommentsUseCase {
@@ -28,7 +30,11 @@ export class ListTicketCommentsUseCase {
       input.tenantId,
     );
 
-    return this.commentsRepo.listByTicketId(input.ticketId, input.tenantId);
+    return this.commentsRepo.listByTicketId(
+      input.ticketId,
+      input.tenantId,
+      input.visibility,
+    );
   }
 }
 

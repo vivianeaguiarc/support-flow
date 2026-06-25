@@ -1,4 +1,5 @@
 import type { Express } from 'express';
+import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../../../app.js';
@@ -210,15 +211,46 @@ describe.sequential('Ticket Comments', () => {
       expect(history[0].field).toBe('comment');
     });
 
-    it('should deny customer access to create comments', async () => {
+    it('should allow a customer to create a public comment on their own ticket', async () => {
       const api = authRequest(app, customerToken);
       const response = await api
         .post(`/api/v1/tickets/${ticket1Id}/comments`)
         .send({
-          content: 'Customer trying to comment',
+          content: 'Customer public reply',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data).toMatchObject({
+        ticketId: ticket1Id,
+        authorId: customer1Id,
+        content: 'Customer public reply',
+        visibility: 'PUBLIC',
+      });
+    });
+
+    it('should force PUBLIC visibility even if a customer requests INTERNAL', async () => {
+      const api = authRequest(app, customerToken);
+      const response = await api
+        .post(`/api/v1/tickets/${ticket1Id}/comments`)
+        .send({
+          content: 'Customer trying to go internal',
+          visibility: 'INTERNAL',
         });
 
       expect(response.status).toBe(403);
+    });
+
+    it('should allow staff to create a public comment when requested', async () => {
+      const api = authRequest(app, agent1Token);
+      const response = await api
+        .post(`/api/v1/tickets/${ticket1Id}/comments`)
+        .send({
+          content: 'Agent public reply',
+          visibility: 'PUBLIC',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.visibility).toBe('PUBLIC');
     });
 
     it('should deny agent from different tenant', async () => {
@@ -349,11 +381,31 @@ describe.sequential('Ticket Comments', () => {
       expect(response.body.data).toHaveLength(3);
     });
 
-    it('should deny customer access to list comments', async () => {
+    it('should only expose public comments to the customer', async () => {
+      await prisma.ticketComment.create({
+        data: {
+          tenantId: tenant1Id,
+          ticketId: ticket1Id,
+          authorId: customer1Id,
+          content: 'Public comment visible to customer',
+          visibility: 'PUBLIC',
+          createdAt: new Date('2026-01-01T13:00:00Z'),
+        },
+      });
+
       const api = authRequest(app, customerToken);
       const response = await api.get(`/api/v1/tickets/${ticket1Id}/comments`);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].content).toBe(
+        'Public comment visible to customer',
+      );
+      expect(
+        response.body.data.every(
+          (c: { visibility: string }) => c.visibility === 'PUBLIC',
+        ),
+      ).toBe(true);
     });
 
     it('should deny agent from different tenant', async () => {
@@ -391,6 +443,24 @@ describe.sequential('Ticket Comments', () => {
           (c: { content: string }) => c.content !== 'Comment in tenant 2',
         ),
       ).toBe(true);
+    });
+  });
+
+  describe('Authentication', () => {
+    it('should return 401 when listing comments without a token', async () => {
+      const response = await request(app).get(
+        `/api/v1/tickets/${ticket1Id}/comments`,
+      );
+
+      expect(response.status).toBe(401);
+    });
+
+    it('should return 401 when creating a comment without a token', async () => {
+      const response = await request(app)
+        .post(`/api/v1/tickets/${ticket1Id}/comments`)
+        .send({ content: 'No token comment' });
+
+      expect(response.status).toBe(401);
     });
   });
 

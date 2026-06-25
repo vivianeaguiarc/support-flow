@@ -3,7 +3,7 @@
  * /admin/audit-logs:
  *   get:
  *     tags:
- *       - Audit
+ *       - Administration
  *     summary: Listar registros de auditoria imutável
  *     description: >
  *       Retorna a trilha de auditoria append-only com hash encadeado.
@@ -54,7 +54,7 @@
  * /admin/audit-logs/verify:
  *   get:
  *     tags:
- *       - Audit
+ *       - Administration
  *     summary: Verificar integridade da cadeia de auditoria
  *     description: >
  *       Recalcula o hash de cada registro e valida o encadeamento.

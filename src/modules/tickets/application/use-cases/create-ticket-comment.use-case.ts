@@ -26,6 +26,13 @@ export type CreateTicketCommentInput = {
   tenantId: string;
   authorId: string;
   content: string;
+  visibility: CommentVisibility;
+  /**
+   * Whether the author is a staff User (vs. a Customer). Ticket history records
+   * reference a User via `changedById`, so audit entries are only created for
+   * staff-authored comments.
+   */
+  authorIsStaff: boolean;
 };
 
 export class CreateTicketCommentUseCase {
@@ -47,20 +54,23 @@ export class CreateTicketCommentUseCase {
       ticketId: input.ticketId,
       authorId: input.authorId,
       content: input.content,
+      visibility: input.visibility,
     });
 
-    await this.historyRepo.create({
-      ticketId: input.ticketId,
-      tenantId: input.tenantId,
-      event: TicketHistoryEvent.COMMENT_ADDED,
-      changedById: input.authorId,
-      field: 'comment',
-      newValue: `Comment added by user ${input.authorId}`,
-      metadata: {
-        commentId: comment.id,
-        visibility: comment.visibility,
-      },
-    });
+    if (input.authorIsStaff) {
+      await this.historyRepo.create({
+        ticketId: input.ticketId,
+        tenantId: input.tenantId,
+        event: TicketHistoryEvent.COMMENT_ADDED,
+        changedById: input.authorId,
+        field: 'comment',
+        newValue: `Comment added by user ${input.authorId}`,
+        metadata: {
+          commentId: comment.id,
+          visibility: comment.visibility,
+        },
+      });
+    }
 
     await this.notificationService.notifyCommentAdded(
       ticket,

@@ -3,7 +3,7 @@
  * /admin/outbox:
  *   get:
  *     tags:
- *       - Outbox
+ *       - Administration
  *     summary: Listar eventos do outbox transacional
  *     security:
  *       - BearerAuth: []
@@ -39,7 +39,7 @@
  * /admin/outbox/metrics:
  *   get:
  *     tags:
- *       - Outbox
+ *       - Administration
  *     summary: Métricas agregadas do outbox
  *     security:
  *       - BearerAuth: []

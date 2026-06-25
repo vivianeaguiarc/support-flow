@@ -9,6 +9,7 @@ export const createTicketCommentSchema = z
       max: 5000,
       message: 'Comment content is required',
     }),
+    visibility: z.enum(['PUBLIC', 'INTERNAL']).optional(),
   })
   .strict();
 

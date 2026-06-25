@@ -19,6 +19,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/tickets/sla': ['get'],
   '/tickets/sla/breached': ['get'],
   '/tickets/auto-assign': ['post'],
+  '/tickets/bulk/status': ['patch'],
+  '/tickets/bulk/assign': ['patch'],
   '/tickets/{id}': ['get'],
   '/tickets/{id}/status': ['patch'],
   '/tickets/{id}/assign': ['patch'],

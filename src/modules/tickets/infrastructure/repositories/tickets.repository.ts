@@ -51,6 +51,15 @@ export class TicketsRepository {
     });
   }
 
+  async findManyByIdsAndTenant(
+    ids: string[],
+    tenantId: string,
+  ): Promise<Ticket[]> {
+    return prisma.ticket.findMany({
+      where: { id: { in: ids }, tenantId },
+    });
+  }
+
   async listByTenant(tenantId: string): Promise<Ticket[]> {
     const result = await this.listWithFilters({ tenantId });
     return result.data;

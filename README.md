@@ -53,7 +53,7 @@ O SupportFlow Backend entrega essa base como **API modular**, pronta para integr
 
 ### Comentários e anexos
 
-- Comentários internos em chamados (visibilidade `INTERNAL`)
+- Comentários em chamados com visibilidade `PUBLIC` (visível ao cliente) e `INTERNAL` (restrito à equipe); clientes só criam/leem comentários públicos do próprio chamado
 - Upload de anexos com validação de tipo, tamanho e conteúdo (PDF, PNG, JPEG, TXT)
 
 ### Notificações
@@ -942,7 +942,7 @@ O seed é **idempotente**: `upsert` por chaves estáveis (`id`, `tenantId+email`
 3. Copie o `accessToken` → **Authorize** → `Bearer <token>`
 4. Explore, por exemplo:
    - `GET /tickets` — lista os 6 chamados demo
-   - `GET /tickets/{id}/comments` — comentários internos
+   - `GET /tickets/{id}/comments` — timeline de comentários (públicos e, para a equipe, internos)
    - `GET /notifications` — notificações do usuário logado
    - `POST /tickets` — novo chamado usando o `customerId` acima
 
@@ -1096,15 +1096,15 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
 ### Endpoints documentados (prefixo `/api/v1`)
 
-| Tag                | Rotas                                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------ |
-| Authentication     | `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me`                                    |
-| Users              | `POST/GET /users`, `GET /users/{id}`                                                                   |
-| Tickets            | CRUD, status, assign, transitions, history, summary, metrics, auto-assign, route, recalculate-priority |
-| Ticket Comments    | `POST/GET /tickets/{id}/comments`                                                                      |
-| Ticket Attachments | `POST/GET /tickets/{id}/attachments`, `DELETE .../{attachmentId}` (multipart)                          |
-| Notifications      | `GET /notifications`, `PATCH /{id}/read`, `PATCH /read-all`                                            |
-| Health             | `GET /health`, `GET /health/ready`                                                                     |
+| Tag                | Rotas                                                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Authentication     | `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /auth/me`                                                        |
+| Users              | `POST/GET /users`, `GET /users/{id}`                                                                                       |
+| Tickets            | CRUD, status, assign, bulk status/assign, transitions, history, summary, metrics, auto-assign, route, recalculate-priority |
+| Ticket Comments    | `POST/GET /tickets/{id}/comments`                                                                                          |
+| Ticket Attachments | `POST/GET /tickets/{id}/attachments`, `DELETE .../{attachmentId}` (multipart)                                              |
+| Notifications      | `GET /notifications`, `PATCH /{id}/read`, `PATCH /read-all`                                                                |
+| Health             | `GET /health`, `GET /health/ready`                                                                                         |
 
 ---
 
@@ -1383,7 +1383,7 @@ Deploy staging via blueprint Render ([`render.yaml`](render.yaml)) ou Railway ([
 ## Roadmap backend
 
 - [ ] Endpoint autenticado de **download de anexos** (sem expor `storagePath`)
-- [ ] Comentários com visibilidade **pública** para clientes
+- [x] Comentários com visibilidade **pública** para clientes
 - [ ] Módulo **knowledge-base** (artigos de ajuda)
 - [ ] Refatorar módulos `auth` e `users` para Clean Architecture
 - [ ] Scheduler/cron para SLA e escalação em background

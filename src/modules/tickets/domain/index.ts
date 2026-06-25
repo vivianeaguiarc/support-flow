@@ -1,3 +1,11 @@
+export type {
+  BulkTicketOperation,
+  BulkTicketOperationResult,
+} from './bulk-ticket-operation.js';
+export {
+  assertAllTicketsPresent,
+  BULK_TICKET_OPERATION,
+} from './bulk-ticket-operation.js';
 export type { Tenant } from './tenant.entity.js';
 export type { Ticket } from './ticket.entity.js';
 export type {
@@ -19,6 +27,10 @@ export type {
   TicketComment,
   TicketCommentWithAuthor,
 } from './ticket-comment.js';
+export {
+  canViewInternalComments,
+  resolveCommentVisibility,
+} from './ticket-comment.rules.js';
 export {
   CommentVisibility,
   TICKET_HISTORY_EVENTS,

@@ -148,10 +148,28 @@ describe.sequential('RBAC authorization integration', () => {
 
     await api
       .post(`/api/v1/tickets/${openTicketId}/comments`)
-      .send({ content: 'Customer comment' })
+      .send({ content: 'Customer internal attempt', visibility: 'INTERNAL' })
       .expect(403);
 
-    await api.get(`/api/v1/tickets/${openTicketId}/comments`).expect(403);
+    await api
+      .post(`/api/v1/tickets/${openTicketId}/internal-comments`)
+      .send({ content: 'Customer internal route attempt' })
+      .expect(403);
+
+    await api
+      .get(`/api/v1/tickets/${openTicketId}/internal-comments`)
+      .expect(403);
+  });
+
+  it('should allow customer to post and read public comments on their own ticket', async () => {
+    const api = authRequest(app, customerToken);
+
+    await api
+      .post(`/api/v1/tickets/${openTicketId}/comments`)
+      .send({ content: 'Customer public comment' })
+      .expect(201);
+
+    await api.get(`/api/v1/tickets/${openTicketId}/comments`).expect(200);
   });
 
   it('should block customer from assigning tickets', async () => {

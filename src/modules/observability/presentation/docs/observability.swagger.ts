@@ -25,7 +25,7 @@
  * /metrics:
  *   get:
  *     tags:
- *       - Observability
+ *       - Health
  *     summary: Prometheus metrics
  *     description: |
  *       Expõe métricas no formato Prometheus (text/plain). Requer `METRICS_ENABLED=true`.

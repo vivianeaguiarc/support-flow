@@ -17,6 +17,10 @@ import { ticketSatisfactionController } from '../controllers/ticket-satisfaction
 import { ticketSlaController } from '../controllers/ticket-sla.controller.js';
 import { ticketsController } from '../controllers/tickets.controller.js';
 import { assignTicketSchema } from '../dtos/assign-ticket.dto.js';
+import {
+  bulkAssignTicketsSchema,
+  bulkUpdateTicketStatusSchema,
+} from '../dtos/bulk-update-tickets.dto.js';
 import { createTicketSchema } from '../dtos/create-ticket.dto.js';
 import { createTicketCommentSchema } from '../dtos/create-ticket-comment.dto.js';
 import { listBreachedSlaTicketsQuerySchema } from '../dtos/list-breached-sla-tickets-query.dto.js';
@@ -142,6 +146,22 @@ ticketsRouter.post(
 );
 
 ticketsRouter.patch(
+  '/bulk/status',
+  authenticate,
+  authorize(...ROLE_GROUPS.TICKET_STATUS),
+  validateRequest({ body: bulkUpdateTicketStatusSchema }),
+  ticketsController.bulkUpdateStatus,
+);
+
+ticketsRouter.patch(
+  '/bulk/assign',
+  authenticate,
+  authorize(...ROLE_GROUPS.TICKET_ASSIGN),
+  validateRequest({ body: bulkAssignTicketsSchema }),
+  ticketsController.bulkAssign,
+);
+
+ticketsRouter.patch(
   '/:id/status',
   authenticate,
   authorize(...ROLE_GROUPS.TICKET_STATUS, UserRole.OMBUDSMAN),
@@ -195,7 +215,7 @@ ticketsRouter.get(
 ticketsRouter.post(
   '/:id/comments',
   authenticate,
-  authorize(...ROLE_GROUPS.INTERNAL_COMMENTS),
+  authorize(...ROLE_GROUPS.TICKET_COMMENT),
   validateRequest({
     params: ticketIdParamSchema,
     body: createTicketCommentSchema,
@@ -206,7 +226,7 @@ ticketsRouter.post(
 ticketsRouter.get(
   '/:id/comments',
   authenticate,
-  authorize(...ROLE_GROUPS.INTERNAL_COMMENTS),
+  authorize(...ROLE_GROUPS.TICKET_COMMENT),
   validateRequest({ params: ticketIdParamSchema }),
   ticketCommentsController.list,
 );

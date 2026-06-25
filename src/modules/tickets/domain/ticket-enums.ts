@@ -41,6 +41,7 @@ export const TICKET_HISTORY_EVENTS = Object.values(TicketHistoryEvent);
 
 export const CommentVisibility = {
   INTERNAL: 'INTERNAL',
+  PUBLIC: 'PUBLIC',
 } as const;
 
 export type CommentVisibility =

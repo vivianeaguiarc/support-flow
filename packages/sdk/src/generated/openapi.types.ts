@@ -1306,6 +1306,263 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/tickets/bulk/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Atualizar status de múltiplos chamados (bulk)
+         * @description Atualiza o status de vários chamados em uma única operação atômica.
+         *
+         *     Toda a operação roda dentro de uma transação: se **qualquer** chamado for
+         *     inexistente, pertencer a outro tenant ou violar uma transição de status
+         *     válida, **nenhum** chamado é alterado (rollback completo).
+         *
+         *     IDs duplicados em `ticketIds` são removidos antes do processamento.
+         *
+         *     As regras de transição e a exigência de responsável para `IN_PROGRESS`
+         *     são as mesmas do endpoint individual `PATCH /tickets/{id}/status`.
+         *
+         *     **Permissões:** `AGENT`, `SUPERVISOR` ou `ADMIN`.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BulkUpdateTicketStatusRequest"];
+                };
+            };
+            responses: {
+                /** @description Operação em lote concluída com sucesso */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "totalRequested": 2,
+                         *       "totalUpdated": 2,
+                         *       "updatedTicketIds": [
+                         *         "550e8400-e29b-41d4-a716-446655440000",
+                         *         "660e8400-e29b-41d4-a716-446655440001"
+                         *       ],
+                         *       "operation": "bulk_status_update",
+                         *       "message": "Tickets updated successfully."
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BulkTicketOperationResult"];
+                    };
+                };
+                /** @description Body inválido (ticketIds vazio, UUID inválido ou status inválido) */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "statusCode": 400,
+                         *       "message": "ticketIds must contain at least one ticket"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Token JWT ausente ou inválido */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Role sem permissão para alterar status em lote */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Um ou mais chamados não foram encontrados no tenant */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "statusCode": 404,
+                         *       "message": "One or more tickets were not found in this tenant"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Transição de status inválida para algum chamado (rollback completo) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "statusCode": 409,
+                         *       "message": "Invalid status transition from OPEN to CLOSED"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
+    "/tickets/bulk/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Atribuir múltiplos chamados a um agente (bulk)
+         * @description Atribui (ou reatribui) vários chamados a um único atendente em uma
+         *     operação atômica.
+         *
+         *     Toda a operação roda dentro de uma transação: se **qualquer** chamado for
+         *     inexistente, pertencer a outro tenant ou estiver resolvido/fechado, ou se
+         *     o agente informado não existir/for inelegível, **nenhum** chamado é
+         *     alterado (rollback completo).
+         *
+         *     IDs duplicados em `ticketIds` são removidos antes do processamento.
+         *
+         *     **Permissões:** `SUPERVISOR` ou `ADMIN`.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["BulkAssignTicketsRequest"];
+                };
+            };
+            responses: {
+                /** @description Operação em lote concluída com sucesso */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "totalRequested": 2,
+                         *       "totalUpdated": 2,
+                         *       "updatedTicketIds": [
+                         *         "550e8400-e29b-41d4-a716-446655440000",
+                         *         "660e8400-e29b-41d4-a716-446655440001"
+                         *       ],
+                         *       "operation": "bulk_assign",
+                         *       "message": "Tickets assigned successfully."
+                         *     }
+                         */
+                        "application/json": components["schemas"]["BulkTicketOperationResult"];
+                    };
+                };
+                /** @description Body inválido ou agente inelegível */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "statusCode": 400,
+                         *       "message": "User must have an assignable staff role"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Token JWT ausente ou inválido */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Role sem permissão para atribuir em lote (apenas SUPERVISOR/ADMIN) */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Um ou mais chamados não encontrados no tenant, ou agente inexistente */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "statusCode": 404,
+                         *       "message": "One or more tickets were not found in this tenant"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description Algum chamado não pode ser atribuído (resolvido/fechado) — rollback completo */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "statusCode": 409,
+                         *       "message": "Cannot assign a closed or resolved ticket"
+                         *     }
+                         */
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/tickets/{id}": {
         parameters: {
             query?: never;
@@ -2524,11 +2781,15 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Listar comentários internos
-         * @description Retorna todos os comentários internos do chamado em ordem cronológica (mais antigo primeiro),
-         *     incluindo dados do autor.
+         * Listar comentários do chamado
+         * @description Retorna os comentários do chamado em ordem cronológica (mais antigo primeiro),
+         *     incluindo dados não sensíveis do autor.
          *
-         *     **Permissões:** `AGENT` ou `ADMIN`.
+         *     A visibilidade é aplicada conforme o papel do usuário:
+         *     - `CUSTOMER` recebe apenas comentários `PUBLIC` do próprio chamado.
+         *     - `AGENT`/`SUPERVISOR`/`ADMIN` recebem todos os comentários (`PUBLIC` e `INTERNAL`).
+         *
+         *     **Permissões:** `CUSTOMER` (próprio chamado), `AGENT`, `SUPERVISOR` ou `ADMIN`.
          *
          *     **Autenticação:** JWT Bearer obrigatório.
          */
@@ -2621,13 +2882,22 @@ export interface paths {
         };
         put?: never;
         /**
-         * Adicionar comentário interno
-         * @description Registra um comentário interno no chamado de SAC/Ouvidoria. Comentários são
-         *     **visíveis apenas para agentes e administradores** — o cliente não tem acesso.
+         * Adicionar comentário ao chamado
+         * @description Registra um comentário na timeline do chamado. A visibilidade controla quem
+         *     enxerga o comentário:
+         *
+         *     - `PUBLIC`: visível para o cliente e para a equipe.
+         *     - `INTERNAL`: restrito à equipe de atendimento (cliente não tem acesso).
+         *
+         *     Regras de visibilidade:
+         *     - `CUSTOMER` só pode criar comentários `PUBLIC` no próprio chamado.
+         *     - `AGENT`/`SUPERVISOR`/`ADMIN` podem criar `PUBLIC` ou `INTERNAL`; quando o
+         *       campo `visibility` é omitido, o padrão é `INTERNAL`.
          *
          *     Gera evento `COMMENT_ADDED` no histórico e notificação `TICKET_COMMENT_ADDED`.
          *
-         *     **Permissões:** `AGENT` ou `ADMIN`.
+         *     **Permissões:** `CUSTOMER` (próprio chamado, apenas `PUBLIC`), `AGENT`,
+         *     `SUPERVISOR` ou `ADMIN`.
          *
          *     **Autenticação:** JWT Bearer obrigatório.
          */
@@ -2695,7 +2965,11 @@ export interface paths {
                         "application/json": components["schemas"]["Error"];
                     };
                 };
-                /** @description Cliente, agente de outro tenant ou role sem permissão (cross-tenant retorna 403) */
+                /**
+                 * @description Acesso negado. Ocorre quando o cliente tenta criar um comentário `INTERNAL`,
+                 *     quando o usuário acessa um chamado fora do seu tenant (cross-tenant retorna 403)
+                 *     ou quando o cliente tenta comentar em chamado que não é seu.
+                 */
                 403: {
                     headers: {
                         [name: string]: unknown;
@@ -2704,7 +2978,7 @@ export interface paths {
                         /**
                          * @example {
                          *       "statusCode": 403,
-                         *       "message": "Forbidden"
+                         *       "message": "Customers can only create public comments"
                          *     }
                          */
                         "application/json": components["schemas"]["Error"];
@@ -5446,11 +5720,11 @@ export interface components {
          */
         NotificationType: "TICKET_CREATED" | "TICKET_ASSIGNED" | "TICKET_STATUS_CHANGED" | "TICKET_COMMENT_ADDED" | "TICKET_ATTACHMENT_ADDED" | "SLA_WARNING" | "SLA_EXPIRED";
         /**
-         * @description Visibilidade do comentário — atualmente todos são internos (não visíveis ao cliente)
-         * @example INTERNAL
+         * @description Visibilidade do comentário — `PUBLIC` é visível ao cliente; `INTERNAL` é restrito à equipe de atendimento.
+         * @example PUBLIC
          * @enum {string}
          */
-        CommentVisibility: "INTERNAL";
+        CommentVisibility: "INTERNAL" | "PUBLIC";
         /**
          * @example PUBLISHED
          * @enum {string}
@@ -5677,6 +5951,45 @@ export interface components {
              */
             assignedToId?: string;
         };
+        BulkUpdateTicketStatusRequest: {
+            /** @description IDs dos chamados a atualizar. IDs duplicados são removidos. */
+            ticketIds: string[];
+            status: components["schemas"]["TicketStatus"];
+            /** @description Justificativa registrada no histórico (opcional) */
+            reason?: string;
+        };
+        BulkAssignTicketsRequest: {
+            /** @description IDs dos chamados a atribuir. IDs duplicados são removidos. */
+            ticketIds: string[];
+            /**
+             * Format: uuid
+             * @description ID do atendente que receberá os chamados
+             */
+            assignedToId: string;
+            /** @description Justificativa registrada no histórico (opcional) */
+            reason?: string;
+        };
+        BulkTicketOperationResult: {
+            /**
+             * @description Quantidade de chamados solicitados (após dedupe)
+             * @example 3
+             */
+            totalRequested?: number;
+            /**
+             * @description Quantidade de chamados efetivamente alterados
+             * @example 3
+             */
+            totalUpdated?: number;
+            /** @description IDs dos chamados alterados */
+            updatedTicketIds?: string[];
+            /**
+             * @description Tipo da operação em lote executada
+             * @enum {string}
+             */
+            operation?: "bulk_status_update" | "bulk_assign";
+            /** @example Tickets updated successfully. */
+            message?: string;
+        };
         TicketComment: {
             /** Format: uuid */
             id?: string;
@@ -5702,10 +6015,12 @@ export interface components {
         };
         CreateCommentRequest: {
             /**
-             * @description Conteúdo do comentário interno
+             * @description Conteúdo do comentário
              * @example Contato telefônico realizado — cliente confirmou recebimento do estorno de R$ 249,90
              */
             content: string;
+            /** @description Visibilidade do comentário. Opcional. Clientes só podem criar comentários `PUBLIC`; para a equipe, o padrão é `INTERNAL` quando omitido. */
+            visibility?: components["schemas"]["CommentVisibility"];
         };
         TicketAttachment: {
             /** Format: uuid */

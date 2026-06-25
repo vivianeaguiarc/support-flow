@@ -37,6 +37,12 @@ export const ROLE_GROUPS = {
     UserRole.AGENT,
   ],
   INTERNAL_COMMENTS: [UserRole.ADMIN, UserRole.AGENT, UserRole.SUPERVISOR],
+  TICKET_COMMENT: [
+    UserRole.CUSTOMER,
+    UserRole.AGENT,
+    UserRole.SUPERVISOR,
+    UserRole.ADMIN,
+  ],
   ATTACHMENT_MANAGE: [UserRole.AGENT, UserRole.SUPERVISOR, UserRole.ADMIN],
   ATTACHMENT_READ: [
     UserRole.AGENT,

@@ -5,12 +5,12 @@ import {
   assertCanCreateTicket,
   assertCanManageTicket,
   assertTicketAccess,
-  canAccessInternalComments,
 } from '../../../../shared/security/rbac.js';
 import { resolveTenantId } from '../../../../shared/tenant/get-request-tenant-id.js';
 import type { AuthenticatedUser } from '../../../../shared/types/authenticated-user.js';
 import { UserRole } from '../../../../shared/types/user-role.js';
 import type { AgentMetricsResult } from '../../domain/agent-metrics.js';
+import type { BulkTicketOperationResult } from '../../domain/bulk-ticket-operation.js';
 import type { Ticket } from '../../domain/ticket.entity.js';
 import type {
   TicketAttachment,
@@ -20,8 +20,15 @@ import type {
   TicketComment,
   TicketCommentWithAuthor,
 } from '../../domain/ticket-comment.js';
-import type { TicketPriority } from '../../domain/ticket-enums.js';
-import { TicketStatus } from '../../domain/ticket-enums.js';
+import {
+  canViewInternalComments,
+  resolveCommentVisibility,
+} from '../../domain/ticket-comment.rules.js';
+import {
+  CommentVisibility,
+  type TicketPriority,
+  TicketStatus,
+} from '../../domain/ticket-enums.js';
 import {
   TicketsRepository,
   ticketsRepository as defaultTicketsRepository,
@@ -29,6 +36,10 @@ import {
 import {
   AssignTicketUseCase,
   assignTicketUseCase,
+  BulkAssignTicketsUseCase,
+  bulkAssignTicketsUseCase,
+  BulkUpdateTicketStatusUseCase,
+  bulkUpdateTicketStatusUseCase,
   CreateTicketCommentUseCase,
   createTicketCommentUseCase,
   DeleteTicketAttachmentUseCase,
@@ -97,6 +108,8 @@ export class TicketsService {
     private readonly listAttachmentsUseCase: ListTicketAttachmentsUseCase = listTicketAttachmentsUseCase,
     private readonly deleteAttachmentUseCase: DeleteTicketAttachmentUseCase = deleteTicketAttachmentUseCase,
     private readonly ticketsRepository: TicketsRepository = defaultTicketsRepository,
+    private readonly bulkUpdateTicketStatus: BulkUpdateTicketStatusUseCase = bulkUpdateTicketStatusUseCase,
+    private readonly bulkAssignTickets: BulkAssignTicketsUseCase = bulkAssignTicketsUseCase,
   ) {}
 
   async create(
@@ -353,22 +366,65 @@ export class TicketsService {
     });
   }
 
+  async bulkUpdateStatus(
+    ticketIds: string[],
+    status: TicketStatus,
+    authUser: AuthenticatedUser,
+    reason?: string,
+  ): Promise<BulkTicketOperationResult> {
+    assertCanManageTicket(authUser);
+
+    const tenantId = resolveTenantId(authUser);
+
+    return this.bulkUpdateTicketStatus.execute({
+      tenantId,
+      ticketIds,
+      status,
+      changedById: authUser.id,
+      reason,
+    });
+  }
+
+  async bulkAssign(
+    ticketIds: string[],
+    assignedToId: string,
+    authUser: AuthenticatedUser,
+    reason?: string,
+  ): Promise<BulkTicketOperationResult> {
+    assertCanAssignTicket(authUser);
+
+    const tenantId = resolveTenantId(authUser);
+
+    return this.bulkAssignTickets.execute({
+      tenantId,
+      ticketIds,
+      assignedToId,
+      changedById: authUser.id,
+      reason,
+    });
+  }
+
   async addComment(
     ticketId: string,
     content: string,
     authUser: AuthenticatedUser,
+    visibility?: CommentVisibility,
   ): Promise<TicketComment> {
-    if (!canAccessInternalComments(authUser.role)) {
-      throw new AppError('Forbidden', 403);
-    }
+    await this.findById(ticketId, authUser);
 
     const tenantId = resolveTenantId(authUser);
+    const resolvedVisibility = resolveCommentVisibility(
+      authUser.role,
+      visibility,
+    );
 
     return this.createComment.execute({
       ticketId,
       tenantId,
       authorId: authUser.id,
       content,
+      visibility: resolvedVisibility,
+      authorIsStaff: canViewInternalComments(authUser.role),
     });
   }
 
@@ -376,15 +432,17 @@ export class TicketsService {
     ticketId: string,
     authUser: AuthenticatedUser,
   ): Promise<TicketCommentWithAuthor[]> {
-    if (!canAccessInternalComments(authUser.role)) {
-      throw new AppError('Forbidden', 403);
-    }
+    await this.findById(ticketId, authUser);
 
     const tenantId = resolveTenantId(authUser);
+    const visibility = canViewInternalComments(authUser.role)
+      ? undefined
+      : CommentVisibility.PUBLIC;
 
     return this.listComments.execute({
       ticketId,
       tenantId,
+      visibility,
     });
   }
 

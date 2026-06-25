@@ -77,3 +77,19 @@ export type AssignTicketInput = {
   assignedToId: string;
   changedById?: string;
 };
+
+export type BulkUpdateTicketStatusInput = {
+  tenantId: string;
+  ticketIds: string[];
+  status: TicketStatus;
+  changedById?: string;
+  reason?: string;
+};
+
+export type BulkAssignTicketsInput = {
+  tenantId: string;
+  ticketIds: string[];
+  assignedToId: string;
+  changedById?: string;
+  reason?: string;
+};

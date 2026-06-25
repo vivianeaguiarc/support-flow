@@ -3,7 +3,7 @@
  * /tickets/{ticketId}/internal-comments:
  *   post:
  *     tags:
- *       - Ticket Internal Comments
+ *       - Comments
  *     summary: Adicionar comentário interno ao chamado
  *     description: |
  *       Registra um comentário interno visível apenas para a equipe de atendimento.
@@ -67,7 +67,7 @@
  *
  *   get:
  *     tags:
- *       - Ticket Internal Comments
+ *       - Comments
  *     summary: Listar comentários internos do chamado
  *     description: |
  *       Retorna comentários internos em ordem cronológica (mais antigo primeiro),

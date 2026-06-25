@@ -432,6 +432,185 @@
  *               statusCode: 403
  *               message: "Forbidden"
  *
+ * /tickets/bulk/status:
+ *   patch:
+ *     tags:
+ *       - Tickets
+ *     summary: Atualizar status de múltiplos chamados (bulk)
+ *     description: |
+ *       Atualiza o status de vários chamados em uma única operação atômica.
+ *
+ *       Toda a operação roda dentro de uma transação: se **qualquer** chamado for
+ *       inexistente, pertencer a outro tenant ou violar uma transição de status
+ *       válida, **nenhum** chamado é alterado (rollback completo).
+ *
+ *       IDs duplicados em `ticketIds` são removidos antes do processamento.
+ *
+ *       As regras de transição e a exigência de responsável para `IN_PROGRESS`
+ *       são as mesmas do endpoint individual `PATCH /tickets/{id}/status`.
+ *
+ *       **Permissões:** `AGENT`, `SUPERVISOR` ou `ADMIN`.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BulkUpdateTicketStatusRequest'
+ *           examples:
+ *             resolverEmLote:
+ *               summary: Resolver vários chamados
+ *               value:
+ *                 ticketIds:
+ *                   - "550e8400-e29b-41d4-a716-446655440000"
+ *                   - "660e8400-e29b-41d4-a716-446655440001"
+ *                 status: "RESOLVED"
+ *                 reason: "Lote resolvido após correção do incidente #4521"
+ *     responses:
+ *       200:
+ *         description: Operação em lote concluída com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BulkTicketOperationResult'
+ *             example:
+ *               totalRequested: 2
+ *               totalUpdated: 2
+ *               updatedTicketIds:
+ *                 - "550e8400-e29b-41d4-a716-446655440000"
+ *                 - "660e8400-e29b-41d4-a716-446655440001"
+ *               operation: "bulk_status_update"
+ *               message: "Tickets updated successfully."
+ *       400:
+ *         description: Body inválido (ticketIds vazio, UUID inválido ou status inválido)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 400
+ *               message: "ticketIds must contain at least one ticket"
+ *       401:
+ *         description: Token JWT ausente ou inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Role sem permissão para alterar status em lote
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Um ou mais chamados não foram encontrados no tenant
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 404
+ *               message: "One or more tickets were not found in this tenant"
+ *       409:
+ *         description: Transição de status inválida para algum chamado (rollback completo)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 409
+ *               message: "Invalid status transition from OPEN to CLOSED"
+ *
+ * /tickets/bulk/assign:
+ *   patch:
+ *     tags:
+ *       - Tickets
+ *     summary: Atribuir múltiplos chamados a um agente (bulk)
+ *     description: |
+ *       Atribui (ou reatribui) vários chamados a um único atendente em uma
+ *       operação atômica.
+ *
+ *       Toda a operação roda dentro de uma transação: se **qualquer** chamado for
+ *       inexistente, pertencer a outro tenant ou estiver resolvido/fechado, ou se
+ *       o agente informado não existir/for inelegível, **nenhum** chamado é
+ *       alterado (rollback completo).
+ *
+ *       IDs duplicados em `ticketIds` são removidos antes do processamento.
+ *
+ *       **Permissões:** `SUPERVISOR` ou `ADMIN`.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/BulkAssignTicketsRequest'
+ *           examples:
+ *             atribuirEmLote:
+ *               summary: Atribuir vários chamados ao mesmo especialista
+ *               value:
+ *                 ticketIds:
+ *                   - "550e8400-e29b-41d4-a716-446655440000"
+ *                   - "660e8400-e29b-41d4-a716-446655440001"
+ *                 assignedToId: "880e8400-e29b-41d4-a716-446655440003"
+ *                 reason: "Concentrando chamados de cobrança no especialista"
+ *     responses:
+ *       200:
+ *         description: Operação em lote concluída com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BulkTicketOperationResult'
+ *             example:
+ *               totalRequested: 2
+ *               totalUpdated: 2
+ *               updatedTicketIds:
+ *                 - "550e8400-e29b-41d4-a716-446655440000"
+ *                 - "660e8400-e29b-41d4-a716-446655440001"
+ *               operation: "bulk_assign"
+ *               message: "Tickets assigned successfully."
+ *       400:
+ *         description: Body inválido ou agente inelegível
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 400
+ *               message: "User must have an assignable staff role"
+ *       401:
+ *         description: Token JWT ausente ou inválido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Role sem permissão para atribuir em lote (apenas SUPERVISOR/ADMIN)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Um ou mais chamados não encontrados no tenant, ou agente inexistente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 404
+ *               message: "One or more tickets were not found in this tenant"
+ *       409:
+ *         description: Algum chamado não pode ser atribuído (resolvido/fechado) — rollback completo
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               statusCode: 409
+ *               message: "Cannot assign a closed or resolved ticket"
+ *
  * /tickets/{id}:
  *   get:
  *     tags:

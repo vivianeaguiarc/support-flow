@@ -3,7 +3,7 @@
   "info": {
     "title": "SupportFlow API v1",
     "version": "1.0",
-    "description": "API v1 (estável) para gerenciamento de atendimento ao cliente, SAC e Ouvidoria. Clientes (`Customer`) são entidades internas referenciadas por `customerId` na criação de chamados — não há endpoints REST públicos de CRUD de clientes. Segurança: rate limits por endpoint sensível, lock de login após tentativas inválidas, payloads Zod strict, sanitização de texto e auditoria em `security_audit_logs`. Para a versão em evolução, consulte `/api/docs/v2`.",
+    "description": "API REST do **SupportFlow** — plataforma multi-tenant de atendimento ao cliente (SAC e Ouvidoria):\nchamados, SLA, comentários, anexos, base de conhecimento, automações, webhooks, analytics e relatórios.\n\n### Autenticação\n- **JWT Bearer**: obtenha o `accessToken` em `POST /auth/login` e envie no header `Authorization: Bearer <token>`. Renove com `POST /auth/refresh` e recupere o usuário em `GET /auth/me`.\n- **API Key**: para integrações externas, envie o header `x-api-key: supportflow_sk_live_...`.\n\n### Versionamento\n- **v1** (esta documentação) é a versão estável. A versão em evolução fica em `/api/docs/v2`.\n\n### Multi-tenant\n- O acesso é isolado por organização (tenant). Usuários comuns ficam restritos ao tenant do JWT; `SUPER_ADMIN` pode acessar outro tenant via `x-tenant-id`/`x-tenant-slug`.\n\n> `Customer` é uma entidade interna referenciada por `customerId` na criação de chamados — não há CRUD REST público de clientes.\n\n### Documentação complementar (`docs/`)\n- [Autenticação](docs/authentication.md)\n- [Segurança](docs/security.md)\n- [RBAC](docs/rbac.md)\n- [Versionamento da API](docs/api-versioning.md)\n- [Arquitetura](docs/architecture.md)",
     "contact": {
       "name": "SupportFlow Team",
       "email": "support@supportflow.com"
@@ -371,10 +371,11 @@
       "CommentVisibility": {
         "type": "string",
         "enum": [
-          "INTERNAL"
+          "INTERNAL",
+          "PUBLIC"
         ],
-        "description": "Visibilidade do comentário — atualmente todos são internos (não visíveis ao cliente)",
-        "example": "INTERNAL"
+        "description": "Visibilidade do comentário — `PUBLIC` é visível ao cliente; `INTERNAL` é restrito à equipe de atendimento.",
+        "example": "PUBLIC"
       },
       "KnowledgeArticleStatus": {
         "type": "string",
@@ -799,6 +800,97 @@
           }
         }
       },
+      "BulkUpdateTicketStatusRequest": {
+        "type": "object",
+        "required": [
+          "ticketIds",
+          "status"
+        ],
+        "properties": {
+          "ticketIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "IDs dos chamados a atualizar. IDs duplicados são removidos."
+          },
+          "status": {
+            "$ref": "#/components/schemas/TicketStatus"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Justificativa registrada no histórico (opcional)"
+          }
+        }
+      },
+      "BulkAssignTicketsRequest": {
+        "type": "object",
+        "required": [
+          "ticketIds",
+          "assignedToId"
+        ],
+        "properties": {
+          "ticketIds": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "IDs dos chamados a atribuir. IDs duplicados são removidos."
+          },
+          "assignedToId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID do atendente que receberá os chamados"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Justificativa registrada no histórico (opcional)"
+          }
+        }
+      },
+      "BulkTicketOperationResult": {
+        "type": "object",
+        "properties": {
+          "totalRequested": {
+            "type": "integer",
+            "description": "Quantidade de chamados solicitados (após dedupe)",
+            "example": 3
+          },
+          "totalUpdated": {
+            "type": "integer",
+            "description": "Quantidade de chamados efetivamente alterados",
+            "example": 3
+          },
+          "updatedTicketIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "IDs dos chamados alterados"
+          },
+          "operation": {
+            "type": "string",
+            "enum": [
+              "bulk_status_update",
+              "bulk_assign"
+            ],
+            "description": "Tipo da operação em lote executada"
+          },
+          "message": {
+            "type": "string",
+            "example": "Tickets updated successfully."
+          }
+        }
+      },
       "TicketComment": {
         "type": "object",
         "properties": {
@@ -861,8 +953,12 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 5000,
-            "description": "Conteúdo do comentário interno",
+            "description": "Conteúdo do comentário",
             "example": "Contato telefônico realizado — cliente confirmou recebimento do estorno de R$ 249,90"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/CommentVisibility",
+            "description": "Visibilidade do comentário. Opcional. Clientes só podem criar comentários `PUBLIC`; para a equipe, o padrão é `INTERNAL` quando omitido."
           }
         }
       },
@@ -2593,67 +2689,71 @@
   "tags": [
     {
       "name": "Authentication",
-      "description": "Endpoints de autenticação e autorização"
-    },
-    {
-      "name": "Tickets",
-      "description": "Gerenciamento de chamados — criação, listagem, status, atribuição, roteamento, SLA (métricas/resumo) e operações automáticas"
-    },
-    {
-      "name": "Ticket History",
-      "description": "Histórico de alterações dos chamados"
-    },
-    {
-      "name": "Ticket Queues",
-      "description": "Filas de atendimento — pessoal e não atribuídos"
-    },
-    {
-      "name": "Agent Metrics",
-      "description": "Métricas operacionais por atendente"
-    },
-    {
-      "name": "Ticket Comments",
-      "description": "Comentários internos de SAC/Ouvidoria — visíveis apenas para agentes e administradores"
-    },
-    {
-      "name": "Ticket Attachments",
-      "description": "Anexos de chamados (comprovantes, prints, documentos) — upload multipart e gestão de arquivos"
-    },
-    {
-      "name": "Notifications",
-      "description": "Notificações em tempo real sobre chamados, SLA e eventos do atendimento"
+      "description": "Login, refresh de token, logout e usuário autenticado (JWT Bearer)."
     },
     {
       "name": "Users",
-      "description": "Gerenciamento de usuários"
+      "description": "Gerenciamento de usuários da plataforma."
     },
     {
-      "name": "Health",
-      "description": "Health checks da aplicação"
+      "name": "Customers",
+      "description": "Consulta de clientes — entidades internas referenciadas nos chamados."
     },
     {
-      "name": "Automation",
-      "description": "Regras de automação de workflow — triggers, condições e ações"
+      "name": "Tickets",
+      "description": "Chamados — criação, listagem, status, atribuição, filas, SLA, categorias, histórico, satisfação e métricas de atendimento."
     },
     {
-      "name": "Outbox",
-      "description": "Outbox transacional — eventos pendentes, processados e métricas"
+      "name": "Comments",
+      "description": "Comentários internos de chamados — visíveis apenas para a equipe de atendimento."
+    },
+    {
+      "name": "Attachments",
+      "description": "Anexos de chamados — upload multipart, listagem e remoção de arquivos."
+    },
+    {
+      "name": "Knowledge Base",
+      "description": "Base de conhecimento — artigos de autoatendimento."
+    },
+    {
+      "name": "Analytics",
+      "description": "Indicadores analíticos de atendimento, SLA e CSAT."
+    },
+    {
+      "name": "Reports",
+      "description": "Exportação de relatórios operacionais em CSV."
+    },
+    {
+      "name": "Notifications",
+      "description": "Notificações sobre chamados, SLA e eventos do atendimento."
+    },
+    {
+      "name": "Webhooks",
+      "description": "Webhooks de integração — assinatura de eventos e entregas."
     },
     {
       "name": "API Keys",
-      "description": "Gerenciamento de API Keys para integrações externas"
+      "description": "API Keys para integrações externas (autenticação via `x-api-key`)."
     },
     {
-      "name": "Audit",
-      "description": "Auditoria imutável — trilha append-only com hash encadeado e verificação de integridade"
+      "name": "Automation",
+      "description": "Regras de automação de workflow — triggers, condições e ações."
+    },
+    {
+      "name": "Feature Flags",
+      "description": "Feature flags por tenant."
+    },
+    {
+      "name": "Administration",
+      "description": "Operações administrativas — outbox transacional, auditoria imutável e monitoramento de filas de jobs."
     },
     {
       "name": "RBAC Admin",
-      "description": "Gestão enterprise de papéis e permissões por tenant.\n\nRequer permissão `roles.manage` (ou `SUPER_ADMIN`).\n\nEndpoints:\n- `GET/POST /admin/roles`\n- `PATCH/DELETE /admin/roles/{id}`\n- `POST /admin/roles/{id}/permissions`\n- `GET/POST /admin/permissions`\n"
+      "description": "Gerenciamento de papéis e permissões da plataforma."
     },
     {
-      "name": "Security",
-      "description": "Controles de segurança aplicados globalmente e por rota.\n\n**Rate limits** (quando `RATE_LIMIT_ENABLED=true`):\n- `POST /auth/login` e `POST /auth/refresh` — `AUTH_RATE_LIMIT_*`\n- `POST /tickets` — `TICKET_CREATE_RATE_LIMIT_*`\n- `POST /tickets/{id}/attachments` — `ATTACHMENT_UPLOAD_RATE_LIMIT_*`\n- Operações de API Keys — `API_KEY_RATE_LIMIT_*`\n- Operações de Webhooks — `WEBHOOK_RATE_LIMIT_*`\n\nRespostas `429` incluem cabeçalhos `RateLimit-*`.\n\n**Login lock**: após `LOGIN_MAX_FAILED_ATTEMPTS` falhas, a conta retorna `423` até `LOGIN_LOCK_DURATION_MS`.\n\n**Payloads**: schemas em modo strict rejeitam campos desconhecidos (`400`).\n\n**Auditoria**: eventos `LOGIN_FAILED`, `LOGIN_LOCKED`, `ACCESS_DENIED`, `API_KEY_CREATED`, `API_KEY_REVOKED`, `USER_PERMISSION_ASSIGNED`.\n"
+      "name": "Health",
+      "description": "Health checks, observabilidade e métricas Prometheus."
     }
   ],
   "paths": {
@@ -4444,6 +4544,248 @@
         }
       }
     },
+    "/tickets/bulk/status": {
+      "patch": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Atualizar status de múltiplos chamados (bulk)",
+        "description": "Atualiza o status de vários chamados em uma única operação atômica.\n\nToda a operação roda dentro de uma transação: se **qualquer** chamado for\ninexistente, pertencer a outro tenant ou violar uma transição de status\nválida, **nenhum** chamado é alterado (rollback completo).\n\nIDs duplicados em `ticketIds` são removidos antes do processamento.\n\nAs regras de transição e a exigência de responsável para `IN_PROGRESS`\nsão as mesmas do endpoint individual `PATCH /tickets/{id}/status`.\n\n**Permissões:** `AGENT`, `SUPERVISOR` ou `ADMIN`.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkUpdateTicketStatusRequest"
+              },
+              "examples": {
+                "resolverEmLote": {
+                  "summary": "Resolver vários chamados",
+                  "value": {
+                    "ticketIds": [
+                      "550e8400-e29b-41d4-a716-446655440000",
+                      "660e8400-e29b-41d4-a716-446655440001"
+                    ],
+                    "status": "RESOLVED",
+                    "reason": "Lote resolvido após correção do incidente #4521"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operação em lote concluída com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkTicketOperationResult"
+                },
+                "example": {
+                  "totalRequested": 2,
+                  "totalUpdated": 2,
+                  "updatedTicketIds": [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "660e8400-e29b-41d4-a716-446655440001"
+                  ],
+                  "operation": "bulk_status_update",
+                  "message": "Tickets updated successfully."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body inválido (ticketIds vazio, UUID inválido ou status inválido)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": "ticketIds must contain at least one ticket"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token JWT ausente ou inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role sem permissão para alterar status em lote",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Um ou mais chamados não foram encontrados no tenant",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "One or more tickets were not found in this tenant"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Transição de status inválida para algum chamado (rollback completo)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "statusCode": 409,
+                  "message": "Invalid status transition from OPEN to CLOSED"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tickets/bulk/assign": {
+      "patch": {
+        "tags": [
+          "Tickets"
+        ],
+        "summary": "Atribuir múltiplos chamados a um agente (bulk)",
+        "description": "Atribui (ou reatribui) vários chamados a um único atendente em uma\noperação atômica.\n\nToda a operação roda dentro de uma transação: se **qualquer** chamado for\ninexistente, pertencer a outro tenant ou estiver resolvido/fechado, ou se\no agente informado não existir/for inelegível, **nenhum** chamado é\nalterado (rollback completo).\n\nIDs duplicados em `ticketIds` são removidos antes do processamento.\n\n**Permissões:** `SUPERVISOR` ou `ADMIN`.\n",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAssignTicketsRequest"
+              },
+              "examples": {
+                "atribuirEmLote": {
+                  "summary": "Atribuir vários chamados ao mesmo especialista",
+                  "value": {
+                    "ticketIds": [
+                      "550e8400-e29b-41d4-a716-446655440000",
+                      "660e8400-e29b-41d4-a716-446655440001"
+                    ],
+                    "assignedToId": "880e8400-e29b-41d4-a716-446655440003",
+                    "reason": "Concentrando chamados de cobrança no especialista"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Operação em lote concluída com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkTicketOperationResult"
+                },
+                "example": {
+                  "totalRequested": 2,
+                  "totalUpdated": 2,
+                  "updatedTicketIds": [
+                    "550e8400-e29b-41d4-a716-446655440000",
+                    "660e8400-e29b-41d4-a716-446655440001"
+                  ],
+                  "operation": "bulk_assign",
+                  "message": "Tickets assigned successfully."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Body inválido ou agente inelegível",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "statusCode": 400,
+                  "message": "User must have an assignable staff role"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token JWT ausente ou inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Role sem permissão para atribuir em lote (apenas SUPERVISOR/ADMIN)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Um ou mais chamados não encontrados no tenant, ou agente inexistente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "statusCode": 404,
+                  "message": "One or more tickets were not found in this tenant"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Algum chamado não pode ser atribuído (resolvido/fechado) — rollback completo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "statusCode": 409,
+                  "message": "Cannot assign a closed or resolved ticket"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/tickets/{id}": {
       "get": {
         "tags": [
@@ -5364,7 +5706,7 @@
     "/tickets/my-queue": {
       "get": {
         "tags": [
-          "Ticket Queues"
+          "Tickets"
         ],
         "summary": "Fila pessoal do atendente",
         "description": "Retorna tickets atribuídos ao usuário autenticado.\nSuporta filtros por `status` e `priority`.\n\n**Permissões:** `AGENT`, `SUPERVISOR`, `ADMIN`.\n",
@@ -5445,7 +5787,7 @@
     "/tickets/unassigned": {
       "get": {
         "tags": [
-          "Ticket Queues"
+          "Tickets"
         ],
         "summary": "Fila de tickets sem responsável",
         "description": "Retorna tickets sem atendente atribuído.\n\n**Permissões:** `SUPERVISOR`, `ADMIN`.\n",
@@ -5526,7 +5868,7 @@
     "/tickets/{ticketId}/internal-comments": {
       "post": {
         "tags": [
-          "Ticket Internal Comments"
+          "Comments"
         ],
         "summary": "Adicionar comentário interno ao chamado",
         "description": "Registra um comentário interno visível apenas para a equipe de atendimento.\nClientes (`CUSTOMER`) não têm acesso a esta rota.\n\nGera evento `COMMENT_ADDED` no histórico e notificação `TICKET_COMMENT_ADDED`.\n\n**Permissões:** `ADMIN`, `AGENT` ou `SUPERVISOR`.\n",
@@ -5624,7 +5966,7 @@
       },
       "get": {
         "tags": [
-          "Ticket Internal Comments"
+          "Comments"
         ],
         "summary": "Listar comentários internos do chamado",
         "description": "Retorna comentários internos em ordem cronológica (mais antigo primeiro),\nincluindo dados do autor.\n\n**Permissões:** `ADMIN`, `AGENT` ou `SUPERVISOR`.\n",
@@ -5707,7 +6049,7 @@
     "/tickets/{ticketId}/history": {
       "get": {
         "tags": [
-          "Ticket History"
+          "Tickets"
         ],
         "summary": "Histórico de alterações do chamado",
         "description": "Retorna a trilha de auditoria do chamado: criação, mudanças de status,\nprioridade, atribuição, comentários internos, anexos e violações de SLA.\n\n**Permissões:** equipe de atendimento (`ADMIN`, `AGENT`, `SUPERVISOR`, `OMBUDSMAN`)\nvisualiza o histórico completo. Clientes (`CUSTOMER`) veem apenas eventos\npúblicos (`CREATED`, `STATUS_CHANGED`) dos próprios chamados.\n",
@@ -5787,10 +6129,10 @@
     "/tickets/{id}/comments": {
       "post": {
         "tags": [
-          "Ticket Comments"
+          "Comments"
         ],
-        "summary": "Adicionar comentário interno",
-        "description": "Registra um comentário interno no chamado de SAC/Ouvidoria. Comentários são\n**visíveis apenas para agentes e administradores** — o cliente não tem acesso.\n\nGera evento `COMMENT_ADDED` no histórico e notificação `TICKET_COMMENT_ADDED`.\n\n**Permissões:** `AGENT` ou `ADMIN`.\n\n**Autenticação:** JWT Bearer obrigatório.\n",
+        "summary": "Adicionar comentário ao chamado",
+        "description": "Registra um comentário na timeline do chamado. A visibilidade controla quem\nenxerga o comentário:\n\n- `PUBLIC`: visível para o cliente e para a equipe.\n- `INTERNAL`: restrito à equipe de atendimento (cliente não tem acesso).\n\nRegras de visibilidade:\n- `CUSTOMER` só pode criar comentários `PUBLIC` no próprio chamado.\n- `AGENT`/`SUPERVISOR`/`ADMIN` podem criar `PUBLIC` ou `INTERNAL`; quando o\n  campo `visibility` é omitido, o padrão é `INTERNAL`.\n\nGera evento `COMMENT_ADDED` no histórico e notificação `TICKET_COMMENT_ADDED`.\n\n**Permissões:** `CUSTOMER` (próprio chamado, apenas `PUBLIC`), `AGENT`,\n`SUPERVISOR` ou `ADMIN`.\n\n**Autenticação:** JWT Bearer obrigatório.\n",
         "security": [
           {
             "BearerAuth": []
@@ -5817,22 +6159,24 @@
                 "$ref": "#/components/schemas/CreateCommentRequest"
               },
               "examples": {
-                "acompanhamentoSac": {
-                  "summary": "SAC — contato com cliente",
+                "respostaPublicaAoCliente": {
+                  "summary": "Resposta pública ao cliente",
                   "value": {
-                    "content": "Ligação realizada às 14h — cliente informou que recebeu a segunda via do boleto por SMS"
+                    "content": "Olá! Já emitimos a segunda via do boleto e enviamos para o seu e-mail. Qualquer dúvida, estamos à disposição.",
+                    "visibility": "PUBLIC"
                   }
                 },
-                "analiseOuvidoria": {
-                  "summary": "Ouvidoria — análise de reclamação",
+                "comentarioCliente": {
+                  "summary": "Comentário do cliente (sempre público)",
                   "value": {
-                    "content": "Reclamação validada: estorno de R$ 249,90 processado no cartão final 4532. Prazo de compensação: 2 dias úteis"
+                    "content": "Recebi o boleto, obrigado pelo retorno rápido!"
                   }
                 },
-                "escalonamento": {
-                  "summary": "Encaminhamento interno",
+                "notaInterna": {
+                  "summary": "Nota interna da equipe",
                   "value": {
-                    "content": "Caso escalado para equipe financeira aguardando comprovante de estorno do gateway de pagamento"
+                    "content": "Reclamação validada: estorno de R$ 249,90 processado no cartão final 4532. Prazo de compensação: 2 dias úteis",
+                    "visibility": "INTERNAL"
                   }
                 }
               }
@@ -5885,7 +6229,7 @@
             }
           },
           "403": {
-            "description": "Cliente, agente de outro tenant ou role sem permissão (cross-tenant retorna 403)",
+            "description": "Acesso negado. Ocorre quando o cliente tenta criar um comentário `INTERNAL`,\nquando o usuário acessa um chamado fora do seu tenant (cross-tenant retorna 403)\nou quando o cliente tenta comentar em chamado que não é seu.\n",
             "content": {
               "application/json": {
                 "schema": {
@@ -5893,7 +6237,7 @@
                 },
                 "example": {
                   "statusCode": 403,
-                  "message": "Forbidden"
+                  "message": "Customers can only create public comments"
                 }
               }
             }
@@ -5916,10 +6260,10 @@
       },
       "get": {
         "tags": [
-          "Ticket Comments"
+          "Comments"
         ],
-        "summary": "Listar comentários internos",
-        "description": "Retorna todos os comentários internos do chamado em ordem cronológica (mais antigo primeiro),\nincluindo dados do autor.\n\n**Permissões:** `AGENT` ou `ADMIN`.\n\n**Autenticação:** JWT Bearer obrigatório.\n",
+        "summary": "Listar comentários do chamado",
+        "description": "Retorna os comentários do chamado em ordem cronológica (mais antigo primeiro),\nincluindo dados não sensíveis do autor.\n\nA visibilidade é aplicada conforme o papel do usuário:\n- `CUSTOMER` recebe apenas comentários `PUBLIC` do próprio chamado.\n- `AGENT`/`SUPERVISOR`/`ADMIN` recebem todos os comentários (`PUBLIC` e `INTERNAL`).\n\n**Permissões:** `CUSTOMER` (próprio chamado), `AGENT`, `SUPERVISOR` ou `ADMIN`.\n\n**Autenticação:** JWT Bearer obrigatório.\n",
         "security": [
           {
             "BearerAuth": []
@@ -6022,7 +6366,7 @@
         "summary": "Listar categorias de chamados",
         "description": "Retorna lista paginada de categorias do tenant.\n\n**Permissões:** roles com acesso à listagem de chamados.\n",
         "tags": [
-          "Ticket Categories"
+          "Tickets"
         ],
         "security": [
           {
@@ -6159,7 +6503,7 @@
     "/tickets/{id}/attachments": {
       "post": {
         "tags": [
-          "Ticket Attachments"
+          "Attachments"
         ],
         "summary": "Enviar anexo ao chamado",
         "description": "Faz upload de um arquivo ao chamado via `multipart/form-data`.\n\n**Tipos permitidos:** PDF, PNG, JPG, JPEG\n**Tamanho máximo:** 10 MB\n**Campo do formulário:** `file` (obrigatório)\n\nGera evento `ATTACHMENT_ADDED` no histórico e notificação `TICKET_ATTACHMENT_ADDED`.\n\n**Permissões:** `AGENT` ou `ADMIN`.\n\n**Autenticação:** JWT Bearer obrigatório.\n",
@@ -6296,7 +6640,7 @@
       },
       "get": {
         "tags": [
-          "Ticket Attachments"
+          "Attachments"
         ],
         "summary": "Listar anexos do chamado",
         "description": "Retorna os anexos do chamado em ordem cronológica, incluindo dados de quem fez o upload.\n\n**Permissões:** `AGENT` (qualquer do tenant) ou `CUSTOMER` (apenas chamados próprios).\n\n**Autenticação:** JWT Bearer obrigatório.\n",
@@ -6404,7 +6748,7 @@
     "/tickets/{id}/attachments/{attachmentId}": {
       "delete": {
         "tags": [
-          "Ticket Attachments"
+          "Attachments"
         ],
         "summary": "Remover anexo",
         "description": "Remove o arquivo do storage e o registro do anexo no banco de dados.\nGera evento `ATTACHMENT_REMOVED` no histórico do chamado.\n\n**Permissões:** `AGENT` ou `ADMIN`.\n\n**Autenticação:** JWT Bearer obrigatório.\n",
@@ -6477,7 +6821,7 @@
     "/metrics/agents": {
       "get": {
         "tags": [
-          "Agent Metrics"
+          "Tickets"
         ],
         "summary": "Métricas por atendente",
         "description": "Retorna indicadores operacionais por atendente (`AGENT`):\ntickets atribuídos, resolvidos, em aberto e com SLA violado.\n\n**Permissões:** `SUPERVISOR`, `ADMIN`.\n",
@@ -6767,7 +7111,7 @@
     "/admin/outbox": {
       "get": {
         "tags": [
-          "Outbox"
+          "Administration"
         ],
         "summary": "Listar eventos do outbox transacional",
         "security": [
@@ -6827,7 +7171,7 @@
     "/admin/outbox/metrics": {
       "get": {
         "tags": [
-          "Outbox"
+          "Administration"
         ],
         "summary": "Métricas agregadas do outbox",
         "security": [
@@ -6882,7 +7226,7 @@
     "/metrics": {
       "get": {
         "tags": [
-          "Observability"
+          "Health"
         ],
         "summary": "Prometheus metrics",
         "description": "Expõe métricas no formato Prometheus (text/plain). Requer `METRICS_ENABLED=true`.\nDisponível em `/api/v1/metrics`.\n",
@@ -7478,7 +7822,7 @@
         "summary": "Monitoramento de filas de jobs",
         "description": "Retorna contagem de jobs por fila (waiting, active, completed, failed)\ne totais agregados. Apenas administradores.\n",
         "tags": [
-          "Admin Jobs"
+          "Administration"
         ],
         "security": [
           {
@@ -7519,7 +7863,7 @@
         "summary": "Métricas detalhadas das filas",
         "description": "Retorna métricas por fila incluindo dead-letter queues.\nApenas administradores.\n",
         "tags": [
-          "Admin Jobs"
+          "Administration"
         ],
         "security": [
           {
@@ -7771,7 +8115,7 @@
         "summary": "Verificar saúde do serviço de e-mail",
         "description": "Retorna o status do provider de e-mail configurado (SMTP ou noop em ambiente local).\nApenas administradores podem acessar este endpoint.\n",
         "tags": [
-          "Admin Notifications"
+          "Notifications"
         ],
         "security": [
           {
@@ -8041,7 +8385,7 @@
     "/admin/audit-logs": {
       "get": {
         "tags": [
-          "Audit"
+          "Administration"
         ],
         "summary": "Listar registros de auditoria imutável",
         "description": "Retorna a trilha de auditoria append-only com hash encadeado. Disponível apenas para administradores e supervisores (permissão `audit.read`).\n",
@@ -8117,7 +8461,7 @@
     "/admin/audit-logs/verify": {
       "get": {
         "tags": [
-          "Audit"
+          "Administration"
         ],
         "summary": "Verificar integridade da cadeia de auditoria",
         "description": "Recalcula o hash de cada registro e valida o encadeamento. Retorna o total verificado, o status da cadeia e o primeiro registro inválido, caso exista.\n",

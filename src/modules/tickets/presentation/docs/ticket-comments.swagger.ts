@@ -3,15 +3,24 @@
  * /tickets/{id}/comments:
  *   post:
  *     tags:
- *       - Ticket Comments
- *     summary: Adicionar comentário interno
+ *       - Comments
+ *     summary: Adicionar comentário ao chamado
  *     description: |
- *       Registra um comentário interno no chamado de SAC/Ouvidoria. Comentários são
- *       **visíveis apenas para agentes e administradores** — o cliente não tem acesso.
+ *       Registra um comentário na timeline do chamado. A visibilidade controla quem
+ *       enxerga o comentário:
+ *
+ *       - `PUBLIC`: visível para o cliente e para a equipe.
+ *       - `INTERNAL`: restrito à equipe de atendimento (cliente não tem acesso).
+ *
+ *       Regras de visibilidade:
+ *       - `CUSTOMER` só pode criar comentários `PUBLIC` no próprio chamado.
+ *       - `AGENT`/`SUPERVISOR`/`ADMIN` podem criar `PUBLIC` ou `INTERNAL`; quando o
+ *         campo `visibility` é omitido, o padrão é `INTERNAL`.
  *
  *       Gera evento `COMMENT_ADDED` no histórico e notificação `TICKET_COMMENT_ADDED`.
  *
- *       **Permissões:** `AGENT` ou `ADMIN`.
+ *       **Permissões:** `CUSTOMER` (próprio chamado, apenas `PUBLIC`), `AGENT`,
+ *       `SUPERVISOR` ou `ADMIN`.
  *
  *       **Autenticação:** JWT Bearer obrigatório.
  *     security:
@@ -32,18 +41,20 @@
  *           schema:
  *             $ref: '#/components/schemas/CreateCommentRequest'
  *           examples:
- *             acompanhamentoSac:
- *               summary: SAC — contato com cliente
+ *             respostaPublicaAoCliente:
+ *               summary: Resposta pública ao cliente
  *               value:
- *                 content: "Ligação realizada às 14h — cliente informou que recebeu a segunda via do boleto por SMS"
- *             analiseOuvidoria:
- *               summary: Ouvidoria — análise de reclamação
+ *                 content: "Olá! Já emitimos a segunda via do boleto e enviamos para o seu e-mail. Qualquer dúvida, estamos à disposição."
+ *                 visibility: "PUBLIC"
+ *             comentarioCliente:
+ *               summary: Comentário do cliente (sempre público)
+ *               value:
+ *                 content: "Recebi o boleto, obrigado pelo retorno rápido!"
+ *             notaInterna:
+ *               summary: Nota interna da equipe
  *               value:
  *                 content: "Reclamação validada: estorno de R$ 249,90 processado no cartão final 4532. Prazo de compensação: 2 dias úteis"
- *             escalonamento:
- *               summary: Encaminhamento interno
- *               value:
- *                 content: "Caso escalado para equipe financeira aguardando comprovante de estorno do gateway de pagamento"
+ *                 visibility: "INTERNAL"
  *     responses:
  *       201:
  *         description: Comentário criado com sucesso
@@ -76,14 +87,17 @@
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *       403:
- *         description: Cliente, agente de outro tenant ou role sem permissão (cross-tenant retorna 403)
+ *         description: |
+ *           Acesso negado. Ocorre quando o cliente tenta criar um comentário `INTERNAL`,
+ *           quando o usuário acessa um chamado fora do seu tenant (cross-tenant retorna 403)
+ *           ou quando o cliente tenta comentar em chamado que não é seu.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *             example:
  *               statusCode: 403
- *               message: "Forbidden"
+ *               message: "Customers can only create public comments"
  *       404:
  *         description: Chamado não encontrado
  *         content:
@@ -96,13 +110,17 @@
  *
  *   get:
  *     tags:
- *       - Ticket Comments
- *     summary: Listar comentários internos
+ *       - Comments
+ *     summary: Listar comentários do chamado
  *     description: |
- *       Retorna todos os comentários internos do chamado em ordem cronológica (mais antigo primeiro),
- *       incluindo dados do autor.
+ *       Retorna os comentários do chamado em ordem cronológica (mais antigo primeiro),
+ *       incluindo dados não sensíveis do autor.
  *
- *       **Permissões:** `AGENT` ou `ADMIN`.
+ *       A visibilidade é aplicada conforme o papel do usuário:
+ *       - `CUSTOMER` recebe apenas comentários `PUBLIC` do próprio chamado.
+ *       - `AGENT`/`SUPERVISOR`/`ADMIN` recebem todos os comentários (`PUBLIC` e `INTERNAL`).
+ *
+ *       **Permissões:** `CUSTOMER` (próprio chamado), `AGENT`, `SUPERVISOR` ou `ADMIN`.
  *
  *       **Autenticação:** JWT Bearer obrigatório.
  *     security:

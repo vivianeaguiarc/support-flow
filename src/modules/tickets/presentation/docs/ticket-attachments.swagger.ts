@@ -3,7 +3,7 @@
  * /tickets/{id}/attachments:
  *   post:
  *     tags:
- *       - Ticket Attachments
+ *       - Attachments
  *     summary: Enviar anexo ao chamado
  *     description: |
  *       Faz upload de um arquivo ao chamado via `multipart/form-data`.
@@ -107,7 +107,7 @@
  *
  *   get:
  *     tags:
- *       - Ticket Attachments
+ *       - Attachments
  *     summary: Listar anexos do chamado
  *     description: |
  *       Retorna os anexos do chamado em ordem cronológica, incluindo dados de quem fez o upload.
@@ -186,7 +186,7 @@
  * /tickets/{id}/attachments/{attachmentId}:
  *   delete:
  *     tags:
- *       - Ticket Attachments
+ *       - Attachments
  *     summary: Remover anexo
  *     description: |
  *       Remove o arquivo do storage e o registro do anexo no banco de dados.

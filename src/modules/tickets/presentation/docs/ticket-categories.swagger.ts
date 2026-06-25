@@ -8,7 +8,7 @@
  *
  *       **Permissões:** roles com acesso à listagem de chamados.
  *     tags:
- *       - Ticket Categories
+ *       - Tickets
  *     security:
  *       - BearerAuth: []
  *     parameters:

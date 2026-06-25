@@ -10,14 +10,24 @@ export type CreateCommentData = {
   ticketId: string;
   authorId: string;
   content: string;
+  visibility: CommentVisibility;
+};
+
+type CommentAuthor = {
+  id: string;
+  name: string;
+  email: string;
 };
 
 export class TicketCommentsRepository {
   async create(data: CreateCommentData): Promise<TicketComment> {
     const comment = await prisma.ticketComment.create({
       data: {
-        ...data,
-        visibility: CommentVisibility.INTERNAL,
+        tenantId: data.tenantId,
+        ticketId: data.ticketId,
+        authorId: data.authorId,
+        content: data.content,
+        visibility: data.visibility,
       },
     });
 
@@ -36,26 +46,26 @@ export class TicketCommentsRepository {
   async listByTicketId(
     ticketId: string,
     tenantId: string,
+    visibility?: CommentVisibility,
   ): Promise<TicketCommentWithAuthor[]> {
     const comments = await prisma.ticketComment.findMany({
       where: {
         ticketId,
         tenantId,
-        visibility: CommentVisibility.INTERNAL,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        ...(visibility ? { visibility } : {}),
       },
       orderBy: {
         createdAt: 'asc',
       },
     });
+
+    if (comments.length === 0) {
+      return [];
+    }
+
+    const authorMap = await this.resolveAuthors(
+      comments.map((comment) => comment.authorId),
+    );
 
     return comments.map((comment) => ({
       id: comment.id,
@@ -66,12 +76,46 @@ export class TicketCommentsRepository {
       visibility: comment.visibility as CommentVisibility,
       createdAt: comment.createdAt,
       updatedAt: comment.updatedAt,
-      author: {
-        id: comment.author.id,
-        name: comment.author.name,
-        email: comment.author.email,
+      author: authorMap.get(comment.authorId) ?? {
+        id: comment.authorId,
+        name: 'Desconhecido',
+        email: '',
       },
     }));
+  }
+
+  /**
+   * authorId is polymorphic: it may point to a staff User or a Customer. We
+   * resolve only non-sensitive fields (id, name, email) from whichever table
+   * owns the id, preferring the User table on the unlikely event of collision.
+   */
+  private async resolveAuthors(
+    authorIds: string[],
+  ): Promise<Map<string, CommentAuthor>> {
+    const uniqueIds = [...new Set(authorIds)];
+
+    const [users, customers] = await Promise.all([
+      prisma.user.findMany({
+        where: { id: { in: uniqueIds } },
+        select: { id: true, name: true, email: true },
+      }),
+      prisma.customer.findMany({
+        where: { id: { in: uniqueIds } },
+        select: { id: true, name: true, email: true },
+      }),
+    ]);
+
+    const authorMap = new Map<string, CommentAuthor>();
+
+    for (const customer of customers) {
+      authorMap.set(customer.id, customer);
+    }
+
+    for (const user of users) {
+      authorMap.set(user.id, user);
+    }
+
+    return authorMap;
   }
 }
 

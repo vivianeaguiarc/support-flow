@@ -6,6 +6,8 @@ export * from './mappers/to-ticket-history-response.js';
 export * from './services/index.js';
 export * from './use-cases/assign-ticket.use-case.js';
 export * from './use-cases/auto-assign-tickets.use-case.js';
+export * from './use-cases/bulk-assign-tickets.use-case.js';
+export * from './use-cases/bulk-update-ticket-status.use-case.js';
 export * from './use-cases/calculate-ticket-priority.use-case.js';
 export * from './use-cases/calculate-ticket-sla.use-case.js';
 export * from './use-cases/create-ticket-comment.use-case.js';

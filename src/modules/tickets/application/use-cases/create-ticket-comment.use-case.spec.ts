@@ -101,6 +101,8 @@ describe('CreateTicketCommentUseCase', () => {
       tenantId: 'tenant-1',
       authorId: 'agent-1',
       content: 'Internal note',
+      visibility: CommentVisibility.INTERNAL,
+      authorIsStaff: true,
     });
 
     expect(result.content).toBe('Internal note');
@@ -110,12 +112,32 @@ describe('CreateTicketCommentUseCase', () => {
       ticketId: 'ticket-1',
       authorId: 'agent-1',
       content: 'Internal note',
+      visibility: CommentVisibility.INTERNAL,
     });
     expect(notificationEventService.notifyCommentAdded).toHaveBeenCalledWith(
       ticket,
       'agent-1',
       true,
     );
+  });
+
+  it('should not record ticket history for customer-authored comments', async () => {
+    const useCase = new CreateTicketCommentUseCase(
+      ticketsRepo,
+      commentsRepo,
+      historyRepo,
+    );
+
+    await useCase.execute({
+      ticketId: 'ticket-1',
+      tenantId: 'tenant-1',
+      authorId: 'customer-1',
+      content: 'Public reply',
+      visibility: CommentVisibility.PUBLIC,
+      authorIsStaff: false,
+    });
+
+    expect(historyRepo.create).not.toHaveBeenCalled();
   });
 
   it('should throw 404 when ticket does not exist', async () => {
@@ -133,6 +155,8 @@ describe('CreateTicketCommentUseCase', () => {
         tenantId: 'tenant-1',
         authorId: 'agent-1',
         content: 'Internal note',
+        visibility: CommentVisibility.INTERNAL,
+        authorIsStaff: true,
       }),
     ).rejects.toEqual(new AppError('Ticket not found', 404));
   });

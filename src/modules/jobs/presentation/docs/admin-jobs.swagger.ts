@@ -6,7 +6,7 @@
  *     description: |
  *       Retorna contagem de jobs por fila (waiting, active, completed, failed)
  *       e totais agregados. Apenas administradores.
- *     tags: [Admin Jobs]
+ *     tags: [Administration]
  *     security:
  *       - BearerAuth: []
  *     responses:
@@ -33,7 +33,7 @@
  *     description: |
  *       Retorna métricas por fila incluindo dead-letter queues.
  *       Apenas administradores.
- *     tags: [Admin Jobs]
+ *     tags: [Administration]
  *     security:
  *       - BearerAuth: []
  *     responses:

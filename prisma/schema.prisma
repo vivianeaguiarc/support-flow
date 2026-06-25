@@ -48,6 +48,7 @@ enum TicketHistoryEvent {
 
 enum CommentVisibility {
   INTERNAL
+  PUBLIC
 }
 
 enum NotificationType {
@@ -151,7 +152,6 @@ model User {
   tenant            Tenant             @relation(fields: [tenantId], references: [id])
   ticketsAssigned   Ticket[]           @relation("TicketAssignee")
   ticketHistory     TicketHistory[]    @relation("TicketHistoryActor")
-  ticketComments    TicketComment[]    @relation("CommentAuthor")
   ticketAttachments TicketAttachment[] @relation("AttachmentUploader")
   notifications     Notification[]     @relation("NotificationRecipient")
   refreshTokens       RefreshToken[]
@@ -278,7 +278,10 @@ model TicketComment {
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  author User   @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  // authorId is polymorphic: it references a User (staff comment) or a Customer
+  // (public comment from the requester). No DB-level FK is enforced; the author
+  // is resolved at read time from the appropriate table.
 
   @@index([tenantId])
   @@index([ticketId])

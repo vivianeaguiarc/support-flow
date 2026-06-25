@@ -3,7 +3,7 @@
  * /tickets/{ticketId}/history:
  *   get:
  *     tags:
- *       - Ticket History
+ *       - Tickets
  *     summary: Histórico de alterações do chamado
  *     description: |
  *       Retorna a trilha de auditoria do chamado: criação, mudanças de status,

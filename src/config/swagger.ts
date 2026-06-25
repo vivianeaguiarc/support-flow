@@ -32,11 +32,29 @@ const options: Options = {
     info: {
       title: 'SupportFlow API v1',
       version: '1.0',
-      description:
-        'API v1 (estável) para gerenciamento de atendimento ao cliente, SAC e Ouvidoria. ' +
-        'Clientes (`Customer`) são entidades internas referenciadas por `customerId` na criação de chamados — não há endpoints REST públicos de CRUD de clientes. ' +
-        'Segurança: rate limits por endpoint sensível, lock de login após tentativas inválidas, payloads Zod strict, sanitização de texto e auditoria em `security_audit_logs`. ' +
-        'Para a versão em evolução, consulte `/api/docs/v2`.',
+      description: [
+        'API REST do **SupportFlow** — plataforma multi-tenant de atendimento ao cliente (SAC e Ouvidoria):',
+        'chamados, SLA, comentários, anexos, base de conhecimento, automações, webhooks, analytics e relatórios.',
+        '',
+        '### Autenticação',
+        '- **JWT Bearer**: obtenha o `accessToken` em `POST /auth/login` e envie no header `Authorization: Bearer <token>`. Renove com `POST /auth/refresh` e recupere o usuário em `GET /auth/me`.',
+        '- **API Key**: para integrações externas, envie o header `x-api-key: supportflow_sk_live_...`.',
+        '',
+        '### Versionamento',
+        '- **v1** (esta documentação) é a versão estável. A versão em evolução fica em `/api/docs/v2`.',
+        '',
+        '### Multi-tenant',
+        '- O acesso é isolado por organização (tenant). Usuários comuns ficam restritos ao tenant do JWT; `SUPER_ADMIN` pode acessar outro tenant via `x-tenant-id`/`x-tenant-slug`.',
+        '',
+        '> `Customer` é uma entidade interna referenciada por `customerId` na criação de chamados — não há CRUD REST público de clientes.',
+        '',
+        '### Documentação complementar (`docs/`)',
+        '- [Autenticação](docs/authentication.md)',
+        '- [Segurança](docs/security.md)',
+        '- [RBAC](docs/rbac.md)',
+        '- [Versionamento da API](docs/api-versioning.md)',
+        '- [Arquitetura](docs/architecture.md)',
+      ].join('\n'),
       contact: {
         name: 'SupportFlow Team',
         email: 'support@supportflow.com',
@@ -339,10 +357,10 @@ const options: Options = {
         },
         CommentVisibility: {
           type: 'string',
-          enum: ['INTERNAL'],
+          enum: ['INTERNAL', 'PUBLIC'],
           description:
-            'Visibilidade do comentário — atualmente todos são internos (não visíveis ao cliente)',
-          example: 'INTERNAL',
+            'Visibilidade do comentário — `PUBLIC` é visível ao cliente; `INTERNAL` é restrito à equipe de atendimento.',
+          example: 'PUBLIC',
         },
         KnowledgeArticleStatus: {
           type: 'string',
@@ -636,6 +654,90 @@ const options: Options = {
             },
           },
         },
+        BulkUpdateTicketStatusRequest: {
+          type: 'object',
+          required: ['ticketIds', 'status'],
+          properties: {
+            ticketIds: {
+              type: 'array',
+              minItems: 1,
+              uniqueItems: true,
+              items: {
+                type: 'string',
+                format: 'uuid',
+              },
+              description:
+                'IDs dos chamados a atualizar. IDs duplicados são removidos.',
+            },
+            status: {
+              $ref: '#/components/schemas/TicketStatus',
+            },
+            reason: {
+              type: 'string',
+              maxLength: 1000,
+              description: 'Justificativa registrada no histórico (opcional)',
+            },
+          },
+        },
+        BulkAssignTicketsRequest: {
+          type: 'object',
+          required: ['ticketIds', 'assignedToId'],
+          properties: {
+            ticketIds: {
+              type: 'array',
+              minItems: 1,
+              uniqueItems: true,
+              items: {
+                type: 'string',
+                format: 'uuid',
+              },
+              description:
+                'IDs dos chamados a atribuir. IDs duplicados são removidos.',
+            },
+            assignedToId: {
+              type: 'string',
+              format: 'uuid',
+              description: 'ID do atendente que receberá os chamados',
+            },
+            reason: {
+              type: 'string',
+              maxLength: 1000,
+              description: 'Justificativa registrada no histórico (opcional)',
+            },
+          },
+        },
+        BulkTicketOperationResult: {
+          type: 'object',
+          properties: {
+            totalRequested: {
+              type: 'integer',
+              description: 'Quantidade de chamados solicitados (após dedupe)',
+              example: 3,
+            },
+            totalUpdated: {
+              type: 'integer',
+              description: 'Quantidade de chamados efetivamente alterados',
+              example: 3,
+            },
+            updatedTicketIds: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'uuid',
+              },
+              description: 'IDs dos chamados alterados',
+            },
+            operation: {
+              type: 'string',
+              enum: ['bulk_status_update', 'bulk_assign'],
+              description: 'Tipo da operação em lote executada',
+            },
+            message: {
+              type: 'string',
+              example: 'Tickets updated successfully.',
+            },
+          },
+        },
         TicketComment: {
           type: 'object',
           properties: {
@@ -694,9 +796,14 @@ const options: Options = {
               type: 'string',
               minLength: 1,
               maxLength: 5000,
-              description: 'Conteúdo do comentário interno',
+              description: 'Conteúdo do comentário',
               example:
                 'Contato telefônico realizado — cliente confirmou recebimento do estorno de R$ 249,90',
+            },
+            visibility: {
+              $ref: '#/components/schemas/CommentVisibility',
+              description:
+                'Visibilidade do comentário. Opcional. Clientes só podem criar comentários `PUBLIC`; para a equipe, o padrão é `INTERNAL` quando omitido.',
             },
           },
         },
@@ -1897,66 +2004,81 @@ const options: Options = {
     tags: [
       {
         name: 'Authentication',
-        description: 'Endpoints de autenticação e autorização',
+        description:
+          'Login, refresh de token, logout e usuário autenticado (JWT Bearer).',
+      },
+      {
+        name: 'Users',
+        description: 'Gerenciamento de usuários da plataforma.',
+      },
+      {
+        name: 'Customers',
+        description:
+          'Consulta de clientes — entidades internas referenciadas nos chamados.',
       },
       {
         name: 'Tickets',
         description:
-          'Gerenciamento de chamados — criação, listagem, status, atribuição, roteamento, SLA (métricas/resumo) e operações automáticas',
+          'Chamados — criação, listagem, status, atribuição, filas, SLA, categorias, histórico, satisfação e métricas de atendimento.',
       },
       {
-        name: 'Ticket History',
-        description: 'Histórico de alterações dos chamados',
-      },
-      {
-        name: 'Ticket Queues',
-        description: 'Filas de atendimento — pessoal e não atribuídos',
-      },
-      {
-        name: 'Agent Metrics',
-        description: 'Métricas operacionais por atendente',
-      },
-      {
-        name: 'Ticket Comments',
+        name: 'Comments',
         description:
-          'Comentários internos de SAC/Ouvidoria — visíveis apenas para agentes e administradores',
+          'Comentários internos de chamados — visíveis apenas para a equipe de atendimento.',
       },
       {
-        name: 'Ticket Attachments',
+        name: 'Attachments',
         description:
-          'Anexos de chamados (comprovantes, prints, documentos) — upload multipart e gestão de arquivos',
+          'Anexos de chamados — upload multipart, listagem e remoção de arquivos.',
+      },
+      {
+        name: 'Knowledge Base',
+        description: 'Base de conhecimento — artigos de autoatendimento.',
+      },
+      {
+        name: 'Analytics',
+        description: 'Indicadores analíticos de atendimento, SLA e CSAT.',
+      },
+      {
+        name: 'Reports',
+        description: 'Exportação de relatórios operacionais em CSV.',
       },
       {
         name: 'Notifications',
         description:
-          'Notificações em tempo real sobre chamados, SLA e eventos do atendimento',
+          'Notificações sobre chamados, SLA e eventos do atendimento.',
       },
       {
-        name: 'Users',
-        description: 'Gerenciamento de usuários',
+        name: 'Webhooks',
+        description:
+          'Webhooks de integração — assinatura de eventos e entregas.',
       },
       {
-        name: 'Health',
-        description: 'Health checks da aplicação',
+        name: 'API Keys',
+        description:
+          'API Keys para integrações externas (autenticação via `x-api-key`).',
       },
       {
         name: 'Automation',
         description:
-          'Regras de automação de workflow — triggers, condições e ações',
+          'Regras de automação de workflow — triggers, condições e ações.',
       },
       {
-        name: 'Outbox',
+        name: 'Feature Flags',
+        description: 'Feature flags por tenant.',
+      },
+      {
+        name: 'Administration',
         description:
-          'Outbox transacional — eventos pendentes, processados e métricas',
+          'Operações administrativas — outbox transacional, auditoria imutável e monitoramento de filas de jobs.',
       },
       {
-        name: 'API Keys',
-        description: 'Gerenciamento de API Keys para integrações externas',
+        name: 'RBAC Admin',
+        description: 'Gerenciamento de papéis e permissões da plataforma.',
       },
       {
-        name: 'Audit',
-        description:
-          'Auditoria imutável — trilha append-only com hash encadeado e verificação de integridade',
+        name: 'Health',
+        description: 'Health checks, observabilidade e métricas Prometheus.',
       },
     ],
   },

@@ -6,7 +6,7 @@
  *     description: |
  *       Retorna o status do provider de e-mail configurado (SMTP ou noop em ambiente local).
  *       Apenas administradores podem acessar este endpoint.
- *     tags: [Admin Notifications]
+ *     tags: [Notifications]
  *     security:
  *       - BearerAuth: []
  *     responses:

@@ -3,7 +3,7 @@
  * /metrics/agents:
  *   get:
  *     tags:
- *       - Agent Metrics
+ *       - Tickets
  *     summary: Métricas por atendente
  *     description: |
  *       Retorna indicadores operacionais por atendente (`AGENT`):
