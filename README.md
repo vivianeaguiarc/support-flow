@@ -1108,6 +1108,81 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
 ---
 
+## SDK TypeScript (geração via OpenAPI)
+
+O contrato OpenAPI é a **fonte única de verdade** para um SDK TypeScript tipado que o frontend consome com segurança de tipos (endpoints, params, request bodies, responses e schemas). A geração é **100% automática e regenerável** — nunca edite os arquivos gerados à mão.
+
+Ferramentas: [`openapi-typescript`](https://openapi-ts.dev) (gera os tipos) + [`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/) (client HTTP tipado, ~6kb, sem code-gen por endpoint).
+
+### Comandos
+
+| Comando               | O que faz                                                                                  |
+| --------------------- | ------------------------------------------------------------------------------------------ |
+| `pnpm openapi:export` | Exporta o spec OpenAPI para `docs/openapi.json`                                            |
+| `pnpm sdk:generate`   | Exporta o OpenAPI e gera os tipos em `src/generated/sdk/openapi.types.ts`                  |
+| `pnpm sdk:check`      | Regenera, faz typecheck do SDK e **falha se houver drift** (spec/SDK desatualizados no CI) |
+
+`pnpm sdk:check` faz parte do `pnpm ci:check`, garantindo que o SDK e o `docs/openapi.json` estejam sempre sincronizados com as rotas/schemas do backend.
+
+### Onde ficam os arquivos
+
+```
+docs/openapi.json                      # spec OpenAPI exportado (fonte do SDK)
+src/generated/sdk/
+  openapi.types.ts                     # GERADO — tipos de paths/requests/responses/schemas
+  client.ts                            # wrapper tipado estável sobre openapi-fetch
+  index.ts                             # entry point público do SDK
+  tsconfig.json                        # typecheck isolado do SDK
+  README.md                            # como usar o SDK
+```
+
+### Como exportar o OpenAPI
+
+```bash
+pnpm openapi:export   # gera docs/openapi.json (sem precisar de banco/segredos)
+```
+
+### Como gerar o SDK
+
+```bash
+pnpm sdk:generate     # docs/openapi.json -> src/generated/sdk/openapi.types.ts
+```
+
+### Como o frontend consome
+
+Copie/importe o conteúdo de `src/generated/sdk` (ou publique como pacote) e instale `openapi-fetch`:
+
+```ts
+import { createSupportFlowClient } from '@/sdk';
+
+const api = createSupportFlowClient({
+  baseUrl: 'https://api.supportflow.com/api/v1',
+  accessToken: token, // Authorization: Bearer <token>
+});
+
+// path, params, body e response totalmente tipados:
+const { data, error } = await api.GET('/auth/me');
+
+const created = await api.POST('/tickets', {
+  body: {
+    title: 'Cobrança indevida',
+    description: 'Fui cobrado duas vezes no cartão',
+    customerId: '550e8400-e29b-41d4-a716-446655440000',
+  },
+});
+```
+
+Apenas tipos (sem client):
+
+```ts
+import type { components } from '@/sdk';
+type Ticket = components['schemas']['Ticket'];
+```
+
+Sempre que o backend mudar contratos, rode `pnpm sdk:generate` e versione os arquivos atualizados.
+
+---
+
 ## Scripts disponíveis
 
 | Script                                            | Descrição                                               |
@@ -1120,6 +1195,9 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 | `pnpm docker:build`                               | Build da imagem Docker                                  |
 | `pnpm docker:run`                                 | Executa container local (requer env vars)               |
 | `pnpm env:check`                                  | Valida variáveis de ambiente                            |
+| `pnpm openapi:export`                             | Exporta o spec OpenAPI para `docs/openapi.json`         |
+| `pnpm sdk:generate`                               | Gera o SDK TypeScript a partir do OpenAPI               |
+| `pnpm sdk:check`                                  | Regenera SDK + typecheck + detecção de drift (CI)       |
 | `pnpm lint` / `pnpm lint:fix`                     | ESLint                                                  |
 | `pnpm format` / `pnpm format:check`               | Prettier                                                |
 | `pnpm typecheck`                                  | `tsc --noEmit`                                          |

@@ -2,3 +2,5 @@ node_modules
 dist
 coverage
 .husky
+docs/openapi.json
+src/generated/sdk/openapi.types.ts

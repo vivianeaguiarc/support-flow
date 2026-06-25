@@ -90,6 +90,40 @@ const options: Options = {
           schema: { type: 'string' },
         },
       },
+      responses: {
+        BadRequestError: {
+          description: 'Requisição inválida (validação ou payload incorreto)',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' },
+            },
+          },
+        },
+        UnauthorizedError: {
+          description: 'Token ausente, inválido ou expirado',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' },
+            },
+          },
+        },
+        ForbiddenError: {
+          description: 'Acesso negado — permissão insuficiente para o recurso',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' },
+            },
+          },
+        },
+        NotFoundError: {
+          description: 'Recurso não encontrado',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ApiErrorResponse' },
+            },
+          },
+        },
+      },
       schemas: {
         ApiSuccessResponse: {
           type: 'object',
