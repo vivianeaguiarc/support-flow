@@ -4,4 +4,5 @@ coverage
 .husky
 docs/openapi.json
 docs/openapi.baseline.json
-src/generated/sdk/openapi.types.ts
+packages/*/dist
+packages/sdk/src/generated/openapi.types.ts

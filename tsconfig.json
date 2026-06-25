@@ -25,6 +25,6 @@
     "dist",
     "src/**/*.spec.ts",
     "src/test/**/*",
-    "src/generated/sdk/**"
+    "packages/**"
   ]
 }

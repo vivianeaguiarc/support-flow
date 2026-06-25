@@ -1,14 +1,14 @@
 /**
  * Typed HTTP client for the SupportFlow API.
  *
- * Thin, dependency-light wrapper around `openapi-fetch` that is fully typed by
- * the generated `paths` from `openapi.types.ts`. This file is stable and does
- * NOT need manual edits when endpoints change — only `openapi.types.ts` is
- * regenerated (see `pnpm sdk:generate`).
+ * Thin, dependency-light wrapper around `openapi-fetch`, fully typed by the
+ * generated `paths` from `./generated/openapi.types`. This file is stable and
+ * does NOT need manual edits when endpoints change — only the generated types
+ * are regenerated (see `pnpm sdk:generate` from the backend root).
  */
 import createClient, { type Client, type ClientOptions } from 'openapi-fetch';
 
-import type { paths } from './openapi.types.js';
+import type { paths } from './generated/openapi.types';
 
 /** Fully-typed SupportFlow API client (all paths, methods, params, bodies). */
 export type SupportFlowApiClient = Client<paths>;
@@ -29,14 +29,14 @@ export interface CreateSupportFlowClientOptions extends Omit<
 export const DEFAULT_BASE_URL = 'http://localhost:3000/api/v1';
 
 /**
- * Creates a typed SupportFlow API client.
+ * Creates a low-level, typed SupportFlow API client.
  *
  * @example
- * const api = createSupportFlowClient({
+ * const client = createSupportFlowClient({
  *   baseUrl: 'https://api.supportflow.com/api/v1',
  *   accessToken: token,
  * });
- * const { data, error } = await api.GET('/auth/me');
+ * const { data, error } = await client.GET('/auth/me');
  */
 export function createSupportFlowClient(
   options: CreateSupportFlowClientOptions = {},

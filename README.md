@@ -1108,78 +1108,77 @@ Guia detalhado: **[docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)**
 
 ---
 
-## SDK TypeScript (geração via OpenAPI)
+## SDK TypeScript (`@supportflow/sdk`)
 
-O contrato OpenAPI é a **fonte única de verdade** para um SDK TypeScript tipado que o frontend consome com segurança de tipos (endpoints, params, request bodies, responses e schemas). A geração é **100% automática e regenerável** — nunca edite os arquivos gerados à mão.
+O contrato OpenAPI é a **fonte única de verdade** para um SDK TypeScript tipado, empacotado como `@supportflow/sdk` (workspace `packages/sdk`) e consumível por qualquer frontend. O SDK separa claramente o **código gerado** (tipos do contrato) do **código manual** (client, autenticação e APIs por recurso) e é publicado em **ESM + CommonJS + `.d.ts`**.
 
-Ferramentas: [`openapi-typescript`](https://openapi-ts.dev) (gera os tipos) + [`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/) (client HTTP tipado, ~6kb, sem code-gen por endpoint).
+Ferramentas: [`openapi-typescript`](https://openapi-ts.dev) (gera os tipos) + [`openapi-fetch`](https://openapi-ts.dev/openapi-fetch/) (client HTTP tipado, ~6kb) + [`tsup`](https://tsup.egoist.dev) (build ESM/CJS/d.ts).
 
 ### Comandos
 
-| Comando               | O que faz                                                                                  |
-| --------------------- | ------------------------------------------------------------------------------------------ |
-| `pnpm openapi:export` | Exporta o spec OpenAPI para `docs/openapi.json`                                            |
-| `pnpm sdk:generate`   | Exporta o OpenAPI e gera os tipos em `src/generated/sdk/openapi.types.ts`                  |
-| `pnpm sdk:check`      | Regenera, faz typecheck do SDK e **falha se houver drift** (spec/SDK desatualizados no CI) |
+| Comando               | O que faz                                                                          |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `pnpm openapi:export` | Exporta o spec OpenAPI para `docs/openapi.json`                                    |
+| `pnpm sdk:generate`   | Exporta o OpenAPI e regenera `packages/sdk/src/generated/openapi.types.ts`         |
+| `pnpm sdk:build`      | Builda o pacote (ESM + CJS + `.d.ts`) em `packages/sdk/dist`                       |
+| `pnpm sdk:verify`     | Regenera + typecheck + build + **falha se houver drift** (spec/SDK desatualizados) |
 
-`pnpm sdk:check` faz parte do `pnpm ci:check`, garantindo que o SDK e o `docs/openapi.json` estejam sempre sincronizados com as rotas/schemas do backend.
+`pnpm sdk:verify` faz parte do `pnpm ci:check`, garantindo que o SDK e o `docs/openapi.json` estejam sempre sincronizados com as rotas/schemas do backend.
 
-### Onde ficam os arquivos
+### Estrutura do pacote
 
 ```
-docs/openapi.json                      # spec OpenAPI exportado (fonte do SDK)
-src/generated/sdk/
-  openapi.types.ts                     # GERADO — tipos de paths/requests/responses/schemas
-  client.ts                            # wrapper tipado estável sobre openapi-fetch
-  index.ts                             # entry point público do SDK
-  tsconfig.json                        # typecheck isolado do SDK
-  README.md                            # como usar o SDK
-```
-
-### Como exportar o OpenAPI
-
-```bash
-pnpm openapi:export   # gera docs/openapi.json (sem precisar de banco/segredos)
-```
-
-### Como gerar o SDK
-
-```bash
-pnpm sdk:generate     # docs/openapi.json -> src/generated/sdk/openapi.types.ts
+packages/sdk/
+  src/
+    generated/openapi.types.ts   # GERADO — paths/requests/responses/schemas
+    apis/tickets.api.ts          # TicketsApi (alto nível)
+    apis/auth.api.ts             # AuthApi (alto nível)
+    client.ts                    # wrapper tipado estável sobre openapi-fetch
+    types.ts                     # aliases (Ticket, AuthUser, ...)
+    sdk.ts                       # createSupportFlowSdk() (client + APIs)
+    index.ts                     # exports públicos
+  package.json / tsconfig.json / tsup.config.ts
+  README.md
 ```
 
 ### Como o frontend consome
 
-Copie/importe o conteúdo de `src/generated/sdk` (ou publique como pacote) e instale `openapi-fetch`:
+No workspace, declare a dependência como `"@supportflow/sdk": "workspace:*"` (ou instale o pacote publicado). Consumo recomendado via APIs por recurso:
 
 ```ts
-import { createSupportFlowClient } from '@/sdk';
+import { TicketsApi, createSupportFlowClient } from '@supportflow/sdk';
 
-const api = createSupportFlowClient({
+const client = createSupportFlowClient({
   baseUrl: 'https://api.supportflow.com/api/v1',
   accessToken: token, // Authorization: Bearer <token>
 });
+const tickets = new TicketsApi(client);
 
-// path, params, body e response totalmente tipados:
-const { data, error } = await api.GET('/auth/me');
-
-const created = await api.POST('/tickets', {
-  body: {
-    title: 'Cobrança indevida',
-    description: 'Fui cobrado duas vezes no cartão',
-    customerId: '550e8400-e29b-41d4-a716-446655440000',
-  },
+const { data, error } = await tickets.list({
+  params: { query: { status: 'OPEN', page: 1, limit: 20 } },
 });
+await tickets.updateStatus(id, { body: { status: 'RESOLVED' } });
 ```
 
-Apenas tipos (sem client):
+Ou tudo de uma vez com a factory:
 
 ```ts
-import type { components } from '@/sdk';
-type Ticket = components['schemas']['Ticket'];
+import { createSupportFlowSdk } from '@supportflow/sdk';
+
+const sdk = createSupportFlowSdk({ accessToken: token });
+const me = await sdk.auth.me();
+const list = await sdk.tickets.list();
 ```
 
-Sempre que o backend mudar contratos, rode `pnpm sdk:generate` e versione os arquivos atualizados.
+Apenas tipos:
+
+```ts
+import type { Ticket, AuthUser } from '@supportflow/sdk';
+// ou o contrato cru:
+import type { components, paths } from '@supportflow/sdk';
+```
+
+Sempre que o backend mudar contratos, rode `pnpm sdk:generate` (ou `pnpm sdk:verify`) e versione os arquivos atualizados. Detalhes completos em [`packages/sdk/README.md`](packages/sdk/README.md).
 
 ---
 
@@ -1300,8 +1299,9 @@ O workflow `.github/workflows/smoke.yml` roda os smoke tests **manualmente** (`w
 | `pnpm smoke:test`                                 | Smoke test pós-deploy (usa `SMOKE_BASE_URL`)            |
 | `pnpm smoke:test:staging`                         | Smoke test contra staging                               |
 | `pnpm smoke:test:production`                      | Smoke test contra produção                              |
-| `pnpm sdk:generate`                               | Gera o SDK TypeScript a partir do OpenAPI               |
-| `pnpm sdk:check`                                  | Regenera SDK + typecheck + detecção de drift (CI)       |
+| `pnpm sdk:generate`                               | Regenera os tipos do SDK a partir do OpenAPI            |
+| `pnpm sdk:build`                                  | Builda o pacote `@supportflow/sdk` (ESM + CJS + d.ts)   |
+| `pnpm sdk:verify`                                 | Regenera + typecheck + build + detecção de drift (CI)   |
 | `pnpm lint` / `pnpm lint:fix`                     | ESLint                                                  |
 | `pnpm format` / `pnpm format:check`               | Prettier                                                |
 | `pnpm typecheck`                                  | `tsc --noEmit`                                          |

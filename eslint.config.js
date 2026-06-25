@@ -28,7 +28,8 @@ export default tseslint.config(
       'dist/**',
       'node_modules/**',
       'coverage/**',
-      'src/generated/sdk/openapi.types.ts',
+      'packages/*/dist/**',
+      'packages/sdk/src/generated/**',
     ],
   },
 );
