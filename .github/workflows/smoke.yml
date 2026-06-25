@@ -1,0 +1,55 @@
+name: Smoke tests
+
+# Post-deploy smoke tests against a published environment.
+# Run manually (choose the URL) or on a daily schedule against production.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Base URL of the deployed API
+        required: true
+        default: https://support-flow-uath.onrender.com
+      skip_auth:
+        description: Run only public checks (health/docs)
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 7 * * *' # daily at 07:00 UTC against production
+
+concurrency:
+  group: smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Post-deploy smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      HUSKY: 0
+      SMOKE_BASE_URL: ${{ github.event.inputs.base_url || 'https://support-flow-uath.onrender.com' }}
+      SMOKE_SKIP_AUTH: ${{ github.event.inputs.skip_auth || 'false' }}
+      # Optional: configure SMOKE_ADMIN_EMAIL / SMOKE_ADMIN_PASSWORD as repo
+      # secrets to use real credentials; otherwise the demo user is used.
+      SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+      SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run smoke tests
+        run: pnpm smoke:test

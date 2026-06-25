@@ -1223,6 +1223,63 @@ Assim o time revisa o diff do baseline no PR — tornando qualquer breaking chan
 
 ---
 
+## Smoke tests pós-deploy
+
+Validam, contra uma instância **publicada**, se os endpoints críticos respondem, se a autenticação funciona com o usuário demo e se o fluxo mínimo de tickets está de pé. O script (`scripts/smoke-test.ts`) é **somente leitura** — nunca cria nem altera dados —, sendo seguro rodar contra produção.
+
+### Endpoints validados
+
+- `GET /health/ready` (liveness + banco)
+- `GET /api/v1/health/ready` e `GET /api/v1/health`
+- `GET /api/v2/health` (rota da v2)
+- `GET /api/docs` (Swagger)
+- `POST /api/v1/auth/login` + `GET /api/v1/auth/me` (autenticação)
+- `GET /api/v1/tickets` e `GET /api/v1/tickets/{id}` (fluxo mínimo de tickets)
+
+Cada checagem loga endpoint, status HTTP, sucesso/falha e tempo de resposta. Há **timeout por requisição** e o processo sai com **código ≠ 0** se qualquer endpoint crítico falhar.
+
+### Variáveis de ambiente
+
+| Variável               | Padrão                       | Descrição                         |
+| ---------------------- | ---------------------------- | --------------------------------- |
+| `SMOKE_BASE_URL`       | `http://localhost:3000`      | URL base da API a testar          |
+| `SMOKE_TIMEOUT_MS`     | `10000`                      | Timeout por requisição (ms)       |
+| `SMOKE_ADMIN_EMAIL`    | `admin.demo@supportflow.com` | E-mail de login                   |
+| `SMOKE_ADMIN_PASSWORD` | `DemoSupport123!`            | Senha de login                    |
+| `SMOKE_SKIP_AUTH`      | `false`                      | `true` roda só os checks públicos |
+
+### Como rodar localmente
+
+```bash
+# Suba a API local (pnpm dev) e então:
+pnpm smoke:test                              # usa http://localhost:3000
+SMOKE_BASE_URL=http://localhost:3000 pnpm smoke:test
+```
+
+### Como rodar contra staging
+
+```bash
+pnpm smoke:test:staging                      # https://supportflow-api-staging.onrender.com
+```
+
+### Como rodar contra produção com segurança
+
+O script é read-only, mas em produção recomenda-se:
+
+```bash
+# Apenas endpoints públicos (sem login), 100% seguro:
+SMOKE_SKIP_AUTH=true pnpm smoke:test:production
+
+# Fluxo completo usando credenciais reais (não comite segredos):
+SMOKE_ADMIN_EMAIL=... SMOKE_ADMIN_PASSWORD=... pnpm smoke:test:production
+```
+
+### CI/CD
+
+O workflow `.github/workflows/smoke.yml` roda os smoke tests **manualmente** (`workflow_dispatch`, escolhendo a URL e se pula auth) e em **agendamento diário** contra produção. Configure os secrets `SMOKE_ADMIN_EMAIL`/`SMOKE_ADMIN_PASSWORD` no repositório para usar credenciais reais; sem eles, o usuário demo é utilizado. Pode ser disparado após o deploy do Render/Railway como gate de verificação.
+
+---
+
 ## Scripts disponíveis
 
 | Script                                            | Descrição                                               |
@@ -1240,6 +1297,9 @@ Assim o time revisa o diff do baseline no PR — tornando qualquer breaking chan
 | `pnpm openapi:diff`                               | Diff de contrato contra o baseline (breaking changes)   |
 | `pnpm contract:check`                             | Export + validate + diff (no `ci:check`)                |
 | `pnpm contract:baseline`                          | Atualiza o baseline do contrato (mudança intencional)   |
+| `pnpm smoke:test`                                 | Smoke test pós-deploy (usa `SMOKE_BASE_URL`)            |
+| `pnpm smoke:test:staging`                         | Smoke test contra staging                               |
+| `pnpm smoke:test:production`                      | Smoke test contra produção                              |
 | `pnpm sdk:generate`                               | Gera o SDK TypeScript a partir do OpenAPI               |
 | `pnpm sdk:check`                                  | Regenera SDK + typecheck + detecção de drift (CI)       |
 | `pnpm lint` / `pnpm lint:fix`                     | ESLint                                                  |
