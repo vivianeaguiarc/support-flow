@@ -35,6 +35,11 @@ export const AuditAction = {
   AUTOMATION_RULE_CREATED: 'automation_rule.created',
   AUTOMATION_RULE_UPDATED: 'automation_rule.updated',
   AUTOMATION_RULE_DELETED: 'automation_rule.deleted',
+
+  // SLA policies
+  SLA_POLICY_CREATED: 'sla_policy.created',
+  SLA_POLICY_UPDATED: 'sla_policy.updated',
+  SLA_POLICY_DELETED: 'sla_policy.deleted',
 } as const;
 
 export type AuditActionValue = (typeof AuditAction)[keyof typeof AuditAction];
@@ -52,6 +57,7 @@ export const AuditEntity = {
   TICKET: 'ticket',
   WEBHOOK: 'webhook',
   AUTOMATION_RULE: 'automation_rule',
+  SLA_POLICY: 'sla_policy',
 } as const;
 
 export type AuditEntityValue = (typeof AuditEntity)[keyof typeof AuditEntity];

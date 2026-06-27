@@ -11,6 +11,8 @@ const EXPECTED_PATHS: Record<string, string[]> = {
   '/users/{id}': ['get'],
   '/customers': ['get'],
   '/ticket-categories': ['get'],
+  '/sla-policies': ['post', 'get'],
+  '/sla-policies/{id}': ['get', 'patch', 'delete'],
   '/tickets': ['post', 'get'],
   '/tickets/my-queue': ['get'],
   '/tickets/unassigned': ['get'],

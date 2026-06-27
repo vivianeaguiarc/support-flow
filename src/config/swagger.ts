@@ -11,19 +11,34 @@ const isProductionBuild = configDir.includes(`${path.sep}dist${path.sep}`);
 const docsRoot = path.join(configDir, '..');
 const swaggerExtension = isProductionBuild ? 'js' : 'ts';
 
+// `swagger-jsdoc` resolves `apis` patterns with the `glob` package, which treats
+// backslashes as escape characters. Normalize to POSIX separators so globbing
+// works on Windows as well as POSIX environments.
+const toGlob = (pattern: string): string => pattern.split(path.sep).join('/');
+
 const swaggerApiGlobs = [
-  path.join(docsRoot, `modules/auth/docs/*.swagger.${swaggerExtension}`),
-  path.join(docsRoot, `modules/users/docs/*.swagger.${swaggerExtension}`),
-  path.join(docsRoot, `modules/customers/docs/*.swagger.${swaggerExtension}`),
-  path.join(
-    docsRoot,
-    `modules/**/presentation/docs/*.swagger.${swaggerExtension}`,
+  toGlob(
+    path.join(docsRoot, `modules/auth/docs/*.swagger.${swaggerExtension}`),
   ),
-  path.join(
-    docsRoot,
-    `modules/outbox/presentation/docs/*.swagger.${swaggerExtension}`,
+  toGlob(
+    path.join(docsRoot, `modules/users/docs/*.swagger.${swaggerExtension}`),
   ),
-  path.join(docsRoot, `shared/http/docs/*.swagger.${swaggerExtension}`),
+  toGlob(
+    path.join(docsRoot, `modules/customers/docs/*.swagger.${swaggerExtension}`),
+  ),
+  toGlob(
+    path.join(
+      docsRoot,
+      `modules/**/presentation/docs/*.swagger.${swaggerExtension}`,
+    ),
+  ),
+  toGlob(
+    path.join(
+      docsRoot,
+      `modules/outbox/presentation/docs/*.swagger.${swaggerExtension}`,
+    ),
+  ),
+  toGlob(path.join(docsRoot, `shared/http/docs/*.swagger.${swaggerExtension}`)),
 ];
 
 const options: Options = {
@@ -1780,6 +1795,109 @@ const options: Options = {
             createdAt: { type: 'string', format: 'date-time' },
           },
         },
+        SlaPolicy: {
+          type: 'object',
+          required: [
+            'id',
+            'tenantId',
+            'name',
+            'description',
+            'priority',
+            'firstResponseHours',
+            'resolutionHours',
+            'businessHoursOnly',
+            'isActive',
+            'categoryIds',
+            'createdById',
+            'createdAt',
+            'updatedAt',
+          ],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            tenantId: { type: 'string', format: 'uuid' },
+            name: { type: 'string', example: 'SLA Prioridade Alta' },
+            description: {
+              type: 'string',
+              nullable: true,
+              example: 'Política aplicada a chamados de alta prioridade',
+            },
+            priority: {
+              allOf: [{ $ref: '#/components/schemas/TicketPriority' }],
+              nullable: true,
+              description:
+                'Prioridade associada à política. `null` indica que se aplica a qualquer prioridade.',
+            },
+            firstResponseHours: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Tempo máximo (em horas) para a primeira resposta',
+              example: 4,
+            },
+            resolutionHours: {
+              type: 'integer',
+              minimum: 1,
+              description: 'Tempo máximo (em horas) para a resolução',
+              example: 24,
+            },
+            businessHoursOnly: {
+              type: 'boolean',
+              description:
+                'Quando verdadeiro, os prazos consideram apenas horário comercial',
+              example: false,
+            },
+            isActive: { type: 'boolean', example: true },
+            categoryIds: {
+              type: 'array',
+              description: 'Categorias de ticket associadas à política',
+              items: { type: 'string', format: 'uuid' },
+            },
+            createdById: { type: 'string', format: 'uuid', nullable: true },
+            createdAt: { type: 'string', format: 'date-time' },
+            updatedAt: { type: 'string', format: 'date-time' },
+          },
+        },
+        CreateSlaPolicyInput: {
+          type: 'object',
+          required: ['name', 'firstResponseHours', 'resolutionHours'],
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            description: { type: 'string', maxLength: 500, nullable: true },
+            priority: {
+              allOf: [{ $ref: '#/components/schemas/TicketPriority' }],
+              nullable: true,
+            },
+            categoryIds: {
+              type: 'array',
+              maxItems: 100,
+              items: { type: 'string', format: 'uuid' },
+            },
+            firstResponseHours: { type: 'integer', minimum: 1, example: 4 },
+            resolutionHours: { type: 'integer', minimum: 1, example: 24 },
+            businessHoursOnly: { type: 'boolean', default: false },
+            isActive: { type: 'boolean', default: true },
+          },
+        },
+        UpdateSlaPolicyInput: {
+          type: 'object',
+          description: 'Atualização parcial — informe ao menos um campo.',
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 120 },
+            description: { type: 'string', maxLength: 500, nullable: true },
+            priority: {
+              allOf: [{ $ref: '#/components/schemas/TicketPriority' }],
+              nullable: true,
+            },
+            categoryIds: {
+              type: 'array',
+              maxItems: 100,
+              items: { type: 'string', format: 'uuid' },
+            },
+            firstResponseHours: { type: 'integer', minimum: 1 },
+            resolutionHours: { type: 'integer', minimum: 1 },
+            businessHoursOnly: { type: 'boolean' },
+            isActive: { type: 'boolean' },
+          },
+        },
         QueueJobCounts: {
           type: 'object',
           properties: {
@@ -2250,6 +2368,11 @@ const options: Options = {
       {
         name: 'Feature Flags',
         description: 'Feature flags por tenant.',
+      },
+      {
+        name: 'SLA Policies',
+        description:
+          'Políticas de SLA administráveis — tempos de resposta e resolução por prioridade e categoria.',
       },
       {
         name: 'Administration',

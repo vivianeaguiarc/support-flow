@@ -133,6 +133,7 @@ model Tenant {
   webhookDeliveries WebhookDelivery[]
   securityAuditLogs SecurityAuditLog[]
   roles             Role[]
+  slaPolicies       SlaPolicy[]
 
   @@map("tenants")
 }
@@ -196,12 +197,55 @@ model TicketCategory {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id])
-  tickets Ticket[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  tickets     Ticket[]
+  slaPolicies SlaPolicyCategory[]
 
   @@unique([tenantId, name])
   @@index([tenantId])
   @@map("ticket_categories")
+}
+
+/// Administrable SLA policy: configurable first-response and resolution
+/// targets, optionally scoped to a priority and one or more ticket categories.
+/// Deactivation is handled via the `isActive` flag (the project does not use a
+/// `deletedAt` soft-delete convention); hard delete remains available for admins.
+model SlaPolicy {
+  id                 String          @id @default(uuid())
+  tenantId           String
+  name               String
+  description        String?
+  priority           TicketPriority?
+  firstResponseHours Int
+  resolutionHours    Int
+  businessHoursOnly  Boolean         @default(false)
+  isActive           Boolean         @default(true)
+  // Polymorphic actor reference (no DB-level FK, mirrors AuditLog.userId).
+  createdById        String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  categories SlaPolicyCategory[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([tenantId, isActive])
+  @@map("sla_policies")
+}
+
+/// Join table associating SLA policies with ticket categories (many-to-many).
+model SlaPolicyCategory {
+  id          String @id @default(uuid())
+  slaPolicyId String
+  categoryId  String
+
+  slaPolicy SlaPolicy      @relation(fields: [slaPolicyId], references: [id], onDelete: Cascade)
+  category  TicketCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([slaPolicyId, categoryId])
+  @@index([categoryId])
+  @@map("sla_policy_categories")
 }
 
 model Ticket {

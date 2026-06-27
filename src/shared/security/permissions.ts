@@ -18,6 +18,10 @@ export const PermissionKey = {
   API_KEYS_MANAGE: 'apiKeys.manage',
   FEATURE_FLAGS_MANAGE: 'featureFlags.manage',
   AUDIT_READ: 'audit.read',
+  SLA_POLICIES_READ: 'slaPolicies.read',
+  SLA_POLICIES_CREATE: 'slaPolicies.create',
+  SLA_POLICIES_UPDATE: 'slaPolicies.update',
+  SLA_POLICIES_DELETE: 'slaPolicies.delete',
 } as const;
 
 export type PermissionKeyValue =
@@ -64,6 +68,19 @@ export const INITIAL_PERMISSIONS: Array<{
     key: PermissionKey.AUDIT_READ,
     description: 'Read immutable audit logs',
   },
+  { key: PermissionKey.SLA_POLICIES_READ, description: 'Read SLA policies' },
+  {
+    key: PermissionKey.SLA_POLICIES_CREATE,
+    description: 'Create SLA policies',
+  },
+  {
+    key: PermissionKey.SLA_POLICIES_UPDATE,
+    description: 'Update SLA policies',
+  },
+  {
+    key: PermissionKey.SLA_POLICIES_DELETE,
+    description: 'Delete SLA policies',
+  },
 ];
 
 const ADMIN_PERMISSIONS: PermissionKeyValue[] = [
@@ -83,6 +100,10 @@ const ADMIN_PERMISSIONS: PermissionKeyValue[] = [
   PermissionKey.REPORTS_EXPORT,
   PermissionKey.API_KEYS_MANAGE,
   PermissionKey.AUDIT_READ,
+  PermissionKey.SLA_POLICIES_READ,
+  PermissionKey.SLA_POLICIES_CREATE,
+  PermissionKey.SLA_POLICIES_UPDATE,
+  PermissionKey.SLA_POLICIES_DELETE,
 ];
 
 export const LEGACY_ROLE_PERMISSIONS: Record<UserRole, PermissionKeyValue[]> = {
@@ -99,6 +120,8 @@ export const LEGACY_ROLE_PERMISSIONS: Record<UserRole, PermissionKeyValue[]> = {
     PermissionKey.ANALYTICS_READ,
     PermissionKey.REPORTS_EXPORT,
     PermissionKey.AUDIT_READ,
+    PermissionKey.SLA_POLICIES_READ,
+    PermissionKey.SLA_POLICIES_UPDATE,
   ],
   [UserRole.AGENT]: [
     PermissionKey.TICKETS_CREATE,
@@ -106,6 +129,7 @@ export const LEGACY_ROLE_PERMISSIONS: Record<UserRole, PermissionKeyValue[]> = {
     PermissionKey.TICKETS_UPDATE,
     PermissionKey.TICKETS_ASSIGN,
     PermissionKey.TICKETS_CLOSE,
+    PermissionKey.SLA_POLICIES_READ,
   ],
   [UserRole.CUSTOMER]: [
     PermissionKey.TICKETS_CREATE,

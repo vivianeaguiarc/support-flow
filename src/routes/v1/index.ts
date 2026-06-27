@@ -10,6 +10,7 @@ import { knowledgeRouter } from '../../modules/knowledge-base/presentation/route
 import { notificationsRouter } from '../../modules/notifications/presentation/routes/notifications.routes.js';
 import { prometheusMetricsHandler } from '../../modules/observability/presentation/routes/observability.routes.js';
 import { reportsRouter } from '../../modules/reports/presentation/routes/reports.routes.js';
+import { slaPoliciesRouter } from '../../modules/sla-policies/presentation/routes/sla-policies.routes.js';
 import { metricsRouter } from '../../modules/tickets/presentation/routes/metrics.routes.js';
 import { ticketCategoriesRouter } from '../../modules/tickets/presentation/routes/ticket-categories.routes.js';
 import { ticketsRouter } from '../../modules/tickets/presentation/routes/tickets.routes.js';
@@ -31,6 +32,7 @@ export function createApiV1Router(): Router {
   router.use('/users', usersRouter);
   router.use('/customers', customersRouter);
   router.use('/ticket-categories', ticketCategoriesRouter);
+  router.use('/sla-policies', slaPoliciesRouter);
   router.use('/tickets', ticketsRouter);
   router.use('/metrics', metricsRouter);
   router.use('/analytics', analyticsRouter);

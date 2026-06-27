@@ -11,8 +11,13 @@ const isProductionBuild = configDir.includes(`${path.sep}dist${path.sep}`);
 const docsRoot = path.join(configDir, '..');
 const swaggerExtension = isProductionBuild ? 'js' : 'ts';
 
+// `swagger-jsdoc` resolves `apis` patterns with the `glob` package, which treats
+// backslashes as escape characters. Normalize to POSIX separators so globbing
+// works on Windows as well as POSIX environments.
+const toGlob = (pattern: string): string => pattern.split(path.sep).join('/');
+
 const swaggerV2Globs = [
-  path.join(docsRoot, `routes/v2/docs/*.swagger.${swaggerExtension}`),
+  toGlob(path.join(docsRoot, `routes/v2/docs/*.swagger.${swaggerExtension}`)),
 ];
 
 const options: Options = {

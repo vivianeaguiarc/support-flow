@@ -34,6 +34,9 @@ export const BusinessEvent = {
   FEATURE_FLAG_CREATED: 'feature_flag.created',
   FEATURE_FLAG_UPDATED: 'feature_flag.updated',
   FEATURE_FLAG_DELETED: 'feature_flag.deleted',
+  SLA_POLICY_CREATED: 'sla_policy.created',
+  SLA_POLICY_UPDATED: 'sla_policy.updated',
+  SLA_POLICY_DELETED: 'sla_policy.deleted',
 } as const;
 
 export type BusinessEventName =

@@ -3435,6 +3435,239 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sla-policies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Listar políticas de SLA
+         * @description Lista as políticas de SLA do tenant. Disponível para ADMIN, SUPERVISOR e AGENT
+         *     (leitura). Suporta filtros por status e prioridade.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Filtra por políticas ativas/inativas. */
+                    isActive?: boolean;
+                    /** @description Filtra por prioridade associada. */
+                    priority?: components["schemas"]["TicketPriority"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Lista de políticas de SLA */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiSuccessResponse"] & {
+                            data?: components["schemas"]["SlaPolicy"][];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedError"];
+                403: components["responses"]["ForbiddenError"];
+            };
+        };
+        put?: never;
+        /**
+         * Criar política de SLA
+         * @description Cria uma nova política de SLA. Restrito a ADMIN (permissão `slaPolicies.create`).
+         *     Toda criação gera um registro imutável de auditoria.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "name": "SLA Prioridade Alta",
+                     *       "description": "Política para chamados de alta prioridade",
+                     *       "priority": "HIGH",
+                     *       "categoryIds": [
+                     *         "550e8400-e29b-41d4-a716-446655440000"
+                     *       ],
+                     *       "firstResponseHours": 4,
+                     *       "resolutionHours": 24,
+                     *       "businessHoursOnly": false,
+                     *       "isActive": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CreateSlaPolicyInput"];
+                };
+            };
+            responses: {
+                /** @description Política de SLA criada */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiSuccessResponse"] & {
+                            data?: components["schemas"]["SlaPolicy"];
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequestError"];
+                401: components["responses"]["UnauthorizedError"];
+                403: components["responses"]["ForbiddenError"];
+                /** @description Já existe uma política com este nome */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sla-policies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obter política de SLA */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Política encontrada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiSuccessResponse"] & {
+                            data?: components["schemas"]["SlaPolicy"];
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedError"];
+                403: components["responses"]["ForbiddenError"];
+                404: components["responses"]["NotFoundError"];
+            };
+        };
+        put?: never;
+        post?: never;
+        /**
+         * Remover política de SLA
+         * @description Remove definitivamente uma política de SLA. Restrito a ADMIN
+         *     (permissão `slaPolicies.delete`). A remoção gera auditoria imutável.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Política removida */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiSuccessResponse"] & {
+                            data?: {
+                                /** @example true */
+                                deleted?: boolean;
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["UnauthorizedError"];
+                403: components["responses"]["ForbiddenError"];
+                404: components["responses"]["NotFoundError"];
+            };
+        };
+        options?: never;
+        head?: never;
+        /**
+         * Atualizar política de SLA
+         * @description Atualiza uma política de SLA. Disponível para ADMIN e SUPERVISOR
+         *     (permissão `slaPolicies.update`). Toda alteração gera auditoria imutável.
+         */
+        patch: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    /**
+                     * @example {
+                     *       "resolutionHours": 16,
+                     *       "isActive": false
+                     *     }
+                     */
+                    "application/json": components["schemas"]["UpdateSlaPolicyInput"];
+                };
+            };
+            responses: {
+                /** @description Política atualizada */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiSuccessResponse"] & {
+                            data?: components["schemas"]["SlaPolicy"];
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequestError"];
+                401: components["responses"]["UnauthorizedError"];
+                403: components["responses"]["ForbiddenError"];
+                404: components["responses"]["NotFoundError"];
+                /** @description Já existe uma política com este nome */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiErrorResponse"];
+                    };
+                };
+            };
+        };
+        trace?: never;
+    };
     "/reports/tickets.csv": {
         parameters: {
             query?: never;
@@ -6680,6 +6913,68 @@ export interface components {
             failedAt?: string | null;
             /** Format: date-time */
             createdAt: string;
+        };
+        SlaPolicy: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** @example SLA Prioridade Alta */
+            name: string;
+            /** @example Política aplicada a chamados de alta prioridade */
+            description: string | null;
+            /** @description Prioridade associada à política. `null` indica que se aplica a qualquer prioridade. */
+            priority: components["schemas"]["TicketPriority"] | null;
+            /**
+             * @description Tempo máximo (em horas) para a primeira resposta
+             * @example 4
+             */
+            firstResponseHours: number;
+            /**
+             * @description Tempo máximo (em horas) para a resolução
+             * @example 24
+             */
+            resolutionHours: number;
+            /**
+             * @description Quando verdadeiro, os prazos consideram apenas horário comercial
+             * @example false
+             */
+            businessHoursOnly: boolean;
+            /** @example true */
+            isActive: boolean;
+            /** @description Categorias de ticket associadas à política */
+            categoryIds: string[];
+            /** Format: uuid */
+            createdById: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        CreateSlaPolicyInput: {
+            name: string;
+            description?: string | null;
+            priority?: components["schemas"]["TicketPriority"] | null;
+            categoryIds?: string[];
+            /** @example 4 */
+            firstResponseHours: number;
+            /** @example 24 */
+            resolutionHours: number;
+            /** @default false */
+            businessHoursOnly: boolean;
+            /** @default true */
+            isActive: boolean;
+        };
+        /** @description Atualização parcial — informe ao menos um campo. */
+        UpdateSlaPolicyInput: {
+            name?: string;
+            description?: string | null;
+            priority?: components["schemas"]["TicketPriority"] | null;
+            categoryIds?: string[];
+            firstResponseHours?: number;
+            resolutionHours?: number;
+            businessHoursOnly?: boolean;
+            isActive?: boolean;
         };
         QueueJobCounts: {
             /** @example 2 */
