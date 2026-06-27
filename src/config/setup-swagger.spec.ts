@@ -41,4 +41,21 @@ describe('setupSwagger', () => {
     expect(v2Paths).not.toContain('/auth/login');
     expect(v2Paths).not.toContain('/users');
   });
+
+  it('renders complementary guides as HTML at /api/docs/guides/:slug', async () => {
+    const app = buildApp();
+
+    const guide = await request(app).get('/api/docs/guides/rbac');
+    expect(guide.status).toBe(200);
+    expect(guide.headers['content-type']).toContain('text/html');
+    expect(guide.text).toContain('<html');
+    expect(guide.text).toContain('Voltar para a documentação da API');
+  });
+
+  it('returns 404 for an unknown guide slug', async () => {
+    const app = buildApp();
+
+    const guide = await request(app).get('/api/docs/guides/does-not-exist');
+    expect(guide.status).toBe(404);
+  });
 });
